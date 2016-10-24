@@ -10,4 +10,4 @@ gradle.properties
 bin
 build
 out
-.idea
+classes
