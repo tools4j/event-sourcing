@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2016-2018 mmap (tools4j), Marco Terzer, Anton Anufriev
+ * Copyright (c) 2018 tools4j, Marco Terzer, Anton Anufriev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -68,7 +68,7 @@ public class EventSourcingPerfTest {
         final int regionsToMapAhead = 1;
         final long maxFileSize = 64L * 16 * 1024 * 1024 * 4;
         final int encodingBufferSize = 8 * 1024;
-        final String directory = "/Users/anton/IdeaProjects/eventSourcing";
+        final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
         final BooleanSupplier leadership = () -> true;
 
