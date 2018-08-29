@@ -29,14 +29,14 @@ import org.tools4j.eventsourcing.event.Version;
 
 public class AdminHeader implements Header {
 
-    private final Type type;
     private byte version;
+    private final Type type;
     private long sourceSeqNo;
     private long eventTimeNanosSinceEpoch;
     private int userData;
 
     public AdminHeader(final Type type) {
-        if (!type.isAdmin()) {
+        if (type == Type.DATA | type == Type.MULTIPART) {
             throw new IllegalArgumentException("Not an 'Admin' type: " + type);
         }
         this.type = type;
@@ -53,8 +53,8 @@ public class AdminHeader implements Header {
     }
 
     @Override
-    public short templateId() {
-        return ADMIN_TEMPLATE_ID;
+    public short subtypeId() {
+        return DEFAULT_SUBTYPE_ID;
     }
 
     @Override
@@ -128,14 +128,7 @@ public class AdminHeader implements Header {
         if (sourceSeqNo >= 0) {
             return sourceSeqNo;
         }
-        throw new IllegalArgumentException("Source sequene number cannot be negative: " + sourceSeqNo);
-    }
-
-    static short validateTemplated(final short templateId) {
-        if (templateId != ADMIN_TEMPLATE_ID) {
-            return templateId;
-        }
-        throw new IllegalArgumentException("Template ID " + templateId + " is reserved");
+        throw new IllegalArgumentException("Source sequence number cannot be negative: " + sourceSeqNo);
     }
 
     static int validatePayloadLength(final int payloadLength) {

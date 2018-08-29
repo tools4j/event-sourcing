@@ -24,73 +24,56 @@
 package org.tools4j.eventsourcing.header;
 
 import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.event.Type;
 import org.tools4j.eventsourcing.event.Version;
 
-public class InputLeadershipHeader extends LeadershipHeader {
+public class InitializeHeader extends AdminHeader {
 
-    private int inputSourceId;
+    public InitializeHeader() {
+        super(Type.INITIALIZE);
+    }
 
-    @Override
-    public short subtypeId() {
-        return SUBTYPE_LEADERSHIP_TRANSITION;
+    public int leaderId() {
+        return userData();
     }
 
     @Override
-    public int inputSourceId() {
-        return inputSourceId;
-    }
-
-    @Override
-    public InputLeadershipHeader version(final Version version) {
+    public InitializeHeader version(final Version version) {
         super.version(version);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader version(final byte version) {
+    public InitializeHeader version(final byte version) {
         super.version(version);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader subtypeId(final short subtypeId) {
-        if (subtypeId != SUBTYPE_LEADERSHIP_TRANSITION) {
-            throw new IllegalArgumentException("Invalid subtypeId: " + subtypeId);
-        }
-        return this;
-    }
-
-    public InputLeadershipHeader inputSourceId(final int inputSourceId) {
-        this.inputSourceId = validateInputSourceId(inputSourceId);
-        return this;
-    }
-
-    @Override
-    public InputLeadershipHeader sourceSeqNo(final long sourceSeqNo) {
+    public InitializeHeader sourceSeqNo(final long sourceSeqNo) {
         super.sourceSeqNo(sourceSeqNo);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
+    public InitializeHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
         super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader userData(final int userData) {
+    public InitializeHeader userData(final int userData) {
         super.userData(userData);
         return this;
     }
 
-    public InputLeadershipHeader leaderId(final int leaderId) {
-        super.leaderId(leaderId);
-        return this;
+    public InitializeHeader leaderId(final int leaderId) {
+        return userData(leaderId);
     }
 
     @Override
-    public LeadershipHeader init(final Header header) {
+    public InitializeHeader init(final Header header) {
         super.init(header);
-        return inputSourceId(header.inputSourceId());
+        return this;
     }
 }

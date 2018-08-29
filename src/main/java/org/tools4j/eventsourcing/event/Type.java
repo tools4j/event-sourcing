@@ -26,10 +26,12 @@ package org.tools4j.eventsourcing.event;
 public enum Type {
     INITIALIZE((byte)0),
     HEARTBEAT((byte)1),
-    LEADERSHIP_FORCED((byte)2),
-    LEADERSHIP_TRANSITION((byte)3),
+    LEADERSHIP((byte)2),
+    TIMER((byte)3),
     SHUTDOWN((byte)4),
-    DATA((byte)5);
+    NOOP((byte)5),
+    DATA((byte)6),
+    MULTIPART((byte)7);
 
     private final byte code;
     Type(final byte code) {
@@ -38,14 +40,8 @@ public enum Type {
     public byte code() {
         return code;
     }
-    public boolean isData() {
-        return this == DATA;
-    }
-    public boolean isAdmin() {
-        return this != DATA;
-    }
     public boolean isLeadershipChange() {
-        return this == INITIALIZE | this == LEADERSHIP_FORCED | this == LEADERSHIP_TRANSITION;
+        return this == INITIALIZE | this == LEADERSHIP;
     }
     public static Type valueByCode(final byte code) {
         return VALUES[(int)code];

@@ -24,73 +24,66 @@
 package org.tools4j.eventsourcing.header;
 
 import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.event.Multipart;
+import org.tools4j.eventsourcing.event.Type;
 import org.tools4j.eventsourcing.event.Version;
 
-public class InputLeadershipHeader extends LeadershipHeader {
+public class MultipartHeader extends AdminHeader implements Multipart {
 
-    private int inputSourceId;
-
-    @Override
-    public short subtypeId() {
-        return SUBTYPE_LEADERSHIP_TRANSITION;
+    public MultipartHeader() {
+        super(Type.MULTIPART);
     }
 
     @Override
-    public int inputSourceId() {
-        return inputSourceId;
+    public int partCount() {
+        return userData();
     }
 
     @Override
-    public InputLeadershipHeader version(final Version version) {
+    public MultipartHeader version(final Version version) {
         super.version(version);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader version(final byte version) {
+    public MultipartHeader version(final byte version) {
         super.version(version);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader subtypeId(final short subtypeId) {
-        if (subtypeId != SUBTYPE_LEADERSHIP_TRANSITION) {
-            throw new IllegalArgumentException("Invalid subtypeId: " + subtypeId);
-        }
-        return this;
-    }
-
-    public InputLeadershipHeader inputSourceId(final int inputSourceId) {
-        this.inputSourceId = validateInputSourceId(inputSourceId);
-        return this;
-    }
-
-    @Override
-    public InputLeadershipHeader sourceSeqNo(final long sourceSeqNo) {
+    public MultipartHeader sourceSeqNo(final long sourceSeqNo) {
         super.sourceSeqNo(sourceSeqNo);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
+    public MultipartHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
         super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
         return this;
     }
 
     @Override
-    public InputLeadershipHeader userData(final int userData) {
-        super.userData(userData);
+    public MultipartHeader userData(final int userData) {
+        super.userData(validatePartCount(userData));
         return this;
     }
 
-    public InputLeadershipHeader leaderId(final int leaderId) {
-        super.leaderId(leaderId);
-        return this;
+    public MultipartHeader partCount(final int partCount) {
+        return userData(partCount);
     }
 
     @Override
-    public LeadershipHeader init(final Header header) {
+    public MultipartHeader init(final Header header) {
         super.init(header);
-        return inputSourceId(header.inputSourceId());
+        return this;
     }
+
+    static int validatePartCount(final int partCount) {
+        if (partCount >= 0) {
+            return partCount;
+        }
+        throw new IllegalArgumentException("Part count cannot be negative: " + partCount);
+    }
+
 }

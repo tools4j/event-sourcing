@@ -27,13 +27,15 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.header.NoopHeader;
 
 import java.util.Objects;
 
 public class SingleEventAppender implements Queue.Appender {
 
-    private static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(0, 0);
+    static final DirectBuffer EMPTY_PAYLOAD = new UnsafeBuffer(0, 0);
 
+    private final NoopHeader noopHeader = new NoopHeader();
     private final ApplicationHandler applicationHandler;
     private final Queue.Appender outputAppender;
     private final Queue.EventConsuer inputEventHandler;
@@ -44,23 +46,22 @@ public class SingleEventAppender implements Queue.Appender {
                                final Queue.Appender outputAppender) {
         this.applicationHandler = Objects.requireNonNull(applicationHandler);
         this.outputAppender = Objects.requireNonNull(outputAppender);
-        this.inputEventHandler = this::hxandleInputEvent;
+        this.inputEventHandler = this::handleInputEvent;
     }
 
-    private void hxandleInputEvent(final int queueIndex, final Event event) {
+    private void handleInputEvent(final int queueIndex, final Event event) {
         enqueued = 0;
         applicationHandler.processInputEvent(queueIndex, event, this);
         if (enqueued == 0) {
-            enqueueEmpty(queueIndex, event);
+            enqueueNoop(event);
         } else {
             enqueued = 0;
         }
     }
 
-    private void enqueueEmpty(final int inputQueueIndex, final Event event) {
-        final Header header = event.header();
-        outputAppender.enqueue(Header.ADMIN_TEMPLATE_ID, header.inputSourceId(), header.sourceSeqNo(),
-                header.eventTimeNanosSinceEpoch(), 0, EMPTY_PAYLOAD, 0, 0);
+    private void enqueueNoop(final Event event) {
+        noopHeader.init(event.header());
+        outputAppender.enqueue(noopHeader);
     }
 
     private void checkState(final int inputSourceid, final long sourceSeqNo) {
@@ -90,11 +91,11 @@ public class SingleEventAppender implements Queue.Appender {
     }
 
     @Override
-    public void enqueue(final short templateId, final int inputSourceId, final long sourceSeqNo,
+    public void enqueue(final short subtypeId, final int inputSourceId, final long sourceSeqNo,
                         final long eventTimeNanosSinceEpoch, final int userData,
                         final DirectBuffer message, final int offset, final int length) {
         checkState(inputSourceId, sourceSeqNo);
-        outputAppender.enqueue(templateId, inputSourceId, sourceSeqNo, eventTimeNanosSinceEpoch, userData, message, offset, length);
+        outputAppender.enqueue(subtypeId, inputSourceId, sourceSeqNo, eventTimeNanosSinceEpoch, userData, message, offset, length);
         enqueued++;
     }
 }

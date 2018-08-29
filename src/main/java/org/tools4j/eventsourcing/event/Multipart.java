@@ -25,10 +25,8 @@ package org.tools4j.eventsourcing.event;
 
 import org.agrona.MutableDirectBuffer;
 
-import org.tools4j.eventsourcing.header.TimerHeader;
-
 /**
- * Byte layout of a header:
+ * Byte layout for a multipart message:
  * <pre>
       0                   1                   2                   3
       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -43,64 +41,56 @@ import org.tools4j.eventsourcing.header.TimerHeader;
      |                          Event Time                           | 128-191
      |                   (nanoseconds since epoch)                   |
      +-------------------------------+-------------------------------+
-     |                           User Data                           | 192-223
+     |                        Number of Parts                        | 192-223
      +---------------+---------------+-------------------------------+
      |0|                       Payload Length                        | 224-255
      +---------------+---------------+-------------------------------+
+ </pre>
+ *
+ * Each part has a mini header:
+ * <pre>
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |    (unused)   |      Type     |           Subtype ID          |   0- 31
+     +---------------+---------------+-------------------------------+
+     |                           User Data                           |  32- 63
+     +---------------+---------------+-------------------------------+
+     |0|                     Part Payload Length                     |  64- 95
+     +---------------+---------------+-------------------------------+
    </pre>
  *
- * All types follow this format.  Interpretation of subtype and user data depends
- * on the type.
- *
- * @see Multipart
- * @see TimerHeader
+ * @see Header
  */
-public interface Header {
-    int BYTE_LENGTH = 32;
-    int ADMIN_SOURCE_ID = 0;
-    short DEFAULT_SUBTYPE_ID = 0;
+public interface Multipart extends Header {
 
-    byte version();
-    Type type();
-    short subtypeId();
-    int inputSourceId();
-    long sourceSeqNo();
-    long eventTimeNanosSinceEpoch();
-    int userData();
-    int payloadLength();
+    int partCount();
 
-    default boolean isAdmin() {
-        return inputSourceId() == ADMIN_SOURCE_ID;
-    }
+    interface Part {
+        int BYTE_LENGTH = 12;
+        Type type();
+        short subtypeId();
+        int userData();
+        int payloadLength();
 
-    default Header multipartParent() {
-        return null;
-    }
-
-    default int writeTo(final MutableDirectBuffer target, final int offset) {
-        if (offset + BYTE_LENGTH > target.capacity()) {
-            throw new IllegalArgumentException("Not enough capacity: offset=" + offset + ", capacity=" + target.capacity());
+        default int writeTo(final MutableDirectBuffer target, final int offset) {
+            if (offset + BYTE_LENGTH > target.capacity()) {
+                throw new IllegalArgumentException("Not enough capacity: offset=" + offset + ", capacity=" + target.capacity());
+            }
+            target.putByte(offset + Offset.UNUSED, (byte)0);
+            target.putByte(offset + Offset.TYPE, type().code());
+            target.putShort(offset + Offset.SUBTYPE_ID, subtypeId());
+            target.putInt(offset + Offset.USER_DATA, userData());
+            target.putInt(offset + Offset.PAYLOAD_LENGTH, payloadLength());
+            return BYTE_LENGTH;
         }
-        target.putByte(offset + Offset.VERSION, version());
-        target.putByte(offset + Offset.TYPE, type().code());
-        target.putShort(offset + Offset.SUBTYPE_ID, subtypeId());
-        target.putInt(offset + Offset.INPUT_SOURCE_ID, inputSourceId());
-        target.putLong(offset + Offset.SOURCE_SEQ_NO, sourceSeqNo());
-        target.putLong(offset + Offset.EVENT_TIME_NANOS_SINCE_EPOCH, eventTimeNanosSinceEpoch());
-        target.putInt(offset + Offset.USER_DATA, userData());
-        target.putInt(offset + Offset.PAYLOAD_LENGTH, payloadLength());
-        return BYTE_LENGTH;
-    }
 
-    interface Offset {
-        int VERSION = 0;
-        int TYPE = 1;
-        int SUBTYPE_ID = 2;
-        int INPUT_SOURCE_ID = 4;
-        int SOURCE_SEQ_NO = 8;
-        int EVENT_TIME_NANOS_SINCE_EPOCH = 16;
-        int USER_DATA = 24;
-        int PAYLOAD_LENGTH = 28;
+        interface Offset {
+            int UNUSED = 0;
+            int TYPE = 1;
+            int SUBTYPE_ID = 2;
+            int USER_DATA = 4;
+            int PAYLOAD_LENGTH = 8;
+        }
     }
-
 }

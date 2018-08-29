@@ -21,21 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.event;
+package org.tools4j.eventsourcing.header;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.tools4j.eventsourcing.event.Event;
+import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.event.Multipart;
 
-public interface Event {
-    Header header();
-    DirectBuffer payload();
+public class DefaultPartEvent implements Event {
 
-    default Type type() {
-        return header().type();
+    private final DefaultPartHeader header = new DefaultPartHeader();
+    private final DirectBuffer payload = new UnsafeBuffer(0, 0);
+
+    public DefaultPartEvent wrap(final Header multipart, final DirectBuffer source, final int offset) {
+        final int payloadLength = header.wrap(multipart, source, offset).payloadLength();
+        payload.wrap(offset + Multipart.Part.BYTE_LENGTH, payloadLength);
+        return this;
     }
-    default int payloadLength() {
-        return header().payloadLength();
+
+    public DefaultPartEvent unwrap() {
+        header.unwrap();
+        payload.wrap(0, 0);
+        return this;
     }
-    default int totalLength() {
-        return Header.BYTE_LENGTH + payloadLength();
+
+    @Override
+    public DefaultPartHeader header() {
+        return header;
+    }
+
+    @Override
+    public DirectBuffer payload() {
+        return payload;
+    }
+
+    @Override
+    public int totalLength() {
+        return Multipart.Part.BYTE_LENGTH + payloadLength();
     }
 }

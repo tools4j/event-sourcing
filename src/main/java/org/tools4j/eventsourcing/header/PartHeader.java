@@ -24,47 +24,29 @@
 package org.tools4j.eventsourcing.header;
 
 import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.event.Multipart;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
-public class DataHeader implements Header {
+import java.util.EnumSet;
+import java.util.Set;
 
-    private byte version;
+public class PartHeader implements Multipart.Part {
+
+    private static final Set<Type> ALLOWED_TYPES = EnumSet.of(Type.LEADERSHIP, Type.TIMER, Type.SHUTDOWN, Type.NOOP, Type.DATA);
+
+    private Type type = Type.DATA;
     private short subtypeId;
-    private int inputSourceId;
-    private long sourceSeqNo;
-    private long eventTimeNanosSinceEpoch;
     private int userData;
     private int payloadLength;
 
     @Override
-    public byte version() {
-        return version;
-    }
-
-    @Override
     public Type type() {
-        return Type.DATA;
+        return type;
     }
 
     @Override
     public short subtypeId() {
         return subtypeId;
-    }
-
-    @Override
-    public int inputSourceId() {
-        return inputSourceId;
-    }
-
-    @Override
-    public long sourceSeqNo() {
-        return sourceSeqNo;
-    }
-
-    @Override
-    public long eventTimeNanosSinceEpoch() {
-        return eventTimeNanosSinceEpoch;
     }
 
     @Override
@@ -77,55 +59,41 @@ public class DataHeader implements Header {
         return payloadLength;
     }
 
-    public DataHeader version(final Version version) {
-        return version(version.code());
-    }
-
-    public DataHeader version(final byte version) {
-        this.version = version;
+    public PartHeader type(final Type type) {
+        if (!ALLOWED_TYPES.contains(type)) {
+            throw new IllegalArgumentException("Not a valid part type: " + type);
+        }
+        this.type = type;
         return this;
     }
 
-    public DataHeader subtypeId(final short subtypeId) {
+    public PartHeader subtypeId(final short subtypeId) {
         this.subtypeId = subtypeId;
         return this;
     }
 
-    public DataHeader inputSourceId(final int inputSourceId) {
-        this.inputSourceId = AdminHeader.validateInputSourceId(inputSourceId);
-        return this;
-    }
-
-    public DataHeader sourceSeqNo(final long sourceSeqNo) {
-        this.sourceSeqNo = AdminHeader.validateSourceSeqNo(sourceSeqNo);
-        return this;
-    }
-
-    public DataHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        this.eventTimeNanosSinceEpoch = eventTimeNanosSinceEpoch;
-        return this;
-    }
-
-    public DataHeader userData(final int userData) {
+    public PartHeader userData(final int userData) {
         this.userData = userData;
         return this;
     }
 
-    public DataHeader payloadLength(final int payloadLength) {
+    public PartHeader payloadLength(final int payloadLength) {
         this.payloadLength = AdminHeader.validatePayloadLength(payloadLength);
         return this;
     }
 
-    public DataHeader init(final Header header) {
-        if (header.type() != Type.DATA) {
-            throw new IllegalArgumentException("Not a 'DATA' type: " + header.type());
-        }
+    public PartHeader init(final Header header) {
         return this
-                .version(header.version())
+                .type(header.type())
                 .subtypeId(header.subtypeId())
-                .inputSourceId(header.inputSourceId())
-                .sourceSeqNo(header.sourceSeqNo())
-                .eventTimeNanosSinceEpoch(header.eventTimeNanosSinceEpoch())
+                .userData(header.userData())
+                .payloadLength(header.payloadLength());
+    }
+
+    public PartHeader init(final Multipart.Part header) {
+        return this
+                .type(header.type())
+                .subtypeId(header.subtypeId())
                 .userData(header.userData())
                 .payloadLength(header.payloadLength());
     }

@@ -29,15 +29,18 @@ import org.tools4j.eventsourcing.event.Version;
 
 public class LeadershipHeader extends AdminHeader {
 
-    public LeadershipHeader(final Type type) {
-        super(checkType(type));
+    public static final short SUBTYPE_LEADERSHIP_TRANSITION = 0;
+    public static final short SUBTYPE_LEADERSHIP_FORCED     = 1;
+
+    private short subtypeId;
+
+    public LeadershipHeader() {
+        super(Type.LEADERSHIP);
     }
 
-    private static Type checkType(final Type type) {
-        if (type.isLeadershipChange()) {
-            return type;
-        }
-        throw new IllegalArgumentException("Not a 'Leadership' type: " + type);
+    @Override
+    public short subtypeId() {
+        return subtypeId;
     }
 
     public int leaderId() {
@@ -53,6 +56,14 @@ public class LeadershipHeader extends AdminHeader {
     @Override
     public LeadershipHeader version(final byte version) {
         super.version(version);
+        return this;
+    }
+
+    public LeadershipHeader subtypeId(final short subtypeId) {
+        if (subtypeId != SUBTYPE_LEADERSHIP_TRANSITION & subtypeId != SUBTYPE_LEADERSHIP_FORCED) {
+            throw new IllegalArgumentException("Invalid subtypeId: " + subtypeId);
+        }
+        this.subtypeId = subtypeId;
         return this;
     }
 
@@ -81,24 +92,6 @@ public class LeadershipHeader extends AdminHeader {
     @Override
     public LeadershipHeader init(final Header header) {
         super.init(header);
-        return this;
-    }
-
-    public static class InitializeHeader extends LeadershipHeader {
-        public InitializeHeader() {
-            super(Type.INITIALIZE);
-        }
-    }
-
-    public static class LeadershipForcedHeader extends LeadershipHeader {
-        public LeadershipForcedHeader() {
-            super(Type.LEADERSHIP_FORCED);
-        }
-    }
-
-    public static class LeadershipTransitiondHeader extends LeadershipHeader {
-        public LeadershipTransitiondHeader() {
-            super(Type.LEADERSHIP_TRANSITION);
-        }
+        return subtypeId(header.subtypeId());
     }
 }

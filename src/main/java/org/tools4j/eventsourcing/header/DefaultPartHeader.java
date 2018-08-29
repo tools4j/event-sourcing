@@ -24,61 +24,75 @@
 package org.tools4j.eventsourcing.header;
 
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.event.Multipart;
 import org.tools4j.eventsourcing.event.Type;
 
-public class DefaultHeader implements Header {
+public class DefaultPartHeader implements Header, Multipart.Part {
 
+    private final MultipartHeader parent = new MultipartHeader();
     private final DirectBuffer buffer = new UnsafeBuffer(0, 0);
 
-    public DefaultHeader wrap(final DirectBuffer source, final int offset) {
-        buffer.wrap(source, offset, BYTE_LENGTH);
+    public DefaultPartHeader wrap(final Header multipart, final DirectBuffer source, final int offset) {
+        parent.init(multipart);
+        buffer.wrap(source, offset, Multipart.Part.BYTE_LENGTH);
         return this;
     }
 
-    public DefaultHeader unwrap() {
+    public DefaultPartHeader unwrap() {
         buffer.wrap(0, 0);
         return this;
     }
 
     @Override
     public byte version() {
-        return buffer.getByte(Offset.VERSION);
+        return parent.version();
     }
 
     @Override
     public Type type() {
-        return Type.valueByCode(buffer.getByte(Offset.TYPE));
+        return Type.valueByCode(buffer.getByte(Multipart.Part.Offset.TYPE));
     }
 
     @Override
     public short subtypeId() {
-        return buffer.getShort(Offset.SUBTYPE_ID);
+        return buffer.getShort(Multipart.Part.Offset.SUBTYPE_ID);
     }
 
     @Override
     public int inputSourceId() {
-        return buffer.getInt(Offset.INPUT_SOURCE_ID);
+        return parent.inputSourceId();
     }
 
     @Override
     public long sourceSeqNo() {
-        return buffer.getLong(Offset.SOURCE_SEQ_NO);
+        return parent.sourceSeqNo();
     }
 
     @Override
     public long eventTimeNanosSinceEpoch() {
-        return buffer.getLong(Offset.EVENT_TIME_NANOS_SINCE_EPOCH);
+        return parent.eventTimeNanosSinceEpoch();
     }
 
     @Override
     public int userData() {
-        return buffer.getInt(Offset.USER_DATA);
+        return buffer.getInt(Multipart.Part.Offset.USER_DATA);
     }
 
     @Override
     public int payloadLength() {
-        return buffer.getInt(Offset.PAYLOAD_LENGTH);
+        return buffer.getInt(Multipart.Part.Offset.PAYLOAD_LENGTH);
+    }
+
+    @Override
+    public Multipart multipartParent() {
+        return parent;
+    }
+
+    @Override
+    public int writeTo(MutableDirectBuffer target, int offset) {
+        return Multipart.Part.super.writeTo(target, offset);
     }
 }

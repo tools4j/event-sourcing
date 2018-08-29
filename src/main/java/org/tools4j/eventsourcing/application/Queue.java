@@ -27,23 +27,28 @@ import org.agrona.DirectBuffer;
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Header;
 
+import static org.tools4j.eventsourcing.application.SingleEventAppender.EMPTY_PAYLOAD;
+
 public interface Queue {
     Appender appender();
     Poller poller();
     long size();
 
     interface Appender {
-        void enqueue(short templateId, int inputSourceId, long sourceSeqNo,
+        void enqueue(short subtypeId, int inputSourceId, long sourceSeqNo,
                      long eventTimeNanosSinceEpoch, int userData,
                      DirectBuffer message, int offset, int length);
         void enqueue(Header header, DirectBuffer message, int offset, int length);
         default void enqueue(final Event event) {
             enqueue(event.header(), event.payload(), 0, event.payloadLength());
         }
+        default void enqueue(Header header) {
+            enqueue(header, EMPTY_PAYLOAD, 0, 0);
+        }
     }
 
     enum PollResut {
-        POLLED, ADMIN, END;
+        POLLED, ADMIN, END
     }
     interface Poller {
         PollResut poll(EventConsuer consumer);

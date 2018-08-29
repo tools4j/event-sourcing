@@ -21,21 +21,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.event;
+package org.tools4j.eventsourcing.header;
 
-import org.agrona.DirectBuffer;
+import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.event.Type;
+import org.tools4j.eventsourcing.event.Version;
 
-public interface Event {
-    Header header();
-    DirectBuffer payload();
+public class ShutdownHeader extends AdminHeader {
 
-    default Type type() {
-        return header().type();
+    public ShutdownHeader() {
+        super(Type.SHUTDOWN);
     }
-    default int payloadLength() {
-        return header().payloadLength();
+
+    @Override
+    public ShutdownHeader version(final Version version) {
+        super.version(version);
+        return this;
     }
-    default int totalLength() {
-        return Header.BYTE_LENGTH + payloadLength();
+
+    @Override
+    public ShutdownHeader version(final byte version) {
+        super.version(version);
+        return this;
+    }
+
+    @Override
+    public ShutdownHeader sourceSeqNo(final long sourceSeqNo) {
+        super.sourceSeqNo(sourceSeqNo);
+        return this;
+    }
+
+    @Override
+    public ShutdownHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
+        super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
+        return this;
+    }
+
+    @Override
+    public ShutdownHeader userData(final int userData) {
+        super.userData(userData);
+        return this;
+    }
+
+    @Override
+    public ShutdownHeader init(final Header header) {
+        super.init(header);
+        return this;
     }
 }
