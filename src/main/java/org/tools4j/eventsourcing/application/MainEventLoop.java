@@ -23,41 +23,56 @@
  */
 package org.tools4j.eventsourcing.application;
 
-import org.tools4j.nobark.loop.Step;
-
 import java.util.Objects;
+import java.util.function.Consumer;
+
+import org.tools4j.eventsourcing.event.Event;
+import org.tools4j.eventsourcing.store.InputQueue;
+import org.tools4j.eventsourcing.store.OutputQueue;
+import org.tools4j.eventsourcing.store.PollResut;
+import org.tools4j.nobark.loop.Step;
 
 public class MainEventLoop implements Step {
 
-    private final Queue.Poller inputPoller;
-    private final Queue.Poller outputPoller;
+    private final InputQueue.Poller inputPoller;
+    private final OutputQueue.Poller outputPoller;
 
-    private final SingleEventAppender singleEventAppender;
-    private final Queue.EventConsuer inputEventConsumer;
-    private final Queue.EventConsuer outputEventConsumer;
+    private final Consumer<? super Event> inputEventConsumer;
+    private final Consumer<? super Event> outputEventConsumer;
 
-    public MainEventLoop(final Queue.Poller inputPoller,
-                         final Queue.Poller outputPoller,
-                         final Queue.Appender outputAppender,
+    public MainEventLoop(final InputQueue.Poller inputPoller,
+                         final OutputQueue.Poller outputPoller,
+                         final CommandHandler commandHandler,
                          final ApplicationHandler applicationHandler) {
         this.inputPoller = Objects.requireNonNull(inputPoller);
         this.outputPoller = Objects.requireNonNull(outputPoller);
-        this.singleEventAppender = new SingleEventAppender(applicationHandler, outputAppender);
-        this.inputEventConsumer = singleEventAppender.inputEventHandler();
-        this.outputEventConsumer = (queueIndex, event) -> {
-            applicationHandler.applyOutputEvent(queueIndex, event);
-            //FIXME update processed output state
+        Objects.requireNonNull(commandHandler);
+        this.inputEventConsumer = event -> {
+            try {
+                applicationHandler.processInputEvent(event, commandHandler);
+            } catch (final Exception e) {
+                //FIXME handle erors
+                e.printStackTrace();
+            }
+        };
+        this.outputEventConsumer = event -> {
+            try {
+                applicationHandler.applyOutputEvent(event);
+            } catch (final Exception e) {
+                //FIXME handle erors
+                e.printStackTrace();
+            }
         };
     }
 
     @Override
     public boolean perform() {
-        final Queue.PollResut outputPollResult;
-        if ((outputPollResult = outputPoller.poll(outputEventConsumer)) == Queue.PollResut.POLLED) {
+        final PollResut outputPollResult;
+        if ((outputPollResult = outputPoller.poll(outputEventConsumer)) == PollResut.POLLED) {
             return true;
         }
-        if (outputPollResult == Queue.PollResut.END) {
-            if (inputPoller.poll(inputEventConsumer) == Queue.PollResut.POLLED) {
+        if (outputPollResult == PollResut.END) {
+            if (inputPoller.poll(inputEventConsumer)) {
                 return true;
             }
         }

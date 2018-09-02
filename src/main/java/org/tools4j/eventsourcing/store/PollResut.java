@@ -21,11 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.store;
 
-import org.tools4j.eventsourcing.event.Event;
-
-public interface ApplicationHandler {
-    void processInputEvent(Event event, CommandHandler commandHandler);
-    void applyOutputEvent(Event event);
+public enum PollResut {
+    POLLED, ADMIN, END
 }

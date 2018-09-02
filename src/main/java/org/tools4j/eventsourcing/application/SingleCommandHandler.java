@@ -23,9 +23,25 @@
  */
 package org.tools4j.eventsourcing.application;
 
-import org.tools4j.eventsourcing.event.Event;
+import java.util.concurrent.TimeUnit;
 
-public interface ApplicationHandler {
-    void processInputEvent(Event event, CommandHandler commandHandler);
-    void applyOutputEvent(Event event);
+import org.agrona.DirectBuffer;
+
+import org.tools4j.eventsourcing.event.Header;
+
+public interface SingleCommandHandler {
+
+    int startTimer(long timeout, TimeUnit unit);
+    void transferLeadership(int leaderId, boolean force);
+    void shutdown();
+
+    default void commitEvent(short subtypeId, DirectBuffer message, int offset, int length) {
+        commitEvent(subtypeId, Header.DEFAULT_USER_DATA, message, offset, length);
+    }
+    void commitEvent(short subtypeId, int userData, DirectBuffer message, int offset, int length);
+
+    default void commitNoop() {
+        commitNoop(Header.DEFAULT_SUBTYPE_ID, Header.DEFAULT_USER_DATA);
+    }
+    void commitNoop(short subtypeId, int userData);
 }

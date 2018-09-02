@@ -21,41 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.store;
 
-import org.agrona.DirectBuffer;
+import java.util.function.Consumer;
+
 import org.tools4j.eventsourcing.event.Event;
-import org.tools4j.eventsourcing.event.Header;
 
-import static org.tools4j.eventsourcing.application.SingleEventAppender.EMPTY_PAYLOAD;
-
-public interface Queue {
+public interface OutputQueue {
     Appender appender();
     Poller poller();
     long size();
 
     interface Appender {
-        void enqueue(short subtypeId, int inputSourceId, long sourceSeqNo,
-                     long eventTimeNanosSinceEpoch, int userData,
-                     DirectBuffer message, int offset, int length);
-        void enqueue(Header header, DirectBuffer message, int offset, int length);
-        default void enqueue(final Event event) {
-            enqueue(event.header(), event.payload(), 0, event.payloadLength());
-        }
-        default void enqueue(Header header) {
-            enqueue(header, EMPTY_PAYLOAD, 0, 0);
-        }
+        boolean append(Event event);
+        boolean compareAndAppend(long expectedIndex, Event event);
     }
 
-    enum PollResut {
-        POLLED, ADMIN, END
-    }
     interface Poller {
-        PollResut poll(EventConsuer consumer);
-    }
 
-    @FunctionalInterface
-    interface EventConsuer {
-        void consume(int queueIndex, Event event);
+        Poller nextIndex(long index);
+
+        PollResut poll(Consumer<? super Event> consumer);
     }
 }

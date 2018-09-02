@@ -21,11 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.store;
+
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import org.agrona.DirectBuffer;
 
 import org.tools4j.eventsourcing.event.Event;
+import org.tools4j.eventsourcing.event.Header;
 
-public interface ApplicationHandler {
-    void processInputEvent(Event event, CommandHandler commandHandler);
-    void applyOutputEvent(Event event);
+public interface InputQueue {
+    Appender appender();
+    Poller poller();
+    long size();
+
+    interface Appender {
+
+        void append(int sourceId, long sourceSeqNo, short subtypeId, int userData, final long eventTimeNanosSinceEpoch,
+                    DirectBuffer payload, int offset, int length);
+
+        default void append(int sourceId, long sourceSeqNo, short subtypeId,
+                            final long eventTimeNanosSinceEpoch, DirectBuffer payload) {
+            append(sourceId,sourceSeqNo, subtypeId, Header.DEFAULT_USER_DATA, eventTimeNanosSinceEpoch,
+                    payload, 0, payload.capacity());
+        }
+    }
+
+    interface Poller {
+
+        Poller nextIndex(long index);
+
+        default boolean poll(final Consumer<? super Event> consumer) {
+            return poll(header -> true, consumer);
+        }
+        boolean poll(Predicate<? super Header> condition, Consumer<? super Event> consumer);
+    }
 }

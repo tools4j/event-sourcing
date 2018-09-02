@@ -23,9 +23,11 @@
  */
 package org.tools4j.eventsourcing.application;
 
-import org.tools4j.eventsourcing.event.Event;
+public interface CommandHandler extends SingleCommandHandler {
 
-public interface ApplicationHandler {
-    void processInputEvent(Event event, CommandHandler commandHandler);
-    void applyOutputEvent(Event event);
+    MultipartHandler startMultipart();
+
+    interface MultipartHandler extends SingleCommandHandler {
+        void completeMultipart();
+    }
 }

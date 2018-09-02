@@ -21,11 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.store;
 
-import org.tools4j.eventsourcing.event.Event;
+import org.agrona.DirectBuffer;
 
-public interface ApplicationHandler {
-    void processInputEvent(Event event, CommandHandler commandHandler);
-    void applyOutputEvent(Event event);
+public interface Store {
+    Appender appender();
+    Poller poller();
+    long size();
+
+    interface Appender {
+        boolean append(DirectBuffer event, int offset, int length);
+        boolean compareAndAppend(long expectedIndex, DirectBuffer event, int offset, int length);
+    }
+
+    interface Poller {
+        Poller nextIndex(long index);
+        PollResut poll(EventConsuer consumer);
+    }
+
+    @FunctionalInterface
+    interface EventConsuer {
+        void consume(long storeIndex, DirectBuffer event, int offset, int length);
+    }
 }

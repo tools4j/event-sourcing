@@ -33,19 +33,19 @@ import org.tools4j.eventsourcing.header.TimerHeader;
       0                   1                   2                   3
       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     |    Version    |      Type     |           Subtype ID          |   0- 31
+     |    Version    |Type=MULTIPART |           Subtype ID          |  0- 3
      +---------------+---------------+-------------------------------+
-     |                       Input Source ID                         |  32- 63
+     |                       Input Source ID                         |  4- 7
      +-------------------------------+-------------------------------+
-     |0|                   Source Sequence Number                    |  64-127
+     |0|                   Source Sequence Number                    |  8-15
      |                      (0 for admin events)                     |
      +-------------------------------+-------------------------------+
-     |                          Event Time                           | 128-191
+     |                          Event Time                           | 16-23
      |                   (nanoseconds since epoch)                   |
      +-------------------------------+-------------------------------+
-     |                           User Data                           | 192-223
+     |                           User Data                           | 24-27
      +---------------+---------------+-------------------------------+
-     |0|                       Payload Length                        | 224-255
+     |0|                       Payload Length                        | 28-31
      +---------------+---------------+-------------------------------+
    </pre>
  *
@@ -59,6 +59,7 @@ public interface Header {
     int BYTE_LENGTH = 32;
     int ADMIN_SOURCE_ID = 0;
     short DEFAULT_SUBTYPE_ID = 0;
+    int DEFAULT_USER_DATA = 0;
 
     byte version();
     Type type();
