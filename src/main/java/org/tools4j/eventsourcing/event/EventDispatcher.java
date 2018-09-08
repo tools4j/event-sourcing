@@ -24,7 +24,6 @@
 package org.tools4j.eventsourcing.event;
 
 import org.tools4j.eventsourcing.header.DataHeader;
-import org.tools4j.eventsourcing.header.DefaultPartEvent;
 import org.tools4j.eventsourcing.header.HeartbeatHeader;
 import org.tools4j.eventsourcing.header.InitializeHeader;
 import org.tools4j.eventsourcing.header.LeadershipHeader;

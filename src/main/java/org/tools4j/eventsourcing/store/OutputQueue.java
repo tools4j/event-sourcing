@@ -23,8 +23,6 @@
  */
 package org.tools4j.eventsourcing.store;
 
-import java.util.function.Consumer;
-
 import org.tools4j.eventsourcing.event.Event;
 
 public interface OutputQueue {
@@ -33,14 +31,12 @@ public interface OutputQueue {
     long size();
 
     interface Appender {
-        boolean append(Event event);
+        long append(Event event);
         boolean compareAndAppend(long expectedIndex, Event event);
     }
 
     interface Poller {
-
         Poller nextIndex(long index);
-
-        PollResut poll(Consumer<? super Event> consumer);
+        boolean poll(LongObjConsumer<? super Event> consumer);
     }
 }

@@ -23,13 +23,12 @@
  */
 package org.tools4j.eventsourcing.store;
 
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
 import org.agrona.DirectBuffer;
-
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Header;
+
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public interface InputQueue {
     Appender appender();
@@ -41,7 +40,7 @@ public interface InputQueue {
         void append(int sourceId, long sourceSeqNo, short subtypeId, int userData, final long eventTimeNanosSinceEpoch,
                     DirectBuffer payload, int offset, int length);
 
-        default void append(int sourceId, long sourceSeqNo, short subtypeId,
+        default void append(final int sourceId, final long sourceSeqNo, final short subtypeId,
                             final long eventTimeNanosSinceEpoch, DirectBuffer payload) {
             append(sourceId,sourceSeqNo, subtypeId, Header.DEFAULT_USER_DATA, eventTimeNanosSinceEpoch,
                     payload, 0, payload.capacity());

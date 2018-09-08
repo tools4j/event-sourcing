@@ -92,7 +92,7 @@ public class DataHeader implements Header {
     }
 
     public DataHeader inputSourceId(final int inputSourceId) {
-        this.inputSourceId = AdminHeader.validateInputSourceId(inputSourceId);
+        this.inputSourceId = inputSourceId;
         return this;
     }
 

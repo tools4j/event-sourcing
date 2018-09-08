@@ -68,6 +68,12 @@ public class LeadershipHeader extends AdminHeader {
     }
 
     @Override
+    public LeadershipHeader inputSourceId(final int inputSourceId) {
+        super.inputSourceId(inputSourceId);
+        return this;
+    }
+
+    @Override
     public LeadershipHeader sourceSeqNo(final long sourceSeqNo) {
         super.sourceSeqNo(sourceSeqNo);
         return this;

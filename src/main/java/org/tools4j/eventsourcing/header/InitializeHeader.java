@@ -50,6 +50,12 @@ public class InitializeHeader extends AdminHeader {
     }
 
     @Override
+    public InitializeHeader inputSourceId(final int inputSourceId) {
+        super.inputSourceId(inputSourceId);
+        return this;
+    }
+
+    @Override
     public InitializeHeader sourceSeqNo(final long sourceSeqNo) {
         super.sourceSeqNo(sourceSeqNo);
         return this;

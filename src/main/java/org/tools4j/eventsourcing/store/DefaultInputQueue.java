@@ -23,19 +23,18 @@
  */
 package org.tools4j.eventsourcing.store;
 
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Version;
 import org.tools4j.eventsourcing.header.DataHeader;
-import org.tools4j.eventsourcing.header.DefaultEvent;
+import org.tools4j.eventsourcing.event.DefaultEvent;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class DefaultInputQueue implements InputQueue {
 
@@ -86,7 +85,7 @@ public class DefaultInputQueue implements InputQueue {
 
         final Store.Poller storePoller = store.poller();
         final DefaultEvent event = new DefaultEvent();
-        final Store.EventConsuer eventConsuer = this::consume;
+        final Store.EventConsumer eventConsumer = this::consume;
         long lastStoreIndex = -1;
 
         @Override
@@ -96,32 +95,36 @@ public class DefaultInputQueue implements InputQueue {
         }
 
         @Override
-        public boolean poll(Consumer<? super Event> consumer) {
-            storePoller.poll(eventConsuer);
-            try {
-                consumer.accept(event);
-                return true;
-            } finally {
-                lastStoreIndex = -1;
-                event.unwrap();
+        public boolean poll(final Consumer<? super Event> consumer) {
+            if (storePoller.poll(eventConsumer)) {
+                try {
+                    consumer.accept(event);
+                    return true;
+                } finally {
+                    lastStoreIndex = -1;
+                    event.unwrap();
+                }
             }
+            return false;
         }
 
         @Override
         public boolean poll(final Predicate<? super Header> condition, final Consumer<? super Event> consumer) {
-            storePoller.poll(eventConsuer);
-            try {
-                if (condition.test(event.header())) {
-                    consumer.accept(event);
-                    return true;
-                } else {
-                    storePoller.nextIndex(lastStoreIndex);
-                    return false;
+            if (storePoller.poll(eventConsumer)) {
+                try {
+                    if (condition.test(event.header())) {
+                        consumer.accept(event);
+                        return true;
+                    } else {
+                        storePoller.nextIndex(lastStoreIndex);
+                        return false;
+                    }
+                } finally {
+                    lastStoreIndex = -1;
+                    event.unwrap();
                 }
-            } finally {
-                lastStoreIndex = -1;
-                event.unwrap();
             }
+            return false;
         }
 
         private void consume(final long storeIndex, final DirectBuffer event, final int offset, final int length) {

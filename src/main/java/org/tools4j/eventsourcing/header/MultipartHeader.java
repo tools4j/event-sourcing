@@ -28,10 +28,49 @@ import org.tools4j.eventsourcing.event.Multipart;
 import org.tools4j.eventsourcing.event.Type;
 import org.tools4j.eventsourcing.event.Version;
 
-public class MultipartHeader extends AdminHeader implements Multipart {
+public class MultipartHeader implements Multipart {
 
-    public MultipartHeader() {
-        super(Type.MULTIPART);
+    private byte version;
+    private short subtypeId;
+    private int inputSourceId;
+    private long sourceSeqNo;
+    private long eventTimeNanosSinceEpoch;
+    private int userData;
+    private int payloadLength;
+
+    @Override
+    public byte version() {
+        return version;
+    }
+
+    @Override
+    public Type type() {
+        return Type.MULTIPART;
+    }
+
+    @Override
+    public short subtypeId() {
+        return subtypeId;
+    }
+
+    @Override
+    public int inputSourceId() {
+        return inputSourceId;
+    }
+
+    @Override
+    public long sourceSeqNo() {
+        return sourceSeqNo;
+    }
+
+    @Override
+    public long eventTimeNanosSinceEpoch() {
+        return eventTimeNanosSinceEpoch;
+    }
+
+    @Override
+    public int userData() {
+        return userData;
     }
 
     @Override
@@ -40,43 +79,65 @@ public class MultipartHeader extends AdminHeader implements Multipart {
     }
 
     @Override
+    public int payloadLength() {
+        return payloadLength;
+    }
+
     public MultipartHeader version(final Version version) {
-        super.version(version);
-        return this;
+        return version(version.code());
     }
 
-    @Override
     public MultipartHeader version(final byte version) {
-        super.version(version);
+        this.version = version;
         return this;
     }
 
-    @Override
+    public MultipartHeader subtypeId(final short subtypeId) {
+        this.subtypeId = subtypeId;
+        return this;
+    }
+
+    public MultipartHeader inputSourceId(final int inputSourceId) {
+        this.inputSourceId = inputSourceId;
+        return this;
+    }
+
     public MultipartHeader sourceSeqNo(final long sourceSeqNo) {
-        super.sourceSeqNo(sourceSeqNo);
+        this.sourceSeqNo = AdminHeader.validateSourceSeqNo(sourceSeqNo);
         return this;
     }
 
-    @Override
     public MultipartHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
+        this.eventTimeNanosSinceEpoch = eventTimeNanosSinceEpoch;
         return this;
     }
 
-    @Override
     public MultipartHeader userData(final int userData) {
-        super.userData(validatePartCount(userData));
+        this.userData = userData;
         return this;
+    }
+
+    public MultipartHeader payloadLength(final int payloadLength) {
+        this.payloadLength = AdminHeader.validatePayloadLength(payloadLength);
+        return this;
+    }
+
+    public MultipartHeader init(final Header header) {
+        if (header.type() != Type.MULTIPART) {
+            throw new IllegalArgumentException("Not a 'MULTIPART' type: " + header.type());
+        }
+        return this
+                .version(header.version())
+                .subtypeId(header.subtypeId())
+                .inputSourceId(header.inputSourceId())
+                .sourceSeqNo(header.sourceSeqNo())
+                .eventTimeNanosSinceEpoch(header.eventTimeNanosSinceEpoch())
+                .userData(header.userData())
+                .payloadLength(header.payloadLength());
     }
 
     public MultipartHeader partCount(final int partCount) {
         return userData(partCount);
-    }
-
-    @Override
-    public MultipartHeader init(final Header header) {
-        super.init(header);
-        return this;
     }
 
     static int validatePartCount(final int partCount) {

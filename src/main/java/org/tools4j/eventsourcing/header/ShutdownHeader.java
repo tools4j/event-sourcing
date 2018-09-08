@@ -46,6 +46,12 @@ public class ShutdownHeader extends AdminHeader {
     }
 
     @Override
+    public ShutdownHeader inputSourceId(final int inputSourceId) {
+        super.inputSourceId(inputSourceId);
+        return this;
+    }
+
+    @Override
     public ShutdownHeader sourceSeqNo(final long sourceSeqNo) {
         super.sourceSeqNo(sourceSeqNo);
         return this;

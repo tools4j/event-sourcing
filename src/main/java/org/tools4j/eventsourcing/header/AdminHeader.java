@@ -31,6 +31,7 @@ public class AdminHeader implements Header {
 
     private byte version;
     private final Type type;
+    private int inputSourceId;
     private long sourceSeqNo;
     private long eventTimeNanosSinceEpoch;
     private int userData;
@@ -59,7 +60,7 @@ public class AdminHeader implements Header {
 
     @Override
     public int inputSourceId() {
-        return ADMIN_SOURCE_ID;
+        return inputSourceId;
     }
 
     @Override
@@ -91,6 +92,11 @@ public class AdminHeader implements Header {
         return this;
     }
 
+    public AdminHeader inputSourceId(final int inputSourceId) {
+        this.inputSourceId = inputSourceId;
+        return this;
+    }
+
     public AdminHeader sourceSeqNo(final long sourceSeqNo) {
         this.sourceSeqNo = validateSourceSeqNo(sourceSeqNo);
         return this;
@@ -112,16 +118,10 @@ public class AdminHeader implements Header {
         }
         return this
                 .version(header.version())
+                .inputSourceId(header.inputSourceId())
                 .sourceSeqNo(header.sourceSeqNo())
                 .eventTimeNanosSinceEpoch(header.eventTimeNanosSinceEpoch())
                 .userData(header.userData());
-    }
-
-    static int validateInputSourceId(final int inputSourceId) {
-        if (inputSourceId != ADMIN_SOURCE_ID) {
-            return inputSourceId;
-        }
-        throw new IllegalArgumentException("Input source ID " + inputSourceId + " is reserved");
     }
 
     static long validateSourceSeqNo(final long sourceSeqNo) {

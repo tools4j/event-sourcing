@@ -154,6 +154,12 @@ public class TimerHeader extends AdminHeader {
     }
 
     @Override
+    public TimerHeader inputSourceId(final int inputSourceId) {
+        super.inputSourceId(inputSourceId);
+        return this;
+    }
+
+    @Override
     public TimerHeader sourceSeqNo(final long sourceSeqNo) {
         super.sourceSeqNo(sourceSeqNo);
         return this;

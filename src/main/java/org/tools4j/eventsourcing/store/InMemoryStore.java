@@ -23,11 +23,11 @@
  */
 package org.tools4j.eventsourcing.store;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class InMemoryStore implements Store {
 
@@ -53,12 +53,14 @@ public class InMemoryStore implements Store {
 
     private final class InMemoryAppender implements Appender {
         @Override
-        public boolean append(final DirectBuffer event, final int offset, final int length) {
+        public long append(final DirectBuffer event, final int offset, final int length) {
+            final long index;
             final DirectBuffer copy = copy(event, offset, length);
             synchronized (events) {
+                index = events.size();
                 events.add(copy);
             }
-            return true;
+            return index;
         }
 
         @Override
@@ -89,7 +91,7 @@ public class InMemoryStore implements Store {
         }
 
         @Override
-        public PollResut poll(final EventConsuer consumer) {
+        public boolean poll(final EventConsumer consumer) {
             synchronized (this) {
                 synchronized (events) {
                     final int next = index + 1;
@@ -97,11 +99,11 @@ public class InMemoryStore implements Store {
                         final DirectBuffer result = events.get(next);
                         consumer.consume(next, copy(result, 0, result.capacity()), 0, result.capacity());
                         index = next;
-                        return PollResut.POLLED;
+                        return true;
                     }
                 }
             }
-            return PollResut.END;
+            return false;
         }
     }
 

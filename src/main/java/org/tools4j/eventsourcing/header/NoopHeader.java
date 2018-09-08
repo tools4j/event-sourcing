@@ -53,7 +53,7 @@ public class NoopHeader extends AdminHeader {
     }
 
     public NoopHeader inputSourceId(final int inputSourceId) {
-        this.inputSourceId = validateInputSourceId(inputSourceId);
+        super.inputSourceId(inputSourceId);
         return this;
     }
 

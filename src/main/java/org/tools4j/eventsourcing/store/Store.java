@@ -31,17 +31,17 @@ public interface Store {
     long size();
 
     interface Appender {
-        boolean append(DirectBuffer event, int offset, int length);
+        long append(DirectBuffer event, int offset, int length);
         boolean compareAndAppend(long expectedIndex, DirectBuffer event, int offset, int length);
     }
 
     interface Poller {
         Poller nextIndex(long index);
-        PollResut poll(EventConsuer consumer);
+        boolean poll(EventConsumer consumer);
     }
 
     @FunctionalInterface
-    interface EventConsuer {
+    interface EventConsumer {
         void consume(long storeIndex, DirectBuffer event, int offset, int length);
     }
 }

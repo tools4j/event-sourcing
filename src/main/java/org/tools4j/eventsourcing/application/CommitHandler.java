@@ -21,43 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.header;
+package org.tools4j.eventsourcing.application;
 
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Header;
-import org.tools4j.eventsourcing.event.Multipart;
 
-public class DefaultPartEvent implements Event {
-
-    private final DefaultPartHeader header = new DefaultPartHeader();
-    private final DirectBuffer payload = new UnsafeBuffer(0, 0);
-
-    public DefaultPartEvent wrap(final Header multipart, final DirectBuffer source, final int offset) {
-        final int payloadLength = header.wrap(multipart, source, offset).payloadLength();
-        payload.wrap(offset + Multipart.Part.BYTE_LENGTH, payloadLength);
-        return this;
+public interface CommitHandler {
+    default void commitEvent(short subtypeId, DirectBuffer message, int offset, int length) {
+        commitEvent(subtypeId, Header.DEFAULT_USER_DATA, message, offset, length);
     }
+    void commitEvent(short subtypeId, int userData, DirectBuffer message, int offset, int length);
 
-    public DefaultPartEvent unwrap() {
-        header.unwrap();
-        payload.wrap(0, 0);
-        return this;
+    default void commitNoop() {
+        commitNoop(Header.DEFAULT_USER_DATA);
     }
-
-    @Override
-    public DefaultPartHeader header() {
-        return header;
-    }
-
-    @Override
-    public DirectBuffer payload() {
-        return payload;
-    }
-
-    @Override
-    public int totalLength() {
-        return Multipart.Part.BYTE_LENGTH + payloadLength();
-    }
+    void commitNoop(int userData);
 }

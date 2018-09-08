@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.store;
+package org.tools4j.eventsourcing.application;
 
-public enum PollResut {
-    POLLED, ADMIN, END
+public interface AdminService {
+    void transferLeadershipTo(int leaderId, boolean force);
+    void shutdown();
 }

@@ -21,13 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.event;
 
-public interface ServerContext {
-    ServerConfig config();
-    int leaderIndex();
-    int leaderId();
-    long lastAppendedOutputQueueIndex();
-    long lastAppliedOutputQueueIndex();
-    long lastAppliedInputSourceSeqNo(int sourceId);
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.tools4j.eventsourcing.header.DefaultHeader;
+
+public class DefaultEvent implements Event {
+
+    private final DefaultHeader header = new DefaultHeader();
+    private final DirectBuffer payload = new UnsafeBuffer(0, 0);
+
+    public DefaultEvent wrap(final DirectBuffer source, final int offset, final int length) {
+        final int payloadLength = header.wrap(source, offset).payloadLength();
+        payload.wrap(offset + Header.BYTE_LENGTH, payloadLength);
+        assert Header.BYTE_LENGTH + payloadLength <= length;
+        return this;
+    }
+
+    public DefaultEvent unwrap() {
+        header.unwrap();
+        payload.wrap(0, 0);
+        return this;
+    }
+
+    @Override
+    public Header header() {
+        return header;
+    }
+
+    @Override
+    public DirectBuffer payload() {
+        return payload;
+    }
 }

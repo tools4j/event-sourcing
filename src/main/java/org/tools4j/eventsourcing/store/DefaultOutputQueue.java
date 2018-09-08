@@ -23,15 +23,13 @@
  */
 package org.tools4j.eventsourcing.store;
 
-import java.util.Objects;
-import java.util.function.Consumer;
-
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-
 import org.tools4j.eventsourcing.event.Event;
-import org.tools4j.eventsourcing.header.DefaultEvent;
+import org.tools4j.eventsourcing.event.DefaultEvent;
+
+import java.util.Objects;
 
 public class DefaultOutputQueue implements OutputQueue {
 
@@ -62,15 +60,14 @@ public class DefaultOutputQueue implements OutputQueue {
         final MutableDirectBuffer buffer = new ExpandableDirectByteBuffer();
 
         @Override
-        public boolean append(final Event event) {
+        public long append(final Event event) {
             final int length = encode(event);
-            storeAppender.append(buffer, 0, length);
-            return true;
+            return storeAppender.append(buffer, 0, length);
         }
 
         @Override
         public boolean compareAndAppend(final long expectedIndex, final Event event) {
-            if (expectedIndex == store.size()) {
+            if (expectedIndex == store.size()) {//TODO there could be racing with multiple threads, concern?
                 final int length = encode(event);
                 storeAppender.append(buffer, 0, length);
                 return storeAppender.compareAndAppend(expectedIndex, buffer, 0, length);
@@ -90,7 +87,8 @@ public class DefaultOutputQueue implements OutputQueue {
 
         final Store.Poller storePoller = store.poller();
         final DefaultEvent event = new DefaultEvent();
-        final Store.EventConsuer eventConsuer = this::consume;
+        final Store.EventConsumer eventConsumer = this::consume;
+        long storeIndex;
 
         @Override
         public Poller nextIndex(final long index) {
@@ -99,20 +97,22 @@ public class DefaultOutputQueue implements OutputQueue {
         }
 
         @Override
-        public PollResut poll(final Consumer<? super Event> consumer) {
-            final PollResut result = storePoller.poll(eventConsuer);
-            try {
-                if (result != PollResut.END) {
-                    consumer.accept(event);
+        public boolean poll(final LongObjConsumer<? super Event> consumer) {
+            if (storePoller.poll(eventConsumer)) {
+                try {
+                    consumer.accept(storeIndex, event);
+                    return true;
+                } finally {
+                    storeIndex = -1;
+                    event.unwrap();
                 }
-                return result;
-            } finally {
-                event.unwrap();
             }
+            return false;
         }
 
         private void consume(final long storeIndex, final DirectBuffer event, final int offset, final int length) {
-            event.wrap(event, offset, length);
+            this.storeIndex = storeIndex;
+            this.event.wrap(event, offset, length);
         }
     }
 }

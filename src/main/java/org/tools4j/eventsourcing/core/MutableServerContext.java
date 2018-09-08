@@ -21,7 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.core;
+
+import org.tools4j.eventsourcing.application.ServerConfig;
+import org.tools4j.eventsourcing.application.ServerContext;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -31,12 +34,16 @@ public class MutableServerContext implements ServerContext {
     private final ServerConfig config;
 
     private int leaderIndex = -1;
-    private final long[] sourceSequenceNumbers;
+    private long lastAppendedOutputQueueIndex;
+    private long lastAppliedOutputQueueIndex;
+    private final long[] sourceInputSequenceNumbers;
 
     public MutableServerContext(final ServerConfig config) {
         this.config = Objects.requireNonNull(config);
-        this.sourceSequenceNumbers = new long[config.inputSourceCount()];
-        Arrays.fill(sourceSequenceNumbers, -1L);
+        this.lastAppendedOutputQueueIndex = -1L;
+        this.lastAppliedOutputQueueIndex = -1L;
+        this.sourceInputSequenceNumbers = new long[config.inputSourceCount()];
+        Arrays.fill(sourceInputSequenceNumbers, -1L);
     }
 
     @Override
@@ -73,13 +80,39 @@ public class MutableServerContext implements ServerContext {
         return config.serverId(index);
     }
 
-    @Override
-    public long lastAppliedSourceSeqNo(final int inputSourceId) {
-        final int index = config.inputSourceIndexOf(inputSourceId);
-        if (index < 0) {
-            throw new IllegalArgumentException("Invalid input source ID: " + inputSourceId);
+    void lastAppendedOutputQueueIndex(final long index) {
+        if (index < lastAppendedOutputQueueIndex) {
+            throw new IllegalArgumentException("Last appended output queue index is " +
+                    lastAppendedOutputQueueIndex + " so it cannot be updated to " + index);
         }
-        return sourceSequenceNumbers[index];
+        this.lastAppendedOutputQueueIndex = index;
+    }
+
+    @Override
+    public long lastAppendedOutputQueueIndex() {
+        return lastAppendedOutputQueueIndex;
+    }
+
+    void lastAppliedOutputQueueIndex(final long index) {
+        if (index < lastAppliedOutputQueueIndex) {
+            throw new IllegalArgumentException("Last applied output queue index is " +
+                    lastAppliedOutputQueueIndex + " so it cannot be updated to " + index);
+        }
+        this.lastAppliedOutputQueueIndex = index;
+    }
+
+    @Override
+    public long lastAppliedOutputQueueIndex() {
+        return lastAppliedOutputQueueIndex;
+    }
+
+    @Override
+    public long lastAppliedInputSourceSeqNo(final int sourceId) {
+        final int index = config.inputSourceIndexOf(sourceId);
+        if (index < 0) {
+            throw new IllegalArgumentException("Invalid input source ID: " + sourceId);
+        }
+        return sourceInputSequenceNumbers[index];
     }
 
     void lastAppliedSourceSeqNo(final int inputSourceId, final long sourceSeqNo) {
@@ -87,12 +120,12 @@ public class MutableServerContext implements ServerContext {
         if (index < 0) {
             throw new IllegalArgumentException("Invalid input source ID: " + inputSourceId);
         }
-        if (sourceSequenceNumbers[index] > sourceSeqNo) {
+        if (sourceInputSequenceNumbers[index] > sourceSeqNo) {
             throw new IllegalArgumentException(
                     "Out of sequence processing of inputs: inputSourceId=" + inputSourceId +
-                    " lastAppliedSourceSeqNo=" + sourceSequenceNumbers[index] + ", sourceSeqNo=" + sourceSeqNo
+                    " lastAppliedSourceSeqNo=" + sourceInputSequenceNumbers[index] + ", sourceSeqNo=" + sourceSeqNo
             );
         }
-        sourceSequenceNumbers[index] = sourceSeqNo;
+        sourceInputSequenceNumbers[index] = sourceSeqNo;
     }
 }

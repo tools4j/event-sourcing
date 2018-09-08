@@ -21,37 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.header;
+package org.tools4j.eventsourcing.store;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.event.Event;
-import org.tools4j.eventsourcing.event.Header;
-
-public class DefaultEvent implements Event {
-
-    private final DefaultHeader header = new DefaultHeader();
-    private final DirectBuffer payload = new UnsafeBuffer(0, 0);
-
-    public DefaultEvent wrap(final DirectBuffer source, final int offset) {
-        final int payloadLength = header.wrap(source, offset).payloadLength();
-        payload.wrap(offset + Header.BYTE_LENGTH, payloadLength);
-        return this;
-    }
-
-    public DefaultEvent unwrap() {
-        header.unwrap();
-        payload.wrap(0, 0);
-        return this;
-    }
-
-    @Override
-    public Header header() {
-        return header;
-    }
-
-    @Override
-    public DirectBuffer payload() {
-        return payload;
-    }
+@FunctionalInterface
+public interface LongObjConsumer<V> {
+    void accept(long l, V v);
 }

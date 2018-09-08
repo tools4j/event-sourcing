@@ -23,11 +23,9 @@
  */
 package org.tools4j.eventsourcing.application;
 
-public interface ServerContext {
-    ServerConfig config();
-    int leaderIndex();
-    int leaderId();
-    long lastAppendedOutputQueueIndex();
-    long lastAppliedOutputQueueIndex();
-    long lastAppliedInputSourceSeqNo(int sourceId);
+import java.util.concurrent.TimeUnit;
+
+public interface TimerService {
+    int startTimer(long timeout, TimeUnit unit);
+    void stopTimer(int timerId);
 }

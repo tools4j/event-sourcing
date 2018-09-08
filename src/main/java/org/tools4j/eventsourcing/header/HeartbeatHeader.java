@@ -50,6 +50,12 @@ public class HeartbeatHeader extends AdminHeader {
     }
 
     @Override
+    public HeartbeatHeader inputSourceId(final int inputSourceId) {
+        super.inputSourceId(inputSourceId);
+        return this;
+    }
+
+    @Override
     public HeartbeatHeader sourceSeqNo(final long sourceSeqNo) {
         super.sourceSeqNo(sourceSeqNo);
         return this;
