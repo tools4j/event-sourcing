@@ -24,7 +24,7 @@
 package org.tools4j.eventsourcing.core;
 
 import org.agrona.DirectBuffer;
-import org.tools4j.eventsourcing.application.CommitHandler;
+import org.tools4j.eventsourcing.command.CommitCommands;
 import org.tools4j.eventsourcing.event.DefinedHeaderEvent;
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Header;
@@ -35,24 +35,25 @@ import org.tools4j.eventsourcing.header.NoopHeader;
 import org.tools4j.eventsourcing.store.OutputQueue;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
-public class SingleCommitHandler implements CommitHandler {
+public class SingleCommitCommands implements CommitCommands, Consumer<AdminHeader> {
 
     private final DataHeader header = new DataHeader();
     private final NoopHeader noopHeader = new NoopHeader();
     private final DefinedHeaderEvent event = new DefinedHeaderEvent();
     private final OutputQueue.Appender appender;
 
-    public SingleCommitHandler(final OutputQueue.Appender appender) {
+    public SingleCommitCommands(final OutputQueue.Appender appender) {
         this.appender = Objects.requireNonNull(appender);
         this.header.version(Version.current());
     }
 
-    public void init(final Event inputEvent) {
-        init(inputEvent.header());
+    void initWithInputEvent(final Event inputEvent) {
+        initWithInputEvent(inputEvent.header());
     }
 
-    public void init(final Header inputEventHeader) {
+    void initWithInputEvent(final Header inputEventHeader) {
         header
                 .inputSourceId(inputEventHeader.inputSourceId())
                 .sourceSeqNo(inputEventHeader.sourceSeqNo())
@@ -60,13 +61,29 @@ public class SingleCommitHandler implements CommitHandler {
         ;
     }
 
-    public void commitAdminEvent(final AdminHeader adminHeader) {
+    void initForAdminEvent(final long eventSeqNo, final long eventTimeNanosSinceEpoch) {
+        header
+                .inputSourceId(Header.ADMIN_SOURCE_ID)
+                .sourceSeqNo(eventSeqNo)
+                .eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch)
+        ;
+    }
+
+    void startMultipart(final MultipartCommandHandler multipartCommandHandler) {
+        multipartCommandHandler.startMultipart(header);
+    }
+
+    @Override
+    public void accept(final AdminHeader adminHeader) {
         adminHeader
                 .inputSourceId(header.inputSourceId())
                 .sourceSeqNo(header.sourceSeqNo())
                 .eventTimeNanosSinceEpoch(header.eventTimeNanosSinceEpoch())
         ;
-        appender.append(event.wrap(adminHeader));
+        event
+                .wrap(adminHeader)
+                .payload().wrap(0, 0);
+        appender.append(event);
     }
 
     @Override
@@ -84,6 +101,6 @@ public class SingleCommitHandler implements CommitHandler {
 
     @Override
     public void commitNoop(final int userData) {
-        commitAdminEvent(noopHeader.userData(userData));
+        accept(noopHeader.userData(userData));
     }
 }

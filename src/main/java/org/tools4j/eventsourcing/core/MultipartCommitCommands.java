@@ -26,26 +26,24 @@ package org.tools4j.eventsourcing.core;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.tools4j.eventsourcing.application.CommitHandler;
+import org.tools4j.eventsourcing.command.CommitCommands;
 import org.tools4j.eventsourcing.event.*;
 import org.tools4j.eventsourcing.header.AdminHeader;
 import org.tools4j.eventsourcing.header.MultipartHeader;
 import org.tools4j.eventsourcing.header.PartHeader;
 import org.tools4j.eventsourcing.store.OutputQueue;
 
-public class MultipartCommitHandler implements CommitHandler {
+import java.util.function.Consumer;
+
+public class MultipartCommitCommands implements CommitCommands, Consumer<AdminHeader> {
 
     private final MultipartHeader header = new MultipartHeader();
     private final PartHeader partHeader = new PartHeader();
     private final Event event = new DefinedHeaderEvent(header);
     private final MutableDirectBuffer payload = new ExpandableDirectByteBuffer(1024);//make initial capacity configurable
 
-    public MultipartCommitHandler() {
+    public MultipartCommitCommands() {
         this.header.version(Version.current());
-    }
-
-    public void startMultipart(final Event inputEvent) {
-        startMultipart(inputEvent.header());
     }
 
     public void startMultipart(final Header inputEventHeader) {
@@ -71,7 +69,9 @@ public class MultipartCommitHandler implements CommitHandler {
         header.payloadLength(payloadLength + PartHeader.BYTE_LENGTH + partHeader.payloadLength());
     }
 
-    public void commitAdminEvent(final AdminHeader adminHeader) {
+    @Override
+    public void accept(final AdminHeader adminHeader) {
+        checkStarted();
         partHeader
                 .type(adminHeader.type())
                 .subtypeId(adminHeader.subtypeId())
@@ -83,6 +83,7 @@ public class MultipartCommitHandler implements CommitHandler {
 
     @Override
     public void commitEvent(final short subtypeId, final int userData, final DirectBuffer message, final int offset, final int length) {
+        checkStarted();
         partHeader
                 .type(Type.DATA)
                 .subtypeId(subtypeId)
@@ -94,6 +95,7 @@ public class MultipartCommitHandler implements CommitHandler {
 
     @Override
     public void commitNoop(final int userData) {
+        checkStarted();
         partHeader
                 .type(Type.NOOP)
                 .subtypeId(Header.DEFAULT_SUBTYPE_ID)
@@ -104,7 +106,20 @@ public class MultipartCommitHandler implements CommitHandler {
     }
 
     public void completeMultipart(final OutputQueue.Appender appender) {
+        checkStarted();
         event.payload().wrap(payload, 0, header.payloadLength());
         appender.append(event);
+        header
+                .inputSourceId(Header.ADMIN_SOURCE_ID)
+                .sourceSeqNo(0L)
+                .eventTimeNanosSinceEpoch(0L)
+                .partCount(0)
+                .payloadLength(0);
+    }
+
+    private void checkStarted() {
+        if (header.inputSourceId() == Header.ADMIN_SOURCE_ID) {
+            throw new IllegalStateException("Multipart command has not been started");
+        }
     }
 }

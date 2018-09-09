@@ -21,40 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.core;
+package org.tools4j.eventsourcing.ioc;
 
-import org.tools4j.nobark.loop.Step;
+import org.tools4j.eventsourcing.store.InputQueue;
+import org.tools4j.eventsourcing.store.OutputQueue;
 
-import java.util.Objects;
-import java.util.function.BooleanSupplier;
+public class QueueBuilder {
 
-public class MainEventLoop implements Step {
-
-    private final Step outputPollerStep;
-    private final BooleanSupplier outputAppliedCondition;
-    private final Step[] otherSteps;
-
-    public MainEventLoop(final Step outputPollerStep,
-                         final BooleanSupplier outputAppliedCondition,
-                         final Step... otherSteps) {
-        this.outputPollerStep = Objects.requireNonNull(outputPollerStep);
-        this.outputAppliedCondition = Objects.requireNonNull(outputAppliedCondition);
-        this.otherSteps = Objects.requireNonNull(otherSteps);
+    public InputQueue.Poller inputPoller() {
+        throw new RuntimeException("not implemented");//FIXME
     }
 
-    @Override
-    public boolean perform() {
-        if (outputPollerStep.perform()) {
-            return true;
-        }
-        if (outputAppliedCondition.getAsBoolean()) {
-            boolean workDone = false;
-            for (final Step step : otherSteps) {
-                workDone |= step.perform();
-            }
-            return workDone;
-        }
-        return false;
+    public OutputQueue.Poller outputPoller() {
+        throw new RuntimeException("not implemented");//FIXME
+    }
+
+    public OutputQueue.Appender outputAppender() {
+        throw new RuntimeException("not implemented");//FIXME
     }
 
 }

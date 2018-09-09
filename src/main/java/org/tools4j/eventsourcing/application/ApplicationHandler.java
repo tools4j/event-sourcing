@@ -23,6 +23,7 @@
  */
 package org.tools4j.eventsourcing.application;
 
+import org.tools4j.eventsourcing.command.CommandHandler;
 import org.tools4j.eventsourcing.event.Event;
 
 public interface ApplicationHandler {

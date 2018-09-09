@@ -21,40 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.core;
+package org.tools4j.eventsourcing.ioc;
 
-import org.tools4j.nobark.loop.Step;
+import org.tools4j.eventsourcing.application.ServerConfig;
+import org.tools4j.eventsourcing.application.ServerContext;
 
-import java.util.Objects;
-import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongConsumer;
 
-public class MainEventLoop implements Step {
+public class ServerBuilder {
 
-    private final Step outputPollerStep;
-    private final BooleanSupplier outputAppliedCondition;
-    private final Step[] otherSteps;
 
-    public MainEventLoop(final Step outputPollerStep,
-                         final BooleanSupplier outputAppliedCondition,
-                         final Step... otherSteps) {
-        this.outputPollerStep = Objects.requireNonNull(outputPollerStep);
-        this.outputAppliedCondition = Objects.requireNonNull(outputAppliedCondition);
-        this.otherSteps = Objects.requireNonNull(otherSteps);
+    public ServerConfig serverConfig() {
+        throw new RuntimeException("not implemented");//FIXME
     }
 
-    @Override
-    public boolean perform() {
-        if (outputPollerStep.perform()) {
-            return true;
-        }
-        if (outputAppliedCondition.getAsBoolean()) {
-            boolean workDone = false;
-            for (final Step step : otherSteps) {
-                workDone |= step.perform();
-            }
-            return workDone;
-        }
-        return false;
+    public ServerContext serverContext() {
+        throw new RuntimeException("not implemented");//FIXME
+    }
+
+    public IntSupplier timerIdProvider() {
+        throw new RuntimeException("not implemented");//FIXME
+    }
+
+    public LongConsumer lastAppliedOutputIndexConsumer() {
+        throw new RuntimeException("not implemented");//FIXME
     }
 
 }

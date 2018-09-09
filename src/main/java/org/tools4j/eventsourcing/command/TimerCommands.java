@@ -21,19 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.command;
 
-import org.agrona.DirectBuffer;
-import org.tools4j.eventsourcing.event.Header;
+import java.util.concurrent.TimeUnit;
 
-public interface CommitHandler {
-    default void commitEvent(short subtypeId, DirectBuffer message, int offset, int length) {
-        commitEvent(subtypeId, Header.DEFAULT_USER_DATA, message, offset, length);
-    }
-    void commitEvent(short subtypeId, int userData, DirectBuffer message, int offset, int length);
-
-    default void commitNoop() {
-        commitNoop(Header.DEFAULT_USER_DATA);
-    }
-    void commitNoop(int userData);
+public interface TimerCommands {
+    int startTimer(long timeout, TimeUnit unit);
+    void stopTimer(int timerId);
 }

@@ -23,27 +23,25 @@
  */
 package org.tools4j.eventsourcing.core;
 
-import org.tools4j.eventsourcing.application.TimerService;
-import org.tools4j.eventsourcing.event.DefinedHeaderEvent;
+import org.tools4j.eventsourcing.command.TimerCommands;
 import org.tools4j.eventsourcing.event.Version;
 import org.tools4j.eventsourcing.header.TimerHeader;
-import org.tools4j.eventsourcing.store.OutputQueue;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
-public class EventAppendingTimerService implements TimerService {
+public class DefaultTimerCommands implements TimerCommands {
 
     private final IntSupplier idProvider;
-    private final OutputQueue.Appender appender;
+    private final Consumer<? super TimerHeader> eventAppender;
     private final TimerHeader header = new TimerHeader();
-    private final DefinedHeaderEvent event = new DefinedHeaderEvent(header);
 
-    public EventAppendingTimerService(final IntSupplier idProvider,
-                                      final OutputQueue.Appender appender) {
+    public DefaultTimerCommands(final IntSupplier idProvider,
+                                final Consumer<? super TimerHeader> eventAppender) {
         this.idProvider = Objects.requireNonNull(idProvider);
-        this.appender = Objects.requireNonNull(appender);
+        this.eventAppender = Objects.requireNonNull(eventAppender);
         this.header.version(Version.current());
     }
 
@@ -63,7 +61,7 @@ public class EventAppendingTimerService implements TimerService {
                 header.timeoutMillis(toMillis(timeout, unit));
                 break;
         }
-        appender.append(event);
+        eventAppender.accept(header);
         return id;
     }
 
@@ -71,7 +69,7 @@ public class EventAppendingTimerService implements TimerService {
     public void stopTimer(final int timerId) {
         header.stop(timerId);
         header.timeoutMillis(0);
-        appender.append(event);
+        eventAppender.accept(header);
     }
 
     //PRECONDITION: timeout >= 0

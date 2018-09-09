@@ -40,16 +40,19 @@ import java.util.function.LongSupplier;
 public class TimerController {
 
     private final TimerHeader header = new TimerHeader();
+    private final LongSupplier adminSeqNoSupplier;
     private final LongSupplier nanoTimeSupplier;
     private final IntArrayList ids = new IntArrayList();
     private final LongArrayList startNanos = new LongArrayList();
     private final LongArrayList timeoutNanos = new LongArrayList();
 
-    public TimerController() {
-        this(System::nanoTime);
+    public TimerController(final LongSupplier adminSeqNoSupplier) {
+        this(adminSeqNoSupplier, System::nanoTime);
     }
 
-    public TimerController(final LongSupplier nanoTimeSupplier) {
+    public TimerController(final LongSupplier adminSeqNoSupplier,
+                           final LongSupplier nanoTimeSupplier) {
+        this.adminSeqNoSupplier = Objects.requireNonNull(adminSeqNoSupplier);
         this.nanoTimeSupplier = Objects.requireNonNull(nanoTimeSupplier);
     }
 
@@ -97,7 +100,10 @@ public class TimerController {
                 for (int i = 0; i < size; i++) {
                     if (time - startNanos.get(i) >= timeoutNanos.get(i)) {
                         final int id = remove(i);
-                        header.eventTimeNanosSinceEpoch(time).expire(id);
+                        header
+                                .expire(id)
+                                .eventTimeNanosSinceEpoch(time)
+                        ;
                         eventConsumer.accept(event);
                         return true;
                     }

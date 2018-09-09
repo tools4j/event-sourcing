@@ -21,9 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.ioc;
 
-public interface AdminService {
-    void transferLeadershipTo(int leaderId, boolean force);
-    void shutdown();
+import org.tools4j.eventsourcing.application.ApplicationHandler;
+
+public class ApplicationBuilder {
+
+    public ApplicationHandler applicationHandler() {
+        throw new RuntimeException("not implemented");//FIXME
+    }
+
 }

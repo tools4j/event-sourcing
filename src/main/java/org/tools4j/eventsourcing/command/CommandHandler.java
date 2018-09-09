@@ -21,11 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.command;
 
-import java.util.concurrent.TimeUnit;
+public interface CommandHandler extends SingleCommandHandler {
 
-public interface TimerService {
-    int startTimer(long timeout, TimeUnit unit);
-    void stopTimer(int timerId);
+    MultipartHandler startMultipart();
+
+    interface MultipartHandler extends SingleCommandHandler {
+        void completeMultipart();
+    }
 }

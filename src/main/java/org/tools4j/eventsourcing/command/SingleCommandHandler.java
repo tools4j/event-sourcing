@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.command;
 
 public interface SingleCommandHandler {
-    TimerService timerService();
-    AdminService adminService();
-    CommitHandler commitHandler();
+    TimerCommands timerCommands();
+    AdminCommands adminCommands();
+    CommitCommands commitCommands();
 }
