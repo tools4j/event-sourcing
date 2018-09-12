@@ -21,36 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.event;
+package org.tools4j.eventsourcing.core;
 
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.tools4j.eventsourcing.command.CommandHandler;
+import org.tools4j.eventsourcing.event.Event;
 
-public class DefinedHeaderEvent implements Event {
-
-    private final DirectBuffer payload = new UnsafeBuffer(0, 0);
-    private Header header;
-
-    public DefinedHeaderEvent() {
-        super();
-    }
-
-    public DefinedHeaderEvent(final Header header) {
-        this.header = header;//null allowed
-    }
-
-    public DefinedHeaderEvent wrap(final Header header) {
-        this.header = header;//null allowed
-        return this;
-    }
-
+public interface CommandController extends CommandHandler, AutoCloseable {
     @Override
-    public Header header() {
-        return header;
-    }
+    void close();
 
-    @Override
-    public DirectBuffer payload() {
-        return payload;
+    @FunctionalInterface
+    interface Provider {
+        CommandController provideFor(Event inputEvent);
     }
 }

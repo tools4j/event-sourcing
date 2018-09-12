@@ -23,61 +23,52 @@
  */
 package org.tools4j.eventsourcing.header;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
-public class NoopHeader extends AdminHeader {
+public interface NoopHeader extends Header {
 
-    public NoopHeader() {
-        super(Type.NOOP);
+    class Default extends DefaultHeader implements NoopHeader {
+        @Override
+        public Default wrap(final Header header) {
+            super.wrap(header);
+            return this;
+        }
+
+        @Override
+        public Default wrap(final DirectBuffer source, final int offset) {
+            super.wrap(source, offset);
+            return this;
+        }
+
+        @Override
+        public Default unwrap() {
+            super.unwrap();
+            return this;
+        }
     }
 
-    private int inputSourceId;
-
-    @Override
-    public int inputSourceId() {
-        return inputSourceId;
+    class Mutable extends TypedHeader<Mutable> implements NoopHeader {
+        private Mutable(final MutableDirectBuffer buffer) {
+            super(Mutable.class, Type.NOOP, buffer);
+        }
     }
 
-    @Override
-    public NoopHeader version(final Version version) {
-        super.version(version);
-        return this;
+    static Default create() {
+        return new Default();
     }
 
-    @Override
-    public NoopHeader version(final byte version) {
-        super.version(version);
-        return this;
+    static Default create(final DirectBuffer source, final int offset) {
+        return create().wrap(source, offset);
     }
 
-    public NoopHeader inputSourceId(final int inputSourceId) {
-        super.inputSourceId(inputSourceId);
-        return this;
+    static Mutable allocate() {
+        return new Mutable(MutableHeader.allocateBuffer());
     }
 
-    @Override
-    public NoopHeader sourceSeqNo(final long sourceSeqNo) {
-        super.sourceSeqNo(sourceSeqNo);
-        return this;
-    }
-
-    @Override
-    public NoopHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
-        return this;
-    }
-
-    @Override
-    public NoopHeader userData(final int userData) {
-        super.userData(userData);
-        return this;
-    }
-
-    @Override
-    public NoopHeader init(final Header header) {
-        super.init(header);
-        return inputSourceId(header.inputSourceId());
+    static Mutable allocateDirect() {
+        return new Mutable(MutableHeader.allocateDirectBuffer());
     }
 }

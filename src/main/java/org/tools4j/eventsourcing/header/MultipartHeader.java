@@ -23,121 +23,72 @@
  */
 package org.tools4j.eventsourcing.header;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Multipart;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
-public class MultipartHeader implements Multipart {
-
-    private byte version;
-    private short subtypeId;
-    private int inputSourceId;
-    private long sourceSeqNo;
-    private long eventTimeNanosSinceEpoch;
-    private int userData;
-    private int payloadLength;
+public interface MultipartHeader extends Multipart {
 
     @Override
-    public byte version() {
-        return version;
-    }
-
-    @Override
-    public Type type() {
-        return Type.MULTIPART;
-    }
-
-    @Override
-    public short subtypeId() {
-        return subtypeId;
-    }
-
-    @Override
-    public int inputSourceId() {
-        return inputSourceId;
-    }
-
-    @Override
-    public long sourceSeqNo() {
-        return sourceSeqNo;
-    }
-
-    @Override
-    public long eventTimeNanosSinceEpoch() {
-        return eventTimeNanosSinceEpoch;
-    }
-
-    @Override
-    public int userData() {
-        return userData;
-    }
-
-    @Override
-    public int partCount() {
+    default int partCount() {
         return userData();
     }
 
-    @Override
-    public int payloadLength() {
-        return payloadLength;
-    }
-
-    public MultipartHeader version(final Version version) {
-        return version(version.code());
-    }
-
-    public MultipartHeader version(final byte version) {
-        this.version = version;
-        return this;
-    }
-
-    public MultipartHeader subtypeId(final short subtypeId) {
-        this.subtypeId = subtypeId;
-        return this;
-    }
-
-    public MultipartHeader inputSourceId(final int inputSourceId) {
-        this.inputSourceId = inputSourceId;
-        return this;
-    }
-
-    public MultipartHeader sourceSeqNo(final long sourceSeqNo) {
-        this.sourceSeqNo = AdminHeader.validateSourceSeqNo(sourceSeqNo);
-        return this;
-    }
-
-    public MultipartHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        this.eventTimeNanosSinceEpoch = eventTimeNanosSinceEpoch;
-        return this;
-    }
-
-    public MultipartHeader userData(final int userData) {
-        this.userData = userData;
-        return this;
-    }
-
-    public MultipartHeader payloadLength(final int payloadLength) {
-        this.payloadLength = AdminHeader.validatePayloadLength(payloadLength);
-        return this;
-    }
-
-    public MultipartHeader init(final Header header) {
-        if (header.type() != Type.MULTIPART) {
-            throw new IllegalArgumentException("Not a 'MULTIPART' type: " + header.type());
+    class Default extends DefaultHeader implements MultipartHeader {
+        @Override
+        public Default wrap(final Header header) {
+            super.wrap(header);
+            return this;
         }
-        return this
-                .version(header.version())
-                .subtypeId(header.subtypeId())
-                .inputSourceId(header.inputSourceId())
-                .sourceSeqNo(header.sourceSeqNo())
-                .eventTimeNanosSinceEpoch(header.eventTimeNanosSinceEpoch())
-                .userData(header.userData())
-                .payloadLength(header.payloadLength());
+
+        @Override
+        public Default wrap(final DirectBuffer source, final int offset) {
+            super.wrap(source, offset);
+            return this;
+        }
+
+        @Override
+        public Default unwrap() {
+            super.unwrap();
+            return this;
+        }
     }
 
-    public MultipartHeader partCount(final int partCount) {
-        return userData(partCount);
+    class Mutable extends TypedHeader<Mutable> implements MultipartHeader {
+        private Mutable(final MutableDirectBuffer buffer) {
+            super(Mutable.class, Type.MULTIPART, buffer);
+        }
+
+        @Override
+        public Mutable userData(final int userData) {
+            return userData(validatePartCount(userData));
+        }
+
+        public Mutable partCount(final int partCount) {
+            return userData(partCount);
+        }
+    }
+
+    static Default create() {
+        return new Default();
+    }
+
+    static Default create(final DirectBuffer source, final int offset) {
+        return create().wrap(source, offset);
+    }
+
+    static Mutable create(final MutableDirectBuffer buffer) {
+        return new Mutable(buffer);
+    }
+
+    static Mutable allocate() {
+        return new Mutable(MutableHeader.allocateBuffer());
+    }
+
+    static Mutable allocateDirect() {
+        return new Mutable(MutableHeader.allocateDirectBuffer());
     }
 
     static int validatePartCount(final int partCount) {

@@ -25,7 +25,7 @@ package org.tools4j.eventsourcing.core;
 
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.LongArrayList;
-import org.tools4j.eventsourcing.event.DefinedHeaderEvent;
+import org.tools4j.eventsourcing.event.DefaultEvent;
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Type;
 import org.tools4j.eventsourcing.event.Version;
@@ -39,7 +39,7 @@ import java.util.function.LongSupplier;
 
 public class TimerController {
 
-    private final TimerHeader header = new TimerHeader();
+    private final TimerHeader.Mutable header = TimerHeader.allocateDirect();
     private final LongSupplier adminSeqNoSupplier;
     private final LongSupplier nanoTimeSupplier;
     private final IntArrayList ids = new IntArrayList();
@@ -90,9 +90,9 @@ public class TimerController {
     }
 
     public Step expiryCheckerStep(final Consumer<? super Event> eventConsumer) {
-        final TimerHeader header = new TimerHeader();
+        final TimerHeader.Mutable header = TimerHeader.allocateDirect();
         header.version(Version.current());
-        final DefinedHeaderEvent event = new DefinedHeaderEvent(header);
+        final Event event = new DefaultEvent().wrap(header);
         return () -> {
             final int size = ids.size();
             if (size > 0) {

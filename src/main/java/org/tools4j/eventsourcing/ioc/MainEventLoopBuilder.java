@@ -25,7 +25,7 @@ package org.tools4j.eventsourcing.ioc;
 
 import org.tools4j.eventsourcing.application.ApplicationHandler;
 import org.tools4j.eventsourcing.application.ServerContext;
-import org.tools4j.eventsourcing.command.CommandHandler;
+import org.tools4j.eventsourcing.core.CommandController;
 import org.tools4j.eventsourcing.core.MainEventLoop;
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.store.InputQueue;
@@ -91,11 +91,11 @@ public class MainEventLoopBuilder {
 
     private Step inputPollerStep() {
         final InputQueue.Poller inputPoller = queueBuilder.inputPoller();
-        final CommandHandler commandHandler = commandHandlerBuilder.defaultCommandHandler();
+        final CommandController.Provider commandControllerProvider = commandHandlerBuilder.commandControllerProvider();
         final ApplicationHandler applicationHandler = applicationBuilder.applicationHandler();
         final Consumer<Event> eventConsumer = event -> {
-            try {
-                applicationHandler.processInputEvent(event, commandHandler);
+            try (final CommandController commandController = commandControllerProvider.provideFor(event)) {
+                applicationHandler.processInputEvent(event, commandController);
             } catch (final Exception e) {
                 //FIXME handle erors
                 e.printStackTrace();

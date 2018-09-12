@@ -23,81 +23,76 @@
  */
 package org.tools4j.eventsourcing.header;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
-public class LeadershipHeader extends AdminHeader {
+public interface LeadershipHeader extends Header {
 
-    public static final short SUBTYPE_LEADERSHIP_TRANSITION = 0;
-    public static final short SUBTYPE_LEADERSHIP_FORCED     = 1;
+    short SUBTYPE_LEADERSHIP_TRANSITION = 0;
+    short SUBTYPE_LEADERSHIP_FORCED     = 1;
 
-    private short subtypeId;
-
-    public LeadershipHeader() {
-        super(Type.LEADERSHIP);
-    }
-
-    @Override
-    public short subtypeId() {
-        return subtypeId;
-    }
-
-    public int leaderId() {
+    default int leaderId() {
         return userData();
     }
 
-    @Override
-    public LeadershipHeader version(final Version version) {
-        super.version(version);
-        return this;
+    class Default extends DefaultHeader implements LeadershipHeader {
+        @Override
+        public Default wrap(final Header header) {
+            super.wrap(header);
+            return this;
+        }
+
+        @Override
+        public Default wrap(final DirectBuffer source, final int offset) {
+            super.wrap(source, offset);
+            return this;
+        }
+
+        @Override
+        public Default unwrap() {
+            super.unwrap();
+            return this;
+        }
     }
 
-    @Override
-    public LeadershipHeader version(final byte version) {
-        super.version(version);
-        return this;
+    class Mutable extends TypedHeader<Mutable> implements LeadershipHeader {
+        private Mutable(final MutableDirectBuffer buffer) {
+            super(Mutable.class, Type.LEADERSHIP, buffer);
+            subtypeId(SUBTYPE_LEADERSHIP_TRANSITION);
+        }
+
+        @Override
+        public Mutable subtypeId(final short subtypeId) {
+            return super.subtypeId(validateSubtypeId(subtypeId));
+        }
+
+        public Mutable leaderId(final int leaderId) {
+            return userData(leaderId);
+        }
     }
 
-    public LeadershipHeader subtypeId(final short subtypeId) {
+    static Default create() {
+        return new Default();
+    }
+
+    static Default create(final DirectBuffer source, final int offset) {
+        return create().wrap(source, offset);
+    }
+
+    static Mutable allocate() {
+        return new Mutable(MutableHeader.allocateBuffer());
+    }
+
+    static Mutable allocateDirect() {
+        return new Mutable(MutableHeader.allocateDirectBuffer());
+    }
+
+    static short validateSubtypeId(final short subtypeId) {
         if (subtypeId != SUBTYPE_LEADERSHIP_TRANSITION & subtypeId != SUBTYPE_LEADERSHIP_FORCED) {
             throw new IllegalArgumentException("Invalid subtypeId: " + subtypeId);
         }
-        this.subtypeId = subtypeId;
-        return this;
-    }
-
-    @Override
-    public LeadershipHeader inputSourceId(final int inputSourceId) {
-        super.inputSourceId(inputSourceId);
-        return this;
-    }
-
-    @Override
-    public LeadershipHeader sourceSeqNo(final long sourceSeqNo) {
-        super.sourceSeqNo(sourceSeqNo);
-        return this;
-    }
-
-    @Override
-    public LeadershipHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
-        return this;
-    }
-
-    @Override
-    public LeadershipHeader userData(final int userData) {
-        super.userData(userData);
-        return this;
-    }
-
-    public LeadershipHeader leaderId(final int leaderId) {
-        return userData(leaderId);
-    }
-
-    @Override
-    public LeadershipHeader init(final Header header) {
-        super.init(header);
-        return subtypeId(header.subtypeId());
+        return subtypeId;
     }
 }

@@ -30,6 +30,8 @@ import org.tools4j.eventsourcing.event.Type;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static org.tools4j.eventsourcing.event.Header.validatePayloadLength;
+
 public class PartHeader implements Multipart.Part {
 
     private static final Set<Type> ALLOWED_TYPES = EnumSet.of(Type.LEADERSHIP, Type.TIMER, Type.SHUTDOWN, Type.NOOP, Type.DATA);
@@ -78,7 +80,7 @@ public class PartHeader implements Multipart.Part {
     }
 
     public PartHeader payloadLength(final int payloadLength) {
-        this.payloadLength = AdminHeader.validatePayloadLength(payloadLength);
+        this.payloadLength = validatePayloadLength(payloadLength);
         return this;
     }
 

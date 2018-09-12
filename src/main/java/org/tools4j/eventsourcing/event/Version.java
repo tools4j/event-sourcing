@@ -38,7 +38,15 @@ public enum Version {
         return VERSION_0;
     }
     public static Version valueByCode(final byte code) {
-        return VALUES[(int)code];
+        return VALUES[(int)validateCode(code)];
     }
+
+    public static byte validateCode(final byte code) {
+        if (code >= 0 && code < VALUES.length) {
+            return code;
+        }
+        throw new IllegalArgumentException("Not a valid version code: " + code);
+    }
+
     private static final Version[] VALUES = values();
 }

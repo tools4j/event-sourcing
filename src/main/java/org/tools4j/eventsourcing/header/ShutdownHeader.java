@@ -23,55 +23,52 @@
  */
 package org.tools4j.eventsourcing.header;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
-public class ShutdownHeader extends AdminHeader {
+public interface ShutdownHeader extends Header {
 
-    public ShutdownHeader() {
-        super(Type.SHUTDOWN);
+    class Default extends DefaultHeader implements ShutdownHeader {
+        @Override
+        public Default wrap(final Header header) {
+            super.wrap(header);
+            return this;
+        }
+
+        @Override
+        public Default wrap(final DirectBuffer source, final int offset) {
+            super.wrap(source, offset);
+            return this;
+        }
+
+        @Override
+        public Default unwrap() {
+            super.unwrap();
+            return this;
+        }
     }
 
-    @Override
-    public ShutdownHeader version(final Version version) {
-        super.version(version);
-        return this;
+    class Mutable extends TypedHeader<Mutable> implements ShutdownHeader {
+        private Mutable(final MutableDirectBuffer buffer) {
+            super(Mutable.class, Type.SHUTDOWN, buffer);
+        }
     }
 
-    @Override
-    public ShutdownHeader version(final byte version) {
-        super.version(version);
-        return this;
+    static Default create() {
+        return new Default();
     }
 
-    @Override
-    public ShutdownHeader inputSourceId(final int inputSourceId) {
-        super.inputSourceId(inputSourceId);
-        return this;
+    static Default create(final DirectBuffer source, final int offset) {
+        return create().wrap(source, offset);
     }
 
-    @Override
-    public ShutdownHeader sourceSeqNo(final long sourceSeqNo) {
-        super.sourceSeqNo(sourceSeqNo);
-        return this;
+    static Mutable allocate() {
+        return new Mutable(MutableHeader.allocateBuffer());
     }
 
-    @Override
-    public ShutdownHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
-        return this;
-    }
-
-    @Override
-    public ShutdownHeader userData(final int userData) {
-        super.userData(userData);
-        return this;
-    }
-
-    @Override
-    public ShutdownHeader init(final Header header) {
-        super.init(header);
-        return this;
+    static Mutable allocateDirect() {
+        return new Mutable(MutableHeader.allocateDirectBuffer());
     }
 }

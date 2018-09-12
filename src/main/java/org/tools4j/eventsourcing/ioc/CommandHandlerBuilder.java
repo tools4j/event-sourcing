@@ -34,8 +34,11 @@ public class CommandHandlerBuilder {
     private final ServerBuilder serverBuilder;
     private final QueueBuilder queueBuilder;
 
-    private DefaultCommandHandler defaultCommandHandler;
+    private CommandController.Provider commandControllerProvider;
+    private DefaultCommandController defaultCommandController;
+    private DefaultSingleCommandHandler defaultCommandHandler;
     private MultipartCommandHandler multipartCommandHandler;
+    private SingleEventAppender singleEventAppender;
 
     public CommandHandlerBuilder(final ServerBuilder serverBuilder,
                                  final QueueBuilder queueBuilder) {
@@ -43,13 +46,30 @@ public class CommandHandlerBuilder {
         this.queueBuilder = Objects.requireNonNull(queueBuilder);
     }
 
-    DefaultCommandHandler defaultCommandHandler() {
+    CommandController.Provider commandControllerProvider() {
+        if (commandControllerProvider == null) {
+            commandControllerProvider = defaultCommandController().provider();
+        }
+        return commandControllerProvider;
+    }
+
+    DefaultCommandController defaultCommandController() {
+        if (defaultCommandController == null) {
+            defaultCommandController = new DefaultCommandController(
+                    defaultSingleCommandHandler(),
+                    multipartCommandHandler(),
+                    singleEventAppender()
+            );
+        }
+        return defaultCommandController;
+    }
+
+    DefaultSingleCommandHandler defaultSingleCommandHandler() {
         if (defaultCommandHandler == null) {
-            final DefaultCommandHandler.SingleEventAppender singleEventAppender = new DefaultCommandHandler.SingleEventAppender(queueBuilder.outputAppender());
-            final SingleCommitCommands singleCommitCommands = new SingleCommitCommands(singleEventAppender);
+            final SingleCommitCommands singleCommitCommands = new SingleCommitCommands(singleEventAppender());
             final TimerCommands timerCommands = new DefaultTimerCommands(serverBuilder.timerIdProvider(), singleCommitCommands);
             final AdminCommands adminCommands = new DefaultAdminCommands(serverBuilder.serverConfig(), singleCommitCommands);
-            defaultCommandHandler = new DefaultCommandHandler(singleEventAppender, timerCommands, adminCommands, singleCommitCommands, multipartCommandHandler());
+            defaultCommandHandler = new DefaultSingleCommandHandler(timerCommands, adminCommands, singleCommitCommands);
         }
         return defaultCommandHandler;
     }
@@ -59,9 +79,17 @@ public class CommandHandlerBuilder {
             final MultipartCommitCommands multipartCommitCommands = new MultipartCommitCommands();
             final TimerCommands timerCommands = new DefaultTimerCommands(serverBuilder.timerIdProvider(), multipartCommitCommands);
             final AdminCommands adminCommands = new DefaultAdminCommands(serverBuilder.serverConfig(), multipartCommitCommands);
-            multipartCommandHandler = new MultipartCommandHandler(queueBuilder.outputAppender(), timerCommands, adminCommands, multipartCommitCommands);
+            multipartCommandHandler = new MultipartCommandHandler(singleEventAppender(), timerCommands, adminCommands, multipartCommitCommands);
         }
         return multipartCommandHandler;
     }
+
+    SingleEventAppender singleEventAppender() {
+        if (singleEventAppender == null) {
+            singleEventAppender = new SingleEventAppender(queueBuilder.outputAppender());
+        }
+        return singleEventAppender;
+    }
+
 
 }

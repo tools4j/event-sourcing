@@ -24,83 +24,76 @@
 package org.tools4j.eventsourcing.core;
 
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.command.CommitCommands;
-import org.tools4j.eventsourcing.event.DefinedHeaderEvent;
-import org.tools4j.eventsourcing.event.Event;
+import org.tools4j.eventsourcing.event.DefaultEvent;
 import org.tools4j.eventsourcing.event.Header;
-import org.tools4j.eventsourcing.event.Version;
-import org.tools4j.eventsourcing.header.AdminHeader;
-import org.tools4j.eventsourcing.header.DataHeader;
-import org.tools4j.eventsourcing.header.NoopHeader;
+import org.tools4j.eventsourcing.event.Type;
+import org.tools4j.eventsourcing.header.MutableHeader;
 import org.tools4j.eventsourcing.store.OutputQueue;
 
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class SingleCommitCommands implements CommitCommands, Consumer<AdminHeader> {
+public class SingleCommitCommands implements CommitCommands, Consumer<Header> {
 
-    private final DataHeader header = new DataHeader();
-    private final NoopHeader noopHeader = new NoopHeader();
-    private final DefinedHeaderEvent event = new DefinedHeaderEvent();
+    private final MutableHeader header = new MutableHeader(new UnsafeBuffer(0, 0));
+    private final DefaultEvent event = new DefaultEvent();
     private final OutputQueue.Appender appender;
 
     public SingleCommitCommands(final OutputQueue.Appender appender) {
         this.appender = Objects.requireNonNull(appender);
-        this.header.version(Version.current());
     }
 
-    void initWithInputEvent(final Event inputEvent) {
-        initWithInputEvent(inputEvent.header());
+    void init(final MutableHeader inputEventHeader) {
+        header.buffer().wrap(inputEventHeader.buffer());
     }
 
-    void initWithInputEvent(final Header inputEventHeader) {
-        header
-                .inputSourceId(inputEventHeader.inputSourceId())
-                .sourceSeqNo(inputEventHeader.sourceSeqNo())
-                .eventTimeNanosSinceEpoch(inputEventHeader.eventTimeNanosSinceEpoch())
-        ;
-    }
-
-    void initForAdminEvent(final long eventSeqNo, final long eventTimeNanosSinceEpoch) {
-        header
-                .inputSourceId(Header.ADMIN_SOURCE_ID)
-                .sourceSeqNo(eventSeqNo)
-                .eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch)
-        ;
-    }
-
-    void startMultipart(final MultipartCommandHandler multipartCommandHandler) {
-        multipartCommandHandler.startMultipart(header);
+    private void reset() {
+        header.buffer().wrap(0, 0);
     }
 
     @Override
-    public void accept(final AdminHeader adminHeader) {
-        adminHeader
-                .inputSourceId(header.inputSourceId())
-                .sourceSeqNo(header.sourceSeqNo())
-                .eventTimeNanosSinceEpoch(header.eventTimeNanosSinceEpoch())
+    public void accept(final Header noPayloadHeader) {
+        headerInitialised()
+                .type(noPayloadHeader.type())
+                .subtypeId(noPayloadHeader.subtypeId())
+                .userData(noPayloadHeader.userData())
+                .payloadLength(0)
         ;
-        event
-                .wrap(adminHeader)
-                .payload().wrap(0, 0);
+        event.wrap(header);
         appender.append(event);
+        reset();
     }
 
     @Override
     public void commitEvent(final short subtypeId, final int userData, final DirectBuffer message, final int offset, final int length) {
-        header
+        headerInitialised()
+                .type(Type.DATA)
                 .subtypeId(subtypeId)
                 .userData(userData)
                 .payloadLength(length)
         ;
-        event
-                .wrap(header)
-                .payload().wrap(message, offset, length);
+        event.wrap(header, message, offset);
         appender.append(event);
+        reset();
     }
 
     @Override
     public void commitNoop(final int userData) {
-        accept(noopHeader.userData(userData));
+        headerInitialised()
+                .type(Type.NOOP)
+                .userData(userData)
+        ;
+        event.wrap(header);
+        appender.append(event);
+        reset();
+    }
+
+    private MutableHeader headerInitialised() {
+        if (header.buffer().capacity() >= Header.BYTE_LENGTH) {
+            return header;
+        }
+        throw new IllegalStateException("Commmit comands have not been initialised");
     }
 }

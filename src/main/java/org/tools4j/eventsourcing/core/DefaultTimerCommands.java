@@ -36,7 +36,7 @@ public class DefaultTimerCommands implements TimerCommands {
 
     private final IntSupplier idProvider;
     private final Consumer<? super TimerHeader> eventAppender;
-    private final TimerHeader header = new TimerHeader();
+    private final TimerHeader.Mutable header = TimerHeader.allocateDirect();
 
     public DefaultTimerCommands(final IntSupplier idProvider,
                                 final Consumer<? super TimerHeader> eventAppender) {

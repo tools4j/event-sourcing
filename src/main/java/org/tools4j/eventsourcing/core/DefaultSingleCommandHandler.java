@@ -24,34 +24,29 @@
 package org.tools4j.eventsourcing.core;
 
 import org.tools4j.eventsourcing.command.AdminCommands;
-import org.tools4j.eventsourcing.command.CommandHandler;
 import org.tools4j.eventsourcing.command.CommitCommands;
+import org.tools4j.eventsourcing.command.SingleCommandHandler;
 import org.tools4j.eventsourcing.command.TimerCommands;
 import org.tools4j.eventsourcing.header.MutableHeader;
-import org.tools4j.eventsourcing.store.OutputQueue;
 
 import java.util.Objects;
 
-public class MultipartCommandHandler implements CommandHandler.MultipartHandler {
+public class DefaultSingleCommandHandler implements SingleCommandHandler {
 
-    private final OutputQueue.Appender appender;
-    private final MultipartCommitCommands multipartCommitCommands;
     private final TimerCommands timerCommands;
     private final AdminCommands adminCommands;
+    private final SingleCommitCommands singleCommitCommands;
 
-    public MultipartCommandHandler(final OutputQueue.Appender appender,
-                                   final TimerCommands timerCommands,
-                                   final AdminCommands adminCommands,
-                                   final MultipartCommitCommands multipartCommitCommands) {
-        this.appender = Objects.requireNonNull(appender);
+    public DefaultSingleCommandHandler(final TimerCommands timerCommands,
+                                       final AdminCommands adminCommands,
+                                       final SingleCommitCommands singleCommitCommands) {
         this.timerCommands = Objects.requireNonNull(timerCommands);
         this.adminCommands = Objects.requireNonNull(adminCommands);
-        this.multipartCommitCommands = Objects.requireNonNull(multipartCommitCommands);
+        this.singleCommitCommands = Objects.requireNonNull(singleCommitCommands);
     }
 
-    CommandHandler.MultipartHandler init(final MutableHeader inputEventHeader) {
-        multipartCommitCommands.init(inputEventHeader);
-        return this;
+    void init(final MutableHeader header) {
+        singleCommitCommands.init(header);
     }
 
     @Override
@@ -66,11 +61,7 @@ public class MultipartCommandHandler implements CommandHandler.MultipartHandler 
 
     @Override
     public CommitCommands commitCommands() {
-        return multipartCommitCommands;
+        return singleCommitCommands;
     }
 
-    @Override
-    public void completeMultipart() {
-        multipartCommitCommands.completeMultipart(appender);
-    }
 }

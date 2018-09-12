@@ -32,6 +32,10 @@ public class DefaultHeader implements Header {
 
     private final DirectBuffer buffer = new UnsafeBuffer(0, 0);
 
+    public DefaultHeader wrap(final Header header) {
+        return wrap(header.buffer(), 0);
+    }
+
     public DefaultHeader wrap(final DirectBuffer source, final int offset) {
         buffer.wrap(source, offset, BYTE_LENGTH);
         return this;
@@ -80,5 +84,10 @@ public class DefaultHeader implements Header {
     @Override
     public int payloadLength() {
         return buffer.getInt(Offset.PAYLOAD_LENGTH);
+    }
+
+    @Override
+    public DirectBuffer buffer() {
+        return buffer;
     }
 }

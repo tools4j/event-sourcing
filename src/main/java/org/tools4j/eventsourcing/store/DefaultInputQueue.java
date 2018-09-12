@@ -26,11 +26,11 @@ package org.tools4j.eventsourcing.store;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.tools4j.eventsourcing.event.DefaultEvent;
 import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Version;
 import org.tools4j.eventsourcing.header.DataHeader;
-import org.tools4j.eventsourcing.event.DefaultEvent;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -63,7 +63,7 @@ public class DefaultInputQueue implements InputQueue {
 
         final Store.Appender storeAppender = store.appender();
         final MutableDirectBuffer buffer = new ExpandableDirectByteBuffer();
-        final DataHeader header = new DataHeader();
+        final DataHeader.Mutable header = DataHeader.allocateDirect();
 
         @Override
         public void append(final int sourceId, final long sourceSeqNo, final short subtypeId, final int userData,

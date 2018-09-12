@@ -23,51 +23,44 @@
  */
 package org.tools4j.eventsourcing.event;
 
-import org.tools4j.eventsourcing.header.DataHeader;
-import org.tools4j.eventsourcing.header.HeartbeatHeader;
-import org.tools4j.eventsourcing.header.InitializeHeader;
-import org.tools4j.eventsourcing.header.LeadershipHeader;
-import org.tools4j.eventsourcing.header.MultipartHeader;
-import org.tools4j.eventsourcing.header.NoopHeader;
-import org.tools4j.eventsourcing.header.ShutdownHeader;
-import org.tools4j.eventsourcing.header.TimerHeader;
+import org.tools4j.eventsourcing.header.*;
 
 public class EventDispatcher {
-    private final InitializeHeader initializeHeader = new InitializeHeader();
-    private final HeartbeatHeader heartbeatHeader = new HeartbeatHeader();
-    private final LeadershipHeader leadershipHeader = new LeadershipHeader();
-    private final TimerHeader timerHeader = new TimerHeader();
-    private final ShutdownHeader shutdownHeader = new ShutdownHeader();
-    private final NoopHeader noopHeader = new NoopHeader();
-    private final DataHeader dataHeader = new DataHeader();
-    private final MultipartHeader multipartHeader = new MultipartHeader();
+    private final InitializeHeader.Default initializeHeader = InitializeHeader.create();
+    private final HeartbeatHeader.Default heartbeatHeader = HeartbeatHeader.create();
+    private final LeadershipHeader.Default leadershipHeader = LeadershipHeader.create();
+    private final TimerHeader.Default timerHeader = TimerHeader.create();
+    private final ShutdownHeader.Default shutdownHeader = ShutdownHeader.create();
+    private final NoopHeader.Default noopHeader = NoopHeader.create();
+    private final DataHeader.Default dataHeader = DataHeader.create();
+    private final MultipartHeader.Default multipartHeader = MultipartHeader.create();
     private final DefaultPartEvent partEvent = new DefaultPartEvent();
 
     public void dispatch(final Event event) {
         switch (event.type()) {
             case INITIALIZE:
-                onInitialize(initializeHeader.init(event.header()), event);
+                onInitialize(initializeHeader.wrap(event.header()), event);
                 break;
             case HEARTBEAT:
-                onHeartbeat(heartbeatHeader.init(event.header()), event);
+                onHeartbeat(heartbeatHeader.wrap(event.header()), event);
                 break;
             case LEADERSHIP:
-                onLeadership(leadershipHeader.init(event.header()), event);
+                onLeadership(leadershipHeader.wrap(event.header()), event);
                 break;
             case TIMER:
-                onTimer(timerHeader.init(event.header()), event);
+                onTimer(timerHeader.wrap(event.header()), event);
                 break;
             case SHUTDOWN:
-                onShutdown(shutdownHeader.init(event.header()), event);
+                onShutdown(shutdownHeader.wrap(event.header()), event);
                 break;
             case NOOP:
-                onNoop(noopHeader.init(event.header()), event);
+                onNoop(noopHeader.wrap(event.header()), event);
                 break;
             case DATA:
-                onData(dataHeader.init(event.header()), event);
+                onData(dataHeader.wrap(event.header()), event);
                 break;
             case MULTIPART:
-                onMultipart(multipartHeader.init(event.header()), event);
+                onMultipart(multipartHeader.wrap(event.header()), event);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported event type: " + event.type());

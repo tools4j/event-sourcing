@@ -26,34 +26,41 @@ package org.tools4j.eventsourcing.core;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.command.CommitCommands;
-import org.tools4j.eventsourcing.event.*;
-import org.tools4j.eventsourcing.header.AdminHeader;
+import org.tools4j.eventsourcing.event.DefaultEvent;
+import org.tools4j.eventsourcing.event.Header;
+import org.tools4j.eventsourcing.event.Type;
+import org.tools4j.eventsourcing.event.Version;
 import org.tools4j.eventsourcing.header.MultipartHeader;
+import org.tools4j.eventsourcing.header.MutableHeader;
 import org.tools4j.eventsourcing.header.PartHeader;
 import org.tools4j.eventsourcing.store.OutputQueue;
 
 import java.util.function.Consumer;
 
-public class MultipartCommitCommands implements CommitCommands, Consumer<AdminHeader> {
+public class MultipartCommitCommands implements CommitCommands, Consumer<Header> {
 
-    private final MultipartHeader header = new MultipartHeader();
+    private final MultipartHeader.Mutable header = MultipartHeader.create(new UnsafeBuffer(0, 0));
     private final PartHeader partHeader = new PartHeader();
-    private final Event event = new DefinedHeaderEvent(header);
+    private final DefaultEvent event = new DefaultEvent();
     private final MutableDirectBuffer payload = new ExpandableDirectByteBuffer(1024);//make initial capacity configurable
 
     public MultipartCommitCommands() {
         this.header.version(Version.current());
     }
 
-    public void startMultipart(final Header inputEventHeader) {
+    void init(final MutableHeader inputEventHeader) {
+        header.buffer().wrap(inputEventHeader.buffer());
         header
-                .inputSourceId(inputEventHeader.inputSourceId())
-                .sourceSeqNo(inputEventHeader.sourceSeqNo())
-                .eventTimeNanosSinceEpoch(inputEventHeader.eventTimeNanosSinceEpoch())
+                .type(Type.MULTIPART)
                 .partCount(0)
                 .payloadLength(0)
         ;
+    }
+
+    private void reset() {
+        header.buffer().wrap(0, 0);
     }
 
     private void appendPart(final DirectBuffer message, final int offset, final int length) {
@@ -70,12 +77,12 @@ public class MultipartCommitCommands implements CommitCommands, Consumer<AdminHe
     }
 
     @Override
-    public void accept(final AdminHeader adminHeader) {
+    public void accept(final Header noPayloadHeader) {
         checkStarted();
         partHeader
-                .type(adminHeader.type())
-                .subtypeId(adminHeader.subtypeId())
-                .userData(adminHeader.userData())
+                .type(noPayloadHeader.type())
+                .subtypeId(noPayloadHeader.subtypeId())
+                .userData(noPayloadHeader.userData())
                 .payloadLength(0)
         ;
         appendPartHeader();
@@ -107,18 +114,13 @@ public class MultipartCommitCommands implements CommitCommands, Consumer<AdminHe
 
     public void completeMultipart(final OutputQueue.Appender appender) {
         checkStarted();
-        event.payload().wrap(payload, 0, header.payloadLength());
+        event.wrap(header, payload, 0);
         appender.append(event);
-        header
-                .inputSourceId(Header.ADMIN_SOURCE_ID)
-                .sourceSeqNo(0L)
-                .eventTimeNanosSinceEpoch(0L)
-                .partCount(0)
-                .payloadLength(0);
+        reset();
     }
 
     private void checkStarted() {
-        if (header.inputSourceId() == Header.ADMIN_SOURCE_ID) {
+        if (header.buffer().capacity() == 0) {
             throw new IllegalStateException("Multipart command has not been started");
         }
     }

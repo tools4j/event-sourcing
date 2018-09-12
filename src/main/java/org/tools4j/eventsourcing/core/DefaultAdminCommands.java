@@ -25,8 +25,8 @@ package org.tools4j.eventsourcing.core;
 
 import org.tools4j.eventsourcing.application.ServerConfig;
 import org.tools4j.eventsourcing.command.AdminCommands;
+import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Version;
-import org.tools4j.eventsourcing.header.AdminHeader;
 import org.tools4j.eventsourcing.header.LeadershipHeader;
 import org.tools4j.eventsourcing.header.ShutdownHeader;
 
@@ -36,12 +36,12 @@ import java.util.function.Consumer;
 public class DefaultAdminCommands implements AdminCommands {
 
     private final ServerConfig config;
-    private final Consumer<? super AdminHeader> eventAppender;
-    private final LeadershipHeader leadershipHeader = new LeadershipHeader();
-    private final ShutdownHeader shutdownHeader = new ShutdownHeader();
+    private final Consumer<? super Header> eventAppender;
+    private final LeadershipHeader.Mutable leadershipHeader = LeadershipHeader.allocateDirect();
+    private final ShutdownHeader.Mutable shutdownHeader = ShutdownHeader.allocateDirect();
 
     public DefaultAdminCommands(final ServerConfig config,
-                                final Consumer<? super AdminHeader> eventAppender) {
+                                final Consumer<? super Header> eventAppender) {
         this.config = Objects.requireNonNull(config);
         this.eventAppender = Objects.requireNonNull(eventAppender);
         this.leadershipHeader.version(Version.current());

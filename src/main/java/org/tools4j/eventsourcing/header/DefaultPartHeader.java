@@ -32,11 +32,11 @@ import org.tools4j.eventsourcing.event.Type;
 
 public class DefaultPartHeader implements Header, Multipart.Part {
 
-    private final MultipartHeader parent = new MultipartHeader();
+    private final MultipartHeader.Default parent = MultipartHeader.create();
     private final DirectBuffer buffer = new UnsafeBuffer(0, 0);
 
     public DefaultPartHeader wrap(final Header multipart, final DirectBuffer source, final int offset) {
-        parent.init(multipart);
+        parent.wrap(multipart);
         buffer.wrap(source, offset, Multipart.Part.BYTE_LENGTH);
         return this;
     }
@@ -87,12 +87,17 @@ public class DefaultPartHeader implements Header, Multipart.Part {
     }
 
     @Override
+    public DirectBuffer buffer() {
+        return parent.buffer();//TODO this won't work for part fields
+    }
+
+    @Override
     public Multipart multipartParent() {
         return parent;
     }
 
     @Override
-    public int writeTo(MutableDirectBuffer target, int offset) {
+    public int writeTo(final MutableDirectBuffer target, final int offset) {
         return Multipart.Part.super.writeTo(target, offset);
     }
 }

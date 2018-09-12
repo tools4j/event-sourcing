@@ -23,65 +23,60 @@
  */
 package org.tools4j.eventsourcing.header;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
-public class HeartbeatHeader extends AdminHeader {
+public interface HeartbeatHeader extends Header {
 
-    public HeartbeatHeader() {
-        super(Type.HEARTBEAT);
-    }
-
-    public int heartbeatSeqNo() {
+    default int heartbeatSeqNo() {
         return userData();
     }
 
-    @Override
-    public HeartbeatHeader version(final Version version) {
-        super.version(version);
-        return this;
+    class Default extends DefaultHeader implements HeartbeatHeader {
+        @Override
+        public Default wrap(final Header header) {
+            super.wrap(header);
+            return this;
+        }
+
+        @Override
+        public Default wrap(final DirectBuffer source, final int offset) {
+            super.wrap(source, offset);
+            return this;
+        }
+
+        @Override
+        public Default unwrap() {
+            super.unwrap();
+            return this;
+        }
     }
 
-    @Override
-    public HeartbeatHeader version(final byte version) {
-        super.version(version);
-        return this;
+    class Mutable extends TypedHeader<Mutable> implements HeartbeatHeader {
+        private Mutable(final MutableDirectBuffer buffer) {
+            super(Mutable.class, Type.HEARTBEAT, buffer);
+        }
+
+        public Mutable heartbeatSeqNo(final int heartbeatSeqNo) {
+            return userData(heartbeatSeqNo);
+        }
     }
 
-    @Override
-    public HeartbeatHeader inputSourceId(final int inputSourceId) {
-        super.inputSourceId(inputSourceId);
-        return this;
+    static Default create() {
+        return new Default();
     }
 
-    @Override
-    public HeartbeatHeader sourceSeqNo(final long sourceSeqNo) {
-        super.sourceSeqNo(sourceSeqNo);
-        return this;
+    static Default create(final DirectBuffer source, final int offset) {
+        return create().wrap(source, offset);
     }
 
-    @Override
-    public HeartbeatHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        super.sourceSeqNo(eventTimeNanosSinceEpoch);
-        return this;
+    static Mutable allocate() {
+        return new Mutable(MutableHeader.allocateBuffer());
     }
 
-    @Override
-    public HeartbeatHeader userData(final int heartbeatSeqNo) {
-        super.userData(heartbeatSeqNo);
-        return this;
+    static Mutable allocateDirect() {
+        return new Mutable(MutableHeader.allocateDirectBuffer());
     }
-
-    public HeartbeatHeader heartbeatSeqNo(final int heartbeatSeqNo) {
-        return userData(heartbeatSeqNo);
-    }
-
-    @Override
-    public HeartbeatHeader init(final Header header) {
-        super.init(header);
-        return this;
-    }
-
-
 }

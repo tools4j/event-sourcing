@@ -23,9 +23,10 @@
  */
 package org.tools4j.eventsourcing.header;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
 import java.util.concurrent.TimeUnit;
 
@@ -60,57 +61,48 @@ import java.util.concurrent.TimeUnit;
  *
  * @see Header
  */
-public class TimerHeader extends AdminHeader {
+public interface TimerHeader extends Header {
 
-    public static final int SUBTYPE_FLAG_TIMER_STOPPED = 0x8000;
-    public static final int SUBTYPE_FLAG_TIMER_EXPIRED = 0x4000;
-    public static final int SUBTYPE_MASK_TIMER_ID      = 0x3fff;
-    public static final short TIMER_ID_MIN = 0;
-    public static final short TIMER_ID_MAX = SUBTYPE_MASK_TIMER_ID - 1;
-    public static final int TIMEOUT_FLAG_MICRO = 0x80000000;
-    public static final int TIMEOUT_MIN = 0;
-    public static final int TIMEOUT_MAX = Integer.MAX_VALUE;
+    int SUBTYPE_FLAG_TIMER_STOPPED = 0x8000;
+    int SUBTYPE_FLAG_TIMER_EXPIRED = 0x4000;
+    int SUBTYPE_MASK_TIMER_ID      = 0x3fff;
+    short TIMER_ID_MIN = 0;
+    short TIMER_ID_MAX = SUBTYPE_MASK_TIMER_ID - 1;
+    int TIMEOUT_FLAG_MICRO = 0x80000000;
+    int TIMEOUT_MIN = 0;
+    int TIMEOUT_MAX = Integer.MAX_VALUE;
 
-    private short subtypeId;
-
-    public TimerHeader() {
-        super(Type.TIMER);
+    default short timerId() {
+        return (short) (subtypeId() & SUBTYPE_MASK_TIMER_ID);
     }
 
-    @Override
-    public short subtypeId() {
-        return subtypeId;
+    default boolean isStarted() {
+        return (subtypeId() & SUBTYPE_FLAG_TIMER_STOPPED) == 0;
     }
 
-    public short timerId() {
-        return (short) (subtypeId & SUBTYPE_MASK_TIMER_ID);
-    }
-
-    public boolean isStarted() {
-        return (subtypeId & SUBTYPE_FLAG_TIMER_STOPPED) == 0;
-    }
-
-    public boolean isStopped() {
+    default boolean isStopped() {
+        final short subtypeId = subtypeId();
         return (subtypeId & SUBTYPE_FLAG_TIMER_STOPPED) != 0 & (subtypeId & SUBTYPE_FLAG_TIMER_EXPIRED) == 0;
     }
 
-    public boolean isExpired() {
+    default boolean isExpired() {
+        final short subtypeId = subtypeId();
         return (subtypeId & SUBTYPE_FLAG_TIMER_STOPPED) != 0 & (subtypeId & SUBTYPE_FLAG_TIMER_EXPIRED) != 0;
     }
 
-    public boolean isMicros() {
+    default boolean isMicros() {
         return (userData() & TIMEOUT_FLAG_MICRO) != 0;
     }
 
-    public boolean isMillis() {
+    default boolean isMillis() {
         return (userData() & TIMEOUT_FLAG_MICRO) == 0;
     }
 
-    public int timeoutValue() {
+    default int timeoutValue() {
         return userData() & (~TIMEOUT_FLAG_MICRO);
     }
 
-    public long timeoutMicros() {
+    default long timeoutMicros() {
         final long timeout = userData();
         if ((timeout & TIMEOUT_FLAG_MICRO) != 0) {
             return timeout & (~TIMEOUT_FLAG_MICRO);
@@ -118,83 +110,88 @@ public class TimerHeader extends AdminHeader {
         return TimeUnit.MILLISECONDS.toMicros(timeout);
     }
 
-    @Override
-    public TimerHeader version(final Version version) {
-        super.version(version);
-        return this;
+    class Default extends DefaultHeader implements TimerHeader {
+        @Override
+        public Default wrap(final Header header) {
+            super.wrap(header);
+            return this;
+        }
+
+        @Override
+        public Default wrap(final DirectBuffer source, final int offset) {
+            super.wrap(source, offset);
+            return this;
+        }
+
+        @Override
+        public Default unwrap() {
+            super.unwrap();
+            return this;
+        }
     }
 
-    @Override
-    public TimerHeader version(final byte version) {
-        super.version(version);
-        return this;
+    class Mutable extends TypedHeader<Mutable> implements TimerHeader {
+
+        private Mutable(final MutableDirectBuffer buffer) {
+            super(Mutable.class, Type.TIMER, buffer);
+        }
+
+        public Mutable subtypeId(final short subtypeId) {
+            super.subtypeId(TimerHeader.validateSubtypeId(subtypeId));
+            return this;
+        }
+
+        public Mutable start(final int timerId) {
+            subtypeId(validateTimerId(timerId));
+            return this;
+        }
+
+        public Mutable stop(final int timerId) {
+            subtypeId((short)(validateTimerId(timerId) | SUBTYPE_FLAG_TIMER_STOPPED));
+            return this;
+        }
+
+        public Mutable expire(final int timerId) {
+            subtypeId((short)(validateTimerId(timerId) | SUBTYPE_FLAG_TIMER_STOPPED | SUBTYPE_FLAG_TIMER_EXPIRED));
+            return this;
+        }
+
+        public Mutable timeoutMillis(final int timeoutMillis) {
+            if (timeoutMillis < 0) {
+                throw new IllegalArgumentException("timeout cannot be negative: " + timeoutMillis);
+            }
+            return userData(timeoutMillis);
+        }
+
+        public Mutable timeoutMicros(final int timeoutMicros) {
+            if (timeoutMicros < 0) {
+                throw new IllegalArgumentException("timeout cannot be negative: " + timeoutMicros);
+            }
+            return userData(timeoutMicros | TIMEOUT_FLAG_MICRO);
+        }
     }
 
-    public TimerHeader subtypeId(final short subtypeId) {
+    static Default create() {
+        return new Default();
+    }
+
+    static Default create(final DirectBuffer source, final int offset) {
+        return create().wrap(source, offset);
+    }
+
+    static Mutable allocate() {
+        return new Mutable(MutableHeader.allocateBuffer());
+    }
+
+    static Mutable allocateDirect() {
+        return new Mutable(MutableHeader.allocateDirectBuffer());
+    }
+
+    static short validateSubtypeId(final short subtypeId) {
         if ((subtypeId & SUBTYPE_FLAG_TIMER_STOPPED) == 0 & (subtypeId & SUBTYPE_FLAG_TIMER_EXPIRED) != 0) {
             throw new IllegalArgumentException("Invalid subtype ID ('Stopped' flag is required if 'Expired' flags is set): " + subtypeId);
         }
-        this.subtypeId = subtypeId;
-        return this;
-    }
-
-    public TimerHeader start(final int timerId) {
-        this.subtypeId = validateTimerId(timerId);
-        return this;
-    }
-
-    public TimerHeader stop(final int timerId) {
-        this.subtypeId = (short)(validateTimerId(timerId) | SUBTYPE_FLAG_TIMER_STOPPED);
-        return this;
-    }
-
-    public TimerHeader expire(final int timerId) {
-        this.subtypeId = (short)(validateTimerId(timerId) | SUBTYPE_FLAG_TIMER_STOPPED | SUBTYPE_FLAG_TIMER_EXPIRED);
-        return this;
-    }
-
-    @Override
-    public TimerHeader inputSourceId(final int inputSourceId) {
-        super.inputSourceId(inputSourceId);
-        return this;
-    }
-
-    @Override
-    public TimerHeader sourceSeqNo(final long sourceSeqNo) {
-        super.sourceSeqNo(sourceSeqNo);
-        return this;
-    }
-
-    @Override
-    public TimerHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
-        return this;
-    }
-
-    @Override
-    public TimerHeader userData(final int userData) {
-        super.userData(userData);
-        return this;
-    }
-
-    public TimerHeader timeoutMillis(final int timeoutMillis) {
-        if (timeoutMillis < 0) {
-            throw new IllegalArgumentException("timeout cannot be negative: " + timeoutMillis);
-        }
-        return userData(timeoutMillis);
-    }
-
-    public TimerHeader timeoutMicros(final int timeoutMicros) {
-        if (timeoutMicros < 0) {
-            throw new IllegalArgumentException("timeout cannot be negative: " + timeoutMicros);
-        }
-        return userData(timeoutMicros | TIMEOUT_FLAG_MICRO);
-    }
-
-    @Override
-    public TimerHeader init(final Header header) {
-        super.init(header);
-        return subtypeId(header.subtypeId());
+        return subtypeId;
     }
 
     static short validateTimerId(final int timerId) {
@@ -203,5 +200,4 @@ public class TimerHeader extends AdminHeader {
         }
         throw new IllegalArgumentException("Invalid timer ID: " + timerId);
     }
-
 }

@@ -31,7 +31,6 @@ import java.util.function.LongConsumer;
 
 public class ServerBuilder {
 
-
     public ServerConfig serverConfig() {
         throw new RuntimeException("not implemented");//FIXME
     }

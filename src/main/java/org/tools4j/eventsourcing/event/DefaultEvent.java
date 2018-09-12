@@ -32,10 +32,27 @@ public class DefaultEvent implements Event {
     private final DefaultHeader header = new DefaultHeader();
     private final DirectBuffer payload = new UnsafeBuffer(0, 0);
 
-    public DefaultEvent wrap(final DirectBuffer source, final int offset, final int length) {
+    public DefaultEvent wrap(final DirectBuffer source,
+                             final int offset,
+                             final int length) {
         final int payloadLength = header.wrap(source, offset).payloadLength();
         payload.wrap(offset + Header.BYTE_LENGTH, payloadLength);
         assert Header.BYTE_LENGTH + payloadLength <= length;
+        return this;
+    }
+
+    public DefaultEvent wrap(final Header header,
+                             final DirectBuffer payload,
+                             final int payloadOffset) {
+        final int payloadLength = this.header.wrap(header).payloadLength();
+        this.payload.wrap(payload, payloadOffset, payloadLength);
+        return this;
+    }
+
+    public DefaultEvent wrap(final Header noPayloadHeader) {
+        final int payloadLength = this.header.wrap(header).payloadLength();
+        this.payload.wrap(0, 0);
+        assert payloadLength == 0;
         return this;
     }
 

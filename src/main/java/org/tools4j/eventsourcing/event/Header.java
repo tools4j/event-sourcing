@@ -23,8 +23,8 @@
  */
 package org.tools4j.eventsourcing.event;
 
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-
 import org.tools4j.eventsourcing.header.TimerHeader;
 
 /**
@@ -69,6 +69,7 @@ public interface Header {
     long eventTimeNanosSinceEpoch();
     int userData();
     int payloadLength();
+    DirectBuffer buffer();
 
     default boolean isAdmin() {
         return inputSourceId() == ADMIN_SOURCE_ID;
@@ -104,4 +105,21 @@ public interface Header {
         int PAYLOAD_LENGTH = 28;
     }
 
+    static byte validateVersion(final byte version) {
+        return Version.validateCode(version);
+    }
+
+    static long validateSourceSeqNo(final long sourceSeqNo) {
+        if (sourceSeqNo >= 0) {
+            return sourceSeqNo;
+        }
+        throw new IllegalArgumentException("Source sequence number cannot be negative: " + sourceSeqNo);
+    }
+
+    static int validatePayloadLength(final int payloadLength) {
+        if (payloadLength >= 0) {
+            return payloadLength;
+        }
+        throw new IllegalArgumentException("Payload length cannot be negative: " + payloadLength);
+    }
 }

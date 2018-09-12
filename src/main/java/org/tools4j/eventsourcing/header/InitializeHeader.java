@@ -23,63 +23,60 @@
  */
 package org.tools4j.eventsourcing.header;
 
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 import org.tools4j.eventsourcing.event.Type;
-import org.tools4j.eventsourcing.event.Version;
 
-public class InitializeHeader extends AdminHeader {
+public interface InitializeHeader extends Header {
 
-    public InitializeHeader() {
-        super(Type.INITIALIZE);
-    }
-
-    public int leaderId() {
+    default int leaderId() {
         return userData();
     }
 
-    @Override
-    public InitializeHeader version(final Version version) {
-        super.version(version);
-        return this;
+    class Default extends DefaultHeader implements InitializeHeader {
+        @Override
+        public Default wrap(final Header header) {
+            super.wrap(header);
+            return this;
+        }
+
+        @Override
+        public Default wrap(final DirectBuffer source, final int offset) {
+            super.wrap(source, offset);
+            return this;
+        }
+
+        @Override
+        public Default unwrap() {
+            super.unwrap();
+            return this;
+        }
     }
 
-    @Override
-    public InitializeHeader version(final byte version) {
-        super.version(version);
-        return this;
+    class Mutable extends TypedHeader<Mutable> implements InitializeHeader {
+        private Mutable(final MutableDirectBuffer buffer) {
+            super(Mutable.class, Type.INITIALIZE, buffer);
+        }
+
+        public Mutable leaderId(final int leaderId) {
+            return userData(leaderId);
+        }
     }
 
-    @Override
-    public InitializeHeader inputSourceId(final int inputSourceId) {
-        super.inputSourceId(inputSourceId);
-        return this;
+    static Default create() {
+        return new Default();
     }
 
-    @Override
-    public InitializeHeader sourceSeqNo(final long sourceSeqNo) {
-        super.sourceSeqNo(sourceSeqNo);
-        return this;
+    static Default create(final DirectBuffer source, final int offset) {
+        return create().wrap(source, offset);
     }
 
-    @Override
-    public InitializeHeader eventTimeNanosSinceEpoch(final long eventTimeNanosSinceEpoch) {
-        super.eventTimeNanosSinceEpoch(eventTimeNanosSinceEpoch);
-        return this;
+    static Mutable allocate() {
+        return new Mutable(MutableHeader.allocateBuffer());
     }
 
-    @Override
-    public InitializeHeader userData(final int userData) {
-        super.userData(userData);
-        return this;
-    }
-
-    public InitializeHeader leaderId(final int leaderId) {
-        return userData(leaderId);
-    }
-
-    @Override
-    public InitializeHeader init(final Header header) {
-        super.init(header);
-        return this;
+    static Mutable allocateDirect() {
+        return new Mutable(MutableHeader.allocateDirectBuffer());
     }
 }
