@@ -24,37 +24,50 @@
 package org.tools4j.eventsourcing.config;
 
 import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.step.ThreadService;
+import org.tools4j.eventsourcing.step.WhileLoop;
 import org.tools4j.mmap.region.api.RegionFactory;
 import org.tools4j.mmap.region.api.RegionRingFactory;
-import org.tools4j.nobark.loop.LoopService;
 import org.tools4j.nobark.loop.Step;
-import org.tools4j.nobark.loop.StepSupplier;
 
-import java.util.Queue;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
 public class RegionRingFactoryConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(RegionRingFactoryConfig.class);
 
     private static final Supplier<RegionRingFactory> ASYNC = () -> {
-        final Queue<Step> stepsToPerform = new OneToOneConcurrentArrayQueue<>(10);
+        final List<Runnable> mutableMappingCommands = new CopyOnWriteArrayList<>();
         return RegionRingFactory.forAsync(RegionFactory.ASYNC_VOLATILE_STATE_MACHINE,
-                runnable -> stepsToPerform.add(()-> {runnable.run();return true;}),
+                mutableMappingCommands::add,
                 () -> {
-                    final LoopService regionMapper = new LoopService(
-                            new BusySpinIdleStrategy()::idle,
-                            (l, s, e) -> LOGGER.error("{} {}", l, e, e),
-                            runnable -> new Thread(null, runnable, "RegionMapper"),
-                            StepSupplier.idleDuringShutdown(() -> {
-                                final Step step = stepsToPerform.poll();
-                                if (step != null) {
-                                    return step.perform();
-                                }
-                                return false;
-                            }));
+                    final Runnable[] mappingCommands = mutableMappingCommands.toArray(new Runnable[mutableMappingCommands.size()]);
+
+                    final Step step = () -> {
+                        for (final Runnable mappingCommand : mappingCommands) {
+                            mappingCommand.run();
+                        }
+                        return true;
+                    };
+
+                    new ThreadService(
+                            "RegionMapper",
+                            (name, threadRunCondition) ->
+                                    new WhileLoop(name,
+                                            () -> true,
+                                            new BusySpinIdleStrategy()::idle,
+                                            (message, exception) -> LOGGER.error("{} {}", message, exception),
+                                            step
+                                    ),
+                            (name, runnable) -> {
+                                final Thread thread = new Thread(null, runnable, name);
+                                thread.setDaemon(true);
+                                return thread;
+                            }
+                    );
                 });
     };
 

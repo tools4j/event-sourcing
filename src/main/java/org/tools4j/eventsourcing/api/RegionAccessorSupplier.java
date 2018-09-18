@@ -30,6 +30,7 @@ import org.tools4j.mmap.region.impl.InitialBytes;
 import org.tools4j.mmap.region.impl.MappedFile;
 import org.tools4j.mmap.region.impl.RegionRingAccessor;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -37,7 +38,7 @@ import java.nio.channels.FileLock;
 /**
  * Index and Message region accessor supplier for indexed queues and stores.
  */
-public interface RegionAccessorSupplier {
+public interface RegionAccessorSupplier extends Closeable {
     /**
      * @return index region accessor
      */
@@ -47,6 +48,12 @@ public interface RegionAccessorSupplier {
      * @return message region accessor
      */
     RegionAccessor messageAccessor();
+
+    @Override
+    default void close() {
+        indexAccessor().close();
+        messageAccessor().close();
+    }
 
     /**
      * Factory method for readOnly region accessors

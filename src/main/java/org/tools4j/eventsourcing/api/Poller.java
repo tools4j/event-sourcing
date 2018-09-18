@@ -23,19 +23,23 @@
  */
 package org.tools4j.eventsourcing.api;
 
+import java.io.Closeable;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 /**
  * Queue poller
  */
-public interface Poller {
+public interface Poller extends Closeable {
     /**
      * polls a queue and invokes the consumer if a message is available for consumption.
      * @param consumer of a polled message if available
      * @return number of polled messages
      */
     int poll(MessageConsumer consumer);
+
+    @Override
+    default void close(){}
 
     /**
      * Tests index details

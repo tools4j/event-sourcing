@@ -23,6 +23,11 @@
  */
 package org.tools4j.eventsourcing.api;
 
-public interface IndexedTransactionalQueue extends IndexedPollerFactory {
+import java.io.Closeable;
+
+public interface IndexedTransactionalQueue extends IndexedPollerFactory, Closeable {
     Transaction appender();
+
+    @Override
+    default void close(){}
 }
