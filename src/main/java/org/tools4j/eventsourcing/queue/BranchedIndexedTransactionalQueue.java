@@ -25,6 +25,7 @@ package org.tools4j.eventsourcing.queue;
 
 import org.agrona.collections.MutableReference;
 import org.tools4j.eventsourcing.api.IndexedTransactionalQueue;
+import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.api.Transaction;
 
@@ -78,6 +79,22 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
 
         currentPollerRef.set(firstLegPoller);
 
-        return consumer -> currentPollerRef.get().poll(consumer);
+        return new Poller() {
+            @Override
+            public int poll(final MessageConsumer consumer) {
+                return currentPollerRef.get().poll(consumer);
+            }
+
+            @Override
+            public void close() {
+                branchQueuePoller.close();
+                firstLegPoller.close();
+            }
+        };
+    }
+
+    @Override
+    public void close() {
+        branchQueue.close();
     }
 }

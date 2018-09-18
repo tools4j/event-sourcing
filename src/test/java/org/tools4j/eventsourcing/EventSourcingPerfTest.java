@@ -34,15 +34,14 @@ import org.tools4j.eventsourcing.config.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.queue.DefaultEventProcessingQueue;
 import org.tools4j.eventsourcing.queue.DefaultIndexedQueue;
 import org.tools4j.eventsourcing.queue.DefaultIndexedTransactionalQueue;
-import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamUntilDoneStep;
-import org.tools4j.eventsourcing.step.PollingProcessStep;
+import org.tools4j.eventsourcing.step.*;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
-import org.tools4j.nobark.loop.LoopService;
+import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
-import org.tools4j.nobark.loop.StepSupplier;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
@@ -62,7 +61,7 @@ public class EventSourcingPerfTest {
         final int regionSize = (int) Math.max(MappedFile.REGION_SIZE_GRANULARITY, 1L << 16) * 1024 * 4;//64 KB
         LOGGER.info("regionSize: {}", regionSize);
 
-        final RegionRingFactory regionRingFactory = getRegionRingFactory(args);
+        final RegionRingFactory regionRingFactory = TestUtil.getRegionRingFactory(args);
 
         final int ringSize = 4;
         final int regionsToMapAhead = 1;
@@ -108,32 +107,20 @@ public class EventSourcingPerfTest {
                 DownstreamWhileDoneThenUpstreamUntilDoneStep::new
         );
 
-        final Step senderStep = new PollingProcessStep(
-                queue.createPoller(
-                        Poller.IndexPredicate.eventTimeBefore(systemNanoClock.getAsLong()),
-                        Poller.IndexPredicate.never(),
-                        Poller.IndexConsumer.noop(),
-                        new MetricIndexConsumer(messages, warmup, stop)),
-                senderMessageConsumer
-        );
+        final Poller senderPoller = queue.createPoller(
+                Poller.IndexPredicate.eventTimeBefore(systemNanoClock.getAsLong()),
+                Poller.IndexPredicate.never(),
+                Poller.IndexConsumer.noop(),
+                new MetricIndexConsumer(messages, warmup, stop));
+
+        final Step senderStep = new PollingProcessStep(senderPoller, senderMessageConsumer);
 
         regionRingFactory.onComplete();
 
-        final LoopService eventProcessor = new LoopService(
-                new BusySpinIdleStrategy()::idle,
-                (l, s, e) -> LOGGER.error("{} {}", l, e, e),
-                runnable -> new Thread(null, runnable, "event-processor"),
-                StepSupplier.idleDuringShutdown(queue.processorStep())
-        );
+        final Service eventProcessor = TestUtil.startService("event-processor", queue.processorStep(), stop::get);
+        final Service sender = TestUtil.startService("event-sender", senderStep, stop::get);
 
-        final LoopService sender = new LoopService(
-                new BusySpinIdleStrategy()::idle,
-                (l, s, e) -> LOGGER.error("{} {}", l, e, e),
-                runnable -> new Thread(null, runnable, "event-sender"),
-                StepSupplier.idleDuringShutdown(senderStep)
-        );
-
-        final String testMessage = "#-------------------------------------------------------------------------------------------------------------#\n";
+        final String testMessage = "#------------------------------------------------#\n";
 
         final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(testMessage.getBytes().length);
         final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
@@ -157,17 +144,10 @@ public class EventSourcingPerfTest {
 
         LOGGER.info("End sourceId {}", seed + messages - 1);
 
-    }
+        eventProcessor.awaitTermination(1, TimeUnit.MINUTES);
+        sender.awaitTermination(1, TimeUnit.MINUTES);
 
-    private static RegionRingFactory getRegionRingFactory(final String[] args) {
-        final String errorMessage = "Please specify a type of mapping (ASYNC/SYNC) as first program argument";
-        if (args.length < 1) {
-            throw new IllegalArgumentException(errorMessage);
-        }
-        try {
-            return RegionRingFactoryConfig.get(args[0]);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(errorMessage);
-        }
+        queue.close();
+        senderPoller.close();
     }
 }

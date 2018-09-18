@@ -35,6 +35,7 @@ import java.nio.ByteBuffer;
 public class DefaultIndexedTransactionalQueue implements IndexedTransactionalQueue {
     private final Transaction appender;
     private final IndexedPollerFactory pollerFactory;
+    private final IndexedAppender indexedAppender;
 
     public DefaultIndexedTransactionalQueue(final String directory,
                                             final String filePrefix,
@@ -46,17 +47,18 @@ public class DefaultIndexedTransactionalQueue implements IndexedTransactionalQue
                                             final long maxFileSize,
                                             final int encodingBufferSize) throws IOException {
 
-        this.appender = new MultiPayloadAppender(
-                            new IndexedAppender(
-                                RegionAccessorSupplier.forReadWrite(
-                                    directory,
-                                    filePrefix,
-                                    clearFiles,
-                                    regionRingFactory,
-                                    regionSize,
-                                    regionRingSize,
-                                    regionsToMapAhead,
-                                    maxFileSize)),
+        this.indexedAppender = new IndexedAppender(
+                RegionAccessorSupplier.forReadWrite(
+                        directory,
+                        filePrefix,
+                        clearFiles,
+                        regionRingFactory,
+                        regionSize,
+                        regionRingSize,
+                        regionsToMapAhead,
+                        maxFileSize));
+
+        this.appender = new MultiPayloadAppender(this.indexedAppender,
                 new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize)));
 
         this.pollerFactory = new DefaultIndexedPollerFactory(
@@ -83,5 +85,10 @@ public class DefaultIndexedTransactionalQueue implements IndexedTransactionalQue
                 pausePredicate,
                 beforeIndexHandler,
                 afterIndexHandler);
+    }
+
+    @Override
+    public void close() {
+        indexedAppender.close();
     }
 }

@@ -53,7 +53,7 @@ public class EventSourcingReplayTest {
         final int branchRegionSize = (int) Math.max(MappedFile.REGION_SIZE_GRANULARITY, 1L << 16) * 1024;
         LOGGER.info("regionSize: {}", regionSize);
 
-        final RegionRingFactory regionRingFactory = getRegionRingFactory(args);
+        final RegionRingFactory regionRingFactory = TestUtil.getRegionRingFactory(args);
 
         final int ringSize = 4;
         final int regionsToMapAhead = 1;
@@ -65,8 +65,8 @@ public class EventSourcingReplayTest {
 
         final MessageConsumer stateMessageConsumer = (buffer, offset, length) -> {};
 
-        final long replayFromSourceId = 1534066796056L;
-        final long replayToSourceId = 1534066796256L;
+        final long replayFromSourceId = replayFromSourceId(args);
+        final long replayToSourceId = replayToSourceId(args);
 
         final MutableReference<EventProcessingState> commitStateRef = new MutableReference<>();
 
@@ -119,22 +119,27 @@ public class EventSourcingReplayTest {
 
         regionRingFactory.onComplete();
 
-        final LoopService processor = new LoopService(
-                new BusySpinIdleStrategy()::idle,
-                (l, s, e) -> LOGGER.error("{} {}", l, e, e),
-                runnable -> new Thread(null, runnable, "replay-processor"),
-                StepSupplier.idleDuringShutdown(() -> commitStateRef.get().sourceId() == replayToSourceId),
-                StepSupplier.idleDuringShutdown(queue.processorStep())
-        );
+        TestUtil.startService("replay-processor",
+                queue.processorStep(),
+                () -> commitStateRef.get().sourceId() == replayToSourceId);
     }
 
-    private static RegionRingFactory getRegionRingFactory(final String[] args) {
-        final String errorMessage = "Please specify a type of mapping (ASYNC/SYNC) as first program argument";
-        if (args.length < 1) {
+
+    private static long replayFromSourceId(final String[] args) {
+        return longArgument(args, "start sourceId", 1);
+    }
+
+    private static long replayToSourceId(final String[] args) {
+        return longArgument(args, "end sourceId", 2);
+    }
+
+    private static long longArgument(final String[] args, final String name, final int position) {
+        final String errorMessage = "Please specify " + name + " at position " + (position + 1) + ". It should be provided in the output of last perf test run";
+        if (args.length < position + 1) {
             throw new IllegalArgumentException(errorMessage);
         }
         try {
-            return RegionRingFactoryConfig.get(args[0]);
+            return Long.valueOf(args[position]);
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException(errorMessage);
         }

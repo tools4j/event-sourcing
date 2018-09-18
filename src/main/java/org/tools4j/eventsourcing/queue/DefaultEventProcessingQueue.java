@@ -39,6 +39,9 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
     private final IndexedTransactionalQueue downstreamQueue;
     private final Step processorStep;
 
+    private final Poller upstreamProcessorPoller;
+    private final Poller downstreamProcessorPoller;
+
     public DefaultEventProcessingQueue(final IndexedQueue upstreamQueue,
                                        final IndexedTransactionalQueue downstreamQueue,
                                        final LongSupplier systemNanoClock,
@@ -59,7 +62,7 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
 
         final Transaction downstreamProcessorAppender = downstreamQueue.appender();
 
-        final Poller upstreamProcessorPoller = upstreamQueue.createPoller(
+        this.upstreamProcessorPoller = upstreamQueue.createPoller(
                 Poller.IndexPredicate.sourceIdIsNotGreaterThanEventStateSourceId(downstreamAfterState),
                 Poller.IndexPredicate.isNotLeader(leadership)
                         .and(Poller.IndexPredicate.sourceIdIsGreaterThanEventStateSourceId(downstreamAfterState)),
@@ -78,15 +81,15 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
                 downstreamBeforeState,
                 downstreamAfterState);
 
-        final Step upstreamProcessorStep = new PollingProcessStep(upstreamProcessorPoller, upstreamMessageConsumer);
+        final Step upstreamProcessorStep = new PollingProcessStep(this.upstreamProcessorPoller, upstreamMessageConsumer);
 
-        final Poller downstreamProcessorPoller = downstreamQueue.createPoller(
+        this.downstreamProcessorPoller = downstreamQueue.createPoller(
                 Poller.IndexPredicate.never(),
                 Poller.IndexPredicate.never(),
                 downstreamBeforeState.andThen(downstreamBeforeIndexHandler),
                 downstreamAfterState.andThen(downstreamAfterIndexHandler));
 
-        final Step downstreamProcessorStep = new PollingProcessStep(downstreamProcessorPoller, downstreamMessageConsumer);
+        final Step downstreamProcessorStep = new PollingProcessStep(this.downstreamProcessorPoller, downstreamMessageConsumer);
 
         this.processorStep = processorStepFactory.apply(upstreamProcessorStep, downstreamProcessorStep);
     }
@@ -110,5 +113,13 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
                                             pausePredicate,
                                             beforeIndexHandler,
                                             afterIndexHandler);
+    }
+
+    @Override
+    public void close() {
+        upstreamQueue.close();
+        downstreamQueue.close();
+        upstreamProcessorPoller.close();
+        downstreamProcessorPoller.close();
     }
 }

@@ -43,4 +43,34 @@ public interface IndexedPollerFactory {
                         Poller.IndexPredicate pausePredicate,
                         Poller.IndexConsumer beforeIndexHandler,
                         Poller.IndexConsumer afterIndexHandler) throws IOException;
+
+    /**
+     * Creates a poller with parametrised skip and pause predicates.
+     *
+     * @param skipPredicate skip predicate is used to decide when to skip processing the event and move to the next position.
+     * @param pausePredicate pause predicate is used to decide when to halt processing and stay at the current position.
+     * @return new instance of a poller.
+     * @throws IOException when a backing file could not be read/mapped.
+     */
+    default Poller createPoller(Poller.IndexPredicate skipPredicate,
+                                Poller.IndexPredicate pausePredicate) throws IOException {
+        return createPoller(skipPredicate,
+                            pausePredicate,
+                            Poller.IndexConsumer.noop(),
+                            Poller.IndexConsumer.noop());
+    }
+
+    /**
+     * Creates a poller.
+     *
+     * @return new instance of a poller.
+     * @throws IOException when a backing file could not be read/mapped.
+     */
+    default Poller createPoller() throws IOException {
+        return createPoller(Poller.IndexPredicate.never(),
+                            Poller.IndexPredicate.never(),
+                            Poller.IndexConsumer.noop(),
+                            Poller.IndexConsumer.noop());
+    }
+
 }

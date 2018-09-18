@@ -122,4 +122,9 @@ public class IndexedPoller implements Poller {
         currentIndex++;
         currentIndexPosition += INDEX_LENGTH;
     }
+
+    @Override
+    public void close() {
+        regionAccessorSupplier.close();
+    }
 }

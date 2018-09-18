@@ -35,6 +35,7 @@ import java.nio.ByteBuffer;
 public final class DefaultIndexedQueue implements IndexedQueue {
     private final IndexedMessageConsumer appender;
     private final IndexedPollerFactory pollerFactory;
+    private final IndexedAppender indexedAppender;
 
 
     public DefaultIndexedQueue(final String directory,
@@ -47,17 +48,18 @@ public final class DefaultIndexedQueue implements IndexedQueue {
                                final long maxFileSize,
                                final int encodingBufferSize) throws IOException {
 
-        this.appender = new SinglePayloadAppender(
-                new IndexedAppender(
-                        RegionAccessorSupplier.forReadWrite(
-                                directory,
-                                filePrefix,
-                                clearFiles,
-                                regionRingFactory,
-                                regionSize,
-                                regionRingSize,
-                                regionsToMapAhead,
-                                maxFileSize)),
+        this.indexedAppender = new IndexedAppender(
+                RegionAccessorSupplier.forReadWrite(
+                        directory,
+                        filePrefix,
+                        clearFiles,
+                        regionRingFactory,
+                        regionSize,
+                        regionRingSize,
+                        regionsToMapAhead,
+                        maxFileSize));
+
+        this.appender = new SinglePayloadAppender(this.indexedAppender,
                 new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize)));
 
         this.pollerFactory = new DefaultIndexedPollerFactory(
@@ -86,4 +88,8 @@ public final class DefaultIndexedQueue implements IndexedQueue {
                 afterIndexHandler);
     }
 
+    @Override
+    public void close() {
+        indexedAppender.close();
+    }
 }

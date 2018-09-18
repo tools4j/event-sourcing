@@ -30,6 +30,8 @@ import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
 import org.tools4j.eventsourcing.sbe.IndexDecoder;
 import org.tools4j.eventsourcing.sbe.IndexEncoder;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -41,7 +43,7 @@ import java.util.Objects;
  *  Appendable message is represented as a buffer at offset with length.
  *  Length of a message is a first field in the index record which has a volatile semantic for thread synchronisation.
  */
-public final class IndexedAppender implements IndexedMessageConsumer {
+public final class IndexedAppender implements IndexedMessageConsumer, Closeable {
     private static final long NOT_INITIALISED = -1;
     private static final int LENGTH_OFFSET = 0;
     private static final int LENGTH_LENGTH = 4;
@@ -119,5 +121,10 @@ public final class IndexedAppender implements IndexedMessageConsumer {
                 }
             } while (currentMessageLength != 0);
         }
+    }
+
+    @Override
+    public void close() {
+        regionAccessorSupplier.close();
     }
 }
