@@ -74,37 +74,36 @@ public class EventSourcingPerfTest {
 
         final MessageConsumer senderMessageConsumer = (buffer, offset, length) -> {};
 
-        final EventProcessingQueue queue = new DefaultEventProcessingQueue(
-                new DefaultIndexedQueue(
-                        directory,
-                        "upstream",
-                        true,
-                        regionRingFactory,
-                        regionSize,
-                        ringSize,
-                        regionsToMapAhead,
-                        maxFileSize,
-                        encodingBufferSize),
-                new DefaultIndexedTransactionalQueue(
-                        directory,
-                        "downstream",
-                        true,
-                        regionRingFactory,
-                        regionSize,
-                        ringSize,
-                        regionsToMapAhead,
-                        maxFileSize,
-                        encodingBufferSize),
-                systemNanoClock,
-                leadership,
-                Poller.IndexConsumer.noop(),
-                Poller.IndexConsumer.noop(),
-                Poller.IndexConsumer.noop(),
-                Poller.IndexConsumer.noop(),
-                (downstreamAppender, upstreamBeforeState, downstreamAfterState) -> downstreamAppender,
-                (upstreamBeforeState, downstreamAfterState) -> stateMessageConsumer,
-                DownstreamWhileDoneThenUpstreamOnceStep::new
-        );
+        final EventProcessingQueue queue = EventProcessingQueue.builder()
+                .upstreamQueue(
+                        new DefaultIndexedQueue(
+                            directory,
+                            "upstream",
+                            true,
+                            regionRingFactory,
+                            regionSize,
+                            ringSize,
+                            regionsToMapAhead,
+                            maxFileSize,
+                            encodingBufferSize))
+                .downstreamQueue(
+                        new DefaultIndexedTransactionalQueue(
+                            directory,
+                            "downstream",
+                            true,
+                            regionRingFactory,
+                            regionSize,
+                            ringSize,
+                            regionsToMapAhead,
+                            maxFileSize,
+                            encodingBufferSize))
+                .upstreamFactory(
+                        (downstreamAppender, upstreamBeforeState, downstreamAfterState) -> downstreamAppender)
+                .downstreamFactory(
+                        (upstreamBeforeState, downstreamAfterState) -> stateMessageConsumer)
+                .systemNanoClock(systemNanoClock)
+                .leadership(leadership)
+                .build();
 
         final Poller senderPoller = queue.createPoller(
                 Poller.Options.builder()

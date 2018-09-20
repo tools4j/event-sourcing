@@ -31,6 +31,7 @@ import java.util.Objects;
  * Interface that allows to process a message in a buffer located at an offset that has a specified length.
  */
 public interface MessageConsumer {
+    MessageConsumer NO_OP = (buffer, offset, length) -> {};
     /**
      * Consumes a message.
      * @param buffer - direct buffer to read message from
@@ -63,6 +64,8 @@ public interface MessageConsumer {
      * Factory for upstream messages consumer.
      */
     interface UpstreamFactory {
+        UpstreamFactory PASS_THROUGH = (downstreamAppender, currentUpstreamProcessingState, completedDownstreamProcessingState) -> downstreamAppender;
+        UpstreamFactory NO_OP = (downstreamAppender, currentUpstreamProcessingState, completedDownstreamProcessingState) -> MessageConsumer.NO_OP;
         /**
          * Upstream message consumer is the business logic to process upstream event. Normally this operation
          * can inspect current in-memory application state and decide which downstream messages are to be created.
@@ -87,6 +90,7 @@ public interface MessageConsumer {
      * Factory for downstream messages consumer.
      */
     interface DownstreamFactory {
+        DownstreamFactory NO_OP = (currentDownstreamProcessingState, completedDownstreamProcessingState) -> MessageConsumer.NO_OP;
         /**
          * Downstream message consumer is the business logic to process downstream event. Normally this operation
          * is to update in-memory application state with the details provided in the downstream message.

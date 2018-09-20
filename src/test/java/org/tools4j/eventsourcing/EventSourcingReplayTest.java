@@ -29,9 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.EventProcessingQueue;
 import org.tools4j.eventsourcing.api.EventProcessingState;
 import org.tools4j.eventsourcing.api.MessageConsumer;
-import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.queue.*;
-import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamOnceStep;
+import org.tools4j.eventsourcing.queue.BranchedIndexedTransactionalQueue;
+import org.tools4j.eventsourcing.queue.DefaultIndexedPollerFactory;
+import org.tools4j.eventsourcing.queue.DefaultIndexedTransactionalQueue;
+import org.tools4j.eventsourcing.queue.ReadOnlyIndexedQueue;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 
@@ -66,52 +67,49 @@ public class EventSourcingReplayTest {
 
         final MutableReference<EventProcessingState> commitStateRef = new MutableReference<>();
 
-        final EventProcessingQueue queue = new DefaultEventProcessingQueue(
-                new ReadOnlyIndexedQueue(
-                        directory,
-                        "upstream",
-                        regionRingFactory,
-                        regionSize,
-                        ringSize,
-                        regionsToMapAhead),
-                new BranchedIndexedTransactionalQueue(
-                        new DefaultIndexedPollerFactory(
+        final EventProcessingQueue queue = EventProcessingQueue.builder()
+                .upstreamQueue(
+                        new ReadOnlyIndexedQueue(
+                            directory,
+                            "upstream",
+                            regionRingFactory,
+                            regionSize,
+                            ringSize,
+                            regionsToMapAhead))
+                .downstreamQueue(
+                        new BranchedIndexedTransactionalQueue(
+                            new DefaultIndexedPollerFactory(
                                 directory,
                                 "downstream",
                                 regionRingFactory,
                                 regionSize,
                                 ringSize,
-                                regionsToMapAhead
-                        ),
-                        new DefaultIndexedTransactionalQueue(
-                            directory,
-                            "downstream_branch",
-                            true,
-                            regionRingFactory,
-                            branchRegionSize,
-                            ringSize,
-                            regionsToMapAhead,
-                            maxFileSize,
-                            encodingBufferSize),
-                        (index, source, sourceId, eventTimeNanos) -> sourceId == replayFromSourceId
-                ),
-                systemNanoClock,
-                leadership,
-                Poller.IndexConsumer.noop(),
-                Poller.IndexConsumer.noop(),
-                Poller.IndexConsumer.noop(),
-                Poller.IndexConsumer.noop(),
-                (downstreamAppender, upstreamBeforeState, downstreamAfterState) ->
-                        (buffer, offset, length) -> {
-                            LOGGER.info("Replaying sourceId {}, already applied sourceId {}", upstreamBeforeState.sourceId(), downstreamAfterState.sourceId());
-                            downstreamAppender.accept(buffer, offset, length);
-                        },
-                (upstreamBeforeState, downstreamAfterState) -> {
-                    commitStateRef.set(downstreamAfterState);
-                    return stateMessageConsumer;
-                },
-                DownstreamWhileDoneThenUpstreamOnceStep::new
-        );
+                                regionsToMapAhead),
+                            new DefaultIndexedTransactionalQueue(
+                                directory,
+                                "downstream_branch",
+                                true,
+                                regionRingFactory,
+                                branchRegionSize,
+                                ringSize,
+                                regionsToMapAhead,
+                                maxFileSize,
+                                encodingBufferSize),
+                            (index, source, sourceId, eventTimeNanos) -> sourceId == replayFromSourceId))
+                .upstreamFactory(
+                        (downstreamAppender, upstreamBeforeState, downstreamAfterState) ->
+                                (buffer, offset, length) -> {
+                                    LOGGER.info("Replaying sourceId {}, already applied sourceId {}", upstreamBeforeState.sourceId(), downstreamAfterState.sourceId());
+                                    downstreamAppender.accept(buffer, offset, length);
+                                })
+                .downstreamFactory(
+                        (upstreamBeforeState, downstreamAfterState) -> {
+                            commitStateRef.set(downstreamAfterState);
+                            return stateMessageConsumer;
+                        })
+                .systemNanoClock(systemNanoClock)
+                .leadership(leadership)
+                .build();
 
         regionRingFactory.onComplete();
 
