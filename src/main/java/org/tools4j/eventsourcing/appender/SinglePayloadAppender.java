@@ -23,7 +23,6 @@
  */
 package org.tools4j.eventsourcing.appender;
 
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.tools4j.eventsourcing.api.IndexedMessageConsumer;

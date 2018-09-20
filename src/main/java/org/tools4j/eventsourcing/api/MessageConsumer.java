@@ -74,13 +74,13 @@ public interface MessageConsumer {
          * It is also injected with upstream-before and downstream-after processing state instances.
          *
          * @param downstreamAppender - resulting message consumer which is a currently initialised transaction.
-         * @param upstreamBeforeState - event processing state before upstream processing
-         * @param downstreamAfterState - event processing state after downstream processing
+         * @param currentUpstreamProcessingState - event processing state before upstream processing
+         * @param completedDownstreamProcessingState - event processing state after downstream processing
          * @return upstream message consumer.
          */
         MessageConsumer create(MessageConsumer downstreamAppender,
-                               EventProcessingState upstreamBeforeState,
-                               EventProcessingState downstreamAfterState);
+                               EventProcessingState currentUpstreamProcessingState,
+                               EventProcessingState completedDownstreamProcessingState);
     }
 
     /**
@@ -90,11 +90,11 @@ public interface MessageConsumer {
         /**
          * Downstream message consumer is the business logic to process downstream event. Normally this operation
          * is to update in-memory application state with the details provided in the downstream message.
-         * @param downstreamBeforeState - event processing state before downstream processing
-         * @param downstreamAfterState - event processing state after downstream processing
+         * @param currentDownstreamProcessingState - event processing state before downstream processing
+         * @param completedDownstreamProcessingState - event processing state after downstream processing
          * @return downstream message consumer
          */
-        MessageConsumer create(EventProcessingState downstreamBeforeState,
-                               EventProcessingState downstreamAfterState);
+        MessageConsumer create(EventProcessingState currentDownstreamProcessingState,
+                               EventProcessingState completedDownstreamProcessingState);
     }
 }

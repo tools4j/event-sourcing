@@ -23,18 +23,17 @@
  */
 package org.tools4j.eventsourcing;
 
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.EventProcessingQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.config.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.queue.DefaultEventProcessingQueue;
 import org.tools4j.eventsourcing.queue.DefaultIndexedQueue;
 import org.tools4j.eventsourcing.queue.DefaultIndexedTransactionalQueue;
-import org.tools4j.eventsourcing.step.*;
+import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamOnceStep;
+import org.tools4j.eventsourcing.step.PollingProcessStep;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 import org.tools4j.nobark.loop.Service;
@@ -104,14 +103,17 @@ public class EventSourcingPerfTest {
                 Poller.IndexConsumer.noop(),
                 (downstreamAppender, upstreamBeforeState, downstreamAfterState) -> downstreamAppender,
                 (upstreamBeforeState, downstreamAfterState) -> stateMessageConsumer,
-                DownstreamWhileDoneThenUpstreamUntilDoneStep::new
+                DownstreamWhileDoneThenUpstreamOnceStep::new
         );
 
         final Poller senderPoller = queue.createPoller(
-                Poller.IndexPredicate.eventTimeBefore(systemNanoClock.getAsLong()),
-                Poller.IndexPredicate.never(),
-                Poller.IndexConsumer.noop(),
-                new MetricIndexConsumer(messages, warmup, stop));
+                Poller.Options.builder()
+                        .skipWhen(
+                            Poller.IndexPredicate.eventTimeBefore(systemNanoClock.getAsLong()))
+                        .onProcessingComplete(
+                            new MetricIndexConsumer(messages, warmup, stop))
+                        .build()
+        );
 
         final Step senderStep = new PollingProcessStep(senderPoller, senderMessageConsumer);
 

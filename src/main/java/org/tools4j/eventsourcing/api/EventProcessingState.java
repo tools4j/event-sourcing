@@ -26,12 +26,14 @@ package org.tools4j.eventsourcing.api;
 /**
  * Event Processing State provides event details at different stages of processing of the event.
  * There are the following stages when event processing state can be observed:
- * - before an upstream event is processed
- * - after the upstream event is processed
- * - before a sequence of downstream events is processed
- * - after the sequence of downstream events is processed
+ * - current upstream event is being processed
+ * - completed the upstream event
+ * - current downstream events is processed
+ * - completed downstream events
  */
 public interface EventProcessingState {
+    int NOT_INITIALISED = -1;
+
     /**
      * @return Position of the event in the queue. Starts from 0 and increments by 1 (for each event).
      */
@@ -62,4 +64,19 @@ public interface EventProcessingState {
      * @return system time when the event is ingested at current stage.
      */
     long ingestionTimeNanos();
+
+    default boolean isAheadOf(final EventProcessingState another) {
+        return sourceId() > 0 && another.sourceId() > 0 &&
+                sourceId() > another.sourceId(source());
+    }
+
+    default boolean isEqualTo(final EventProcessingState another) {
+        return sourceId() == another.sourceId() &&
+                source() == another.source();
+    }
+
+    default boolean isNotEqualTo(final EventProcessingState another) {
+        return !isEqualTo(another);
+    }
+
 }

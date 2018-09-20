@@ -45,6 +45,9 @@ public interface Poller extends Closeable {
      * Tests index details
      */
     interface IndexPredicate {
+        IndexPredicate NEVER = (index, source, sourceId, eventTimeNanos) -> false;
+        IndexPredicate ALWAYS = (index, source, sourceId, eventTimeNanos) -> true;
+
 
         boolean test(long index, int source, long sourceId, long eventTimeNanos);
 
@@ -101,12 +104,20 @@ public interface Poller extends Closeable {
             return (i, s, sid, etn) -> test(i, s, sid, etn) || other.test(i, s, sid, etn);
         }
 
-        static IndexPredicate sourceIdIsNotGreaterThanEventStateSourceId(final EventProcessingState eventProcessingState) {
+        static IndexPredicate isLessThanOrEqual(final EventProcessingState eventProcessingState) {
             return (index, source, sourceId, eventTimeNanos) -> sourceId <= eventProcessingState.sourceId(source);
         }
 
-        static IndexPredicate sourceIdIsGreaterThanEventStateSourceId(final EventProcessingState eventProcessingState) {
-            return sourceIdIsNotGreaterThanEventStateSourceId(eventProcessingState).negate();
+        static IndexPredicate isLessThan(final EventProcessingState eventProcessingState) {
+            return (index, source, sourceId, eventTimeNanos) -> sourceId < eventProcessingState.sourceId(source);
+        }
+
+        static IndexPredicate isEqualTo(final EventProcessingState eventProcessingState) {
+            return (index, source, sourceId, eventTimeNanos) -> sourceId == eventProcessingState.sourceId() && source == eventProcessingState.source();
+        }
+
+        static IndexPredicate isGreaterThan(final EventProcessingState eventProcessingState) {
+            return isLessThanOrEqual(eventProcessingState).negate();
         }
 
         static IndexPredicate eventTimeBefore(final long timeNanos) {
@@ -114,11 +125,19 @@ public interface Poller extends Closeable {
         }
 
         static IndexPredicate never() {
-            return (index, source, sourceId, eventTimeNanos) -> false;
+            return NEVER;
+        }
+
+        static IndexPredicate always() {
+            return ALWAYS;
+        }
+
+        static IndexPredicate isTrue(final BooleanSupplier booleanSupplier) {
+            return (index, source, sourceId, eventTimeNanos) -> booleanSupplier.getAsBoolean();
         }
 
         static IndexPredicate isLeader(final BooleanSupplier leadership) {
-            return (index, source, sourceId, eventTimeNanos) -> leadership.getAsBoolean();
+            return IndexPredicate.isTrue(leadership);
         }
 
         static IndexPredicate isNotLeader(final BooleanSupplier leadership) {
@@ -130,6 +149,7 @@ public interface Poller extends Closeable {
      * Index consumer
      */
     interface IndexConsumer {
+        IndexConsumer NO_OP = (index, source, sourceId, eventTimeNanos) -> {};
         void accept(long index, int source, long sourceId, long eventTimeNanos);
 
         default IndexConsumer andThen(final IndexConsumer after) {
@@ -146,8 +166,94 @@ public interface Poller extends Closeable {
         }
 
         static IndexConsumer noop() {
-            return (index, source, sourceId, eventTimeNanos) -> {};
+            return NO_OP;
         }
     }
 
+    interface Options {
+        IndexPredicate skipWhen();
+        IndexPredicate pauseWhen();
+        IndexConsumer onProcessingStart();
+        IndexConsumer onProcessingComplete();
+        IndexConsumer onProcessingSkipped();
+
+        interface Builder {
+            Builder skipWhen(IndexPredicate skipWhen);
+            Builder pauseWhen(IndexPredicate pauseWhen);
+            Builder onProcessingStart(IndexConsumer onProcessingStart);
+            Builder onProcessingComplete(IndexConsumer onProcessingComplete);
+            Builder onProcessingSkipped(IndexConsumer onProcessingSkipped);
+            Options build();
+        }
+
+        static Builder builder() {
+            return new Builder() {
+                private IndexPredicate skipWhen = IndexPredicate.never();
+                private IndexPredicate pauseWhen = IndexPredicate.never();
+                private IndexConsumer onProcessingStart = IndexConsumer.noop();
+                private IndexConsumer onProcessingComplete = IndexConsumer.noop();
+                private IndexConsumer onProcessingSkipped = IndexConsumer.noop();
+
+                @Override
+                public Builder skipWhen(final IndexPredicate skipWhen) {
+                    this.skipWhen = skipWhen;
+                    return this;
+                }
+
+                @Override
+                public Builder pauseWhen(final IndexPredicate pauseWhen) {
+                    this.pauseWhen = pauseWhen;
+                    return this;
+                }
+
+                @Override
+                public Builder onProcessingStart(final IndexConsumer onProcessingStart) {
+                    this.onProcessingStart = onProcessingStart;
+                    return this;
+                }
+
+                @Override
+                public Builder onProcessingComplete(final IndexConsumer onProcessingComplete) {
+                    this.onProcessingComplete = onProcessingComplete;
+                    return this;
+                }
+
+                @Override
+                public Builder onProcessingSkipped(final IndexConsumer onProcessingSkipped) {
+                    this.onProcessingSkipped = onProcessingSkipped;
+                    return this;
+                }
+
+                @Override
+                public Options build() {
+                    return new Options() {
+                        @Override
+                        public IndexPredicate skipWhen() {
+                            return skipWhen;
+                        }
+
+                        @Override
+                        public IndexPredicate pauseWhen() {
+                            return pauseWhen;
+                        }
+
+                        @Override
+                        public IndexConsumer onProcessingStart() {
+                            return onProcessingStart;
+                        }
+
+                        @Override
+                        public IndexConsumer onProcessingComplete() {
+                            return onProcessingComplete;
+                        }
+
+                        @Override
+                        public IndexConsumer onProcessingSkipped() {
+                            return onProcessingSkipped;
+                        }
+                    };
+                }
+            };
+        }
+    }
 }

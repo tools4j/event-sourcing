@@ -34,11 +34,11 @@ public final class DefaultEventProcessingState implements EventProcessingState, 
     private final Long2LongHashMap sourceIdMap;
     private final LongSupplier systemNanoClock;
 
-    private long id;
-    private int source;
-    private long sourceId;
-    private long eventTimeNanos;
-    private long ingestionTimeNanos;
+    private long id = NOT_INITIALISED;
+    private int source = NOT_INITIALISED;
+    private long sourceId = NOT_INITIALISED;
+    private long eventTimeNanos = NOT_INITIALISED;
+    private long ingestionTimeNanos = NOT_INITIALISED;
 
     public DefaultEventProcessingState(final LongSupplier systemNanoClock) {
         this.systemNanoClock = Objects.requireNonNull(systemNanoClock);

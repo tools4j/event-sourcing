@@ -51,18 +51,11 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
     }
 
     @Override
-    public Poller createPoller(final Poller.IndexPredicate skipPredicate,
-                               final Poller.IndexPredicate pausePredicate,
-                               final Poller.IndexConsumer beforeIndexHandler,
-                               final Poller.IndexConsumer afterIndexHandler) throws IOException {
-        final Poller branchQueuePoller = branchQueue.createPoller(
-                skipPredicate,
-                pausePredicate,
-                beforeIndexHandler,
-                afterIndexHandler);
+    public Poller createPoller(final Poller.Options options) throws IOException {
+        final Poller branchQueuePoller = branchQueue.createPoller(options);
         final MutableReference<Poller> currentPollerRef = new MutableReference<>();
 
-        final Poller.IndexPredicate switchToBranch = (index, source, sourceId, eventTimeNanos) -> {
+        final Poller.IndexPredicate needToSwitchToBranch = (index, source, sourceId, eventTimeNanos) -> {
             if (this.branchPredicate.test(index, source, sourceId, eventTimeNanos)) {
                 currentPollerRef.set(branchQueuePoller);
                 return true;
@@ -72,10 +65,13 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         };
 
         final Poller firstLegPoller = basePollerFactory.createPoller(
-                switchToBranch.or(skipPredicate),
-                pausePredicate,
-                beforeIndexHandler,
-                afterIndexHandler);
+                Poller.Options.builder()
+                        .skipWhen(needToSwitchToBranch.or(options.skipWhen()))
+                        .pauseWhen(options.pauseWhen())
+                        .onProcessingStart(options.onProcessingStart())
+                        .onProcessingComplete(options.onProcessingComplete())
+                        .build()
+        );
 
         currentPollerRef.set(firstLegPoller);
 
