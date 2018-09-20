@@ -26,10 +26,7 @@ package org.tools4j.eventsourcing;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.api.MessageConsumer;
-import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.api.RegionAccessorSupplier;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.appender.IndexedAppender;
 import org.tools4j.eventsourcing.appender.SinglePayloadAppender;
 import org.tools4j.eventsourcing.config.RegionRingFactoryConfig;
@@ -86,10 +83,9 @@ public class SinglePayloadAppendingAndPollingPerfTest {
                         ringSize,
                         regionsToMapAhead
                 ),
-                Poller.IndexPredicate.never(), //skip
-                Poller.IndexPredicate.never(), //pause
-                new MetricIndexConsumer(messages, warmup, stop), //before
-                Poller.IndexConsumer.noop(), //after
+                Poller.Options.builder().
+                        onProcessingStart(new MetricIndexConsumer(messages, warmup, stop))
+                        .build(),
                 new PayloadBufferPoller()
         );
 

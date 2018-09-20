@@ -77,15 +77,8 @@ public final class DefaultIndexedQueue implements IndexedQueue {
     }
 
     @Override
-    public Poller createPoller(final Poller.IndexPredicate skipPredicate,
-                               final Poller.IndexPredicate pausePredicate,
-                               final Poller.IndexConsumer beforeIndexHandler,
-                               final Poller.IndexConsumer afterIndexHandler) throws IOException {
-        return pollerFactory.createPoller(
-                skipPredicate,
-                pausePredicate,
-                beforeIndexHandler,
-                afterIndexHandler);
+    public Poller createPoller(final Poller.Options options) throws IOException {
+        return pollerFactory.createPoller(options);
     }
 
     @Override

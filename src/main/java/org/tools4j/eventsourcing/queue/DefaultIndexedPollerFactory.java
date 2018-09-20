@@ -56,10 +56,7 @@ public class DefaultIndexedPollerFactory implements IndexedPollerFactory {
     }
 
     @Override
-    public Poller createPoller(final Poller.IndexPredicate skipPredicate,
-                               final Poller.IndexPredicate pausePredicate,
-                               final Poller.IndexConsumer beforeIndexHandler,
-                               final Poller.IndexConsumer afterIndexHandler) throws IOException {
+    public Poller createPoller(final Poller.Options options) throws IOException {
         return new IndexedPoller(
                 RegionAccessorSupplier.forReadOnly(
                         directory,
@@ -68,10 +65,7 @@ public class DefaultIndexedPollerFactory implements IndexedPollerFactory {
                         regionSize,
                         regionRingSize,
                         regionsToMapAhead),
-                skipPredicate,
-                pausePredicate,
-                beforeIndexHandler,
-                afterIndexHandler,
+                options,
                 new PayloadBufferPoller());
     }
 }

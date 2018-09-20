@@ -24,20 +24,16 @@
 package org.tools4j.eventsourcing;
 
 import org.agrona.collections.MutableReference;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.EventProcessingQueue;
 import org.tools4j.eventsourcing.api.EventProcessingState;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.config.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.queue.*;
-import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamUntilDoneStep;
+import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamOnceStep;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
-import org.tools4j.nobark.loop.LoopService;
-import org.tools4j.nobark.loop.StepSupplier;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
@@ -114,7 +110,7 @@ public class EventSourcingReplayTest {
                     commitStateRef.set(downstreamAfterState);
                     return stateMessageConsumer;
                 },
-                DownstreamWhileDoneThenUpstreamUntilDoneStep::new
+                DownstreamWhileDoneThenUpstreamOnceStep::new
         );
 
         regionRingFactory.onComplete();

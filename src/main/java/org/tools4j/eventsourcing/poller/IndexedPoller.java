@@ -25,9 +25,9 @@ package org.tools4j.eventsourcing.poller;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.api.BufferPoller;
-import org.tools4j.eventsourcing.api.RegionAccessorSupplier;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.api.RegionAccessorSupplier;
 import org.tools4j.eventsourcing.sbe.IndexDecoder;
 
 import java.util.Objects;
@@ -43,10 +43,7 @@ public class IndexedPoller implements Poller {
     private final UnsafeBuffer mappedIndexBuffer;
     private final UnsafeBuffer mappedMessageBuffer;
 
-    private final IndexPredicate skipPredicate;
-    private final IndexPredicate pausePredicate;
-    private final IndexConsumer beforeIndexConsumer;
-    private final IndexConsumer afterIndexConsumer;
+    private final Options options;
     private final BufferPoller bufferPoller;
 
 
@@ -56,16 +53,10 @@ public class IndexedPoller implements Poller {
     private long currentIndexPosition = 0;
 
     public IndexedPoller(final RegionAccessorSupplier regionAccessorSupplier,
-                         final IndexPredicate skipPredicate,
-                         final IndexPredicate pausePredicate,
-                         final IndexConsumer beforeIndexConsumer,
-                         final IndexConsumer afterIndexConsumer,
+                         final Options options,
                          final BufferPoller bufferPoller) {
         this.regionAccessorSupplier = Objects.requireNonNull(regionAccessorSupplier);
-        this.skipPredicate = Objects.requireNonNull(skipPredicate);
-        this.pausePredicate = Objects.requireNonNull(pausePredicate);
-        this.beforeIndexConsumer = Objects.requireNonNull(beforeIndexConsumer);
-        this.afterIndexConsumer = Objects.requireNonNull(afterIndexConsumer);
+        this.options = Objects.requireNonNull(options);
         this.bufferPoller = Objects.requireNonNull(bufferPoller);
 
         this.mappedIndexBuffer = new UnsafeBuffer();
@@ -73,7 +64,7 @@ public class IndexedPoller implements Poller {
     }
 
     @Override
-    public int poll(final MessageConsumer consumer) {
+    public int poll(final MessageConsumer processingHandler) {
         wrapIndex();
 
         final int messageLength = currentMessageLength();
@@ -84,11 +75,12 @@ public class IndexedPoller implements Poller {
         final long sourceId = indexDecoder.sourceId();
         final long eventTimeNanos = indexDecoder.eventTimeNanos();
 
-        if (skipPredicate.test(currentIndex, source, sourceId, eventTimeNanos)) {
+        if (options.skipWhen().test(currentIndex, source, sourceId, eventTimeNanos)) {
+            options.onProcessingSkipped().accept(currentIndex, source, sourceId, eventTimeNanos);
             advanceIndexToNextAppendPosition();
             return 0;
-        } else if (!pausePredicate.test(currentIndex, source, sourceId, eventTimeNanos)) {
-            final int done = pollMessages(messagePosition, messageLength,  source, sourceId, eventTimeNanos, consumer);
+        } else if (!options.pauseWhen().test(currentIndex, source, sourceId, eventTimeNanos)) {
+            final int done = pollMessages(messagePosition, messageLength,  source, sourceId, eventTimeNanos, processingHandler);
             advanceIndexToNextAppendPosition();
             return done;
         } else {
@@ -101,13 +93,13 @@ public class IndexedPoller implements Poller {
     }
 
     private int pollMessages(final long messagePosition, final int messageLength, final int source, final long sourceId, final long eventTimeNanos,
-                             final MessageConsumer consumer) {
+                             final MessageConsumer processingHandler) {
         if (!regionAccessorSupplier.messageAccessor().wrap(messagePosition, mappedMessageBuffer)) {
             throw new IllegalStateException("Failed to wrap message buffer to position " + messagePosition);
         }
-        beforeIndexConsumer.accept(currentIndex, source, sourceId, eventTimeNanos);
-        final int done = bufferPoller.poll(mappedMessageBuffer, 0, messageLength, consumer);
-        afterIndexConsumer.accept(currentIndex, source, sourceId, eventTimeNanos);
+        options.onProcessingStart().accept(currentIndex, source, sourceId, eventTimeNanos);
+        final int done = bufferPoller.poll(mappedMessageBuffer, 0, messageLength, processingHandler);
+        options.onProcessingComplete().accept(currentIndex, source, sourceId, eventTimeNanos);
         return done;
     }
 

@@ -46,48 +46,67 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
                                        final IndexedTransactionalQueue downstreamQueue,
                                        final LongSupplier systemNanoClock,
                                        final BooleanSupplier leadership,
-                                       final Poller.IndexConsumer upstreamBeforeIndexHandler,
-                                       final Poller.IndexConsumer upstreamAfterIndexHandler,
-                                       final Poller.IndexConsumer downstreamBeforeIndexHandler,
-                                       final Poller.IndexConsumer downstreamAfterIndexHandler,
+                                       final Poller.IndexConsumer onStartUpstreamProcessingHandler,
+                                       final Poller.IndexConsumer onCompleteUpstreamProcessingHandler,
+                                       final Poller.IndexConsumer onStartDownstreamProcessingHandler,
+                                       final Poller.IndexConsumer onCompletedDownstreamProcessingHandler,
                                        final MessageConsumer.UpstreamFactory upstreamFactory,
                                        final MessageConsumer.DownstreamFactory downstreamFactory,
                                        final BinaryOperator<Step> processorStepFactory) throws IOException {
         this.upstreamQueue = Objects.requireNonNull(upstreamQueue);
         this.downstreamQueue = Objects.requireNonNull(downstreamQueue);
 
-        final DefaultEventProcessingState upstreamBeforeState = new DefaultEventProcessingState(systemNanoClock);
-        final DefaultEventProcessingState downstreamBeforeState = new DefaultEventProcessingState(systemNanoClock);
-        final DefaultEventProcessingState downstreamAfterState = new DefaultEventProcessingState(systemNanoClock);
+        final DefaultEventProcessingState currentUpstreamProcessingState = new DefaultEventProcessingState(systemNanoClock);
+        final DefaultEventProcessingState completedUpstreamProcessingState = new DefaultEventProcessingState(systemNanoClock);
+        final DefaultEventProcessingState currentDownstreamProcessingState = new DefaultEventProcessingState(systemNanoClock);
+        final DefaultEventProcessingState completedDownstreamProcessingState = new DefaultEventProcessingState(systemNanoClock);
 
         final Transaction downstreamProcessorAppender = downstreamQueue.appender();
 
         this.upstreamProcessorPoller = upstreamQueue.createPoller(
-                Poller.IndexPredicate.sourceIdIsNotGreaterThanEventStateSourceId(downstreamAfterState),
-                Poller.IndexPredicate.isNotLeader(leadership)
-                        .and(Poller.IndexPredicate.sourceIdIsGreaterThanEventStateSourceId(downstreamAfterState)),
-                upstreamBeforeState
-                        .andThen(Poller.IndexConsumer.transactionInit(downstreamProcessorAppender))
-                        .andThen(upstreamBeforeIndexHandler),
-                Poller.IndexConsumer.transactionCommit(downstreamProcessorAppender)
-                        .andThen(upstreamAfterIndexHandler));
+                Poller.Options.builder()
+                        .skipWhen(
+                            Poller.IndexPredicate.isLessThanOrEqual(completedDownstreamProcessingState))
+                        .pauseWhen(
+                            Poller.IndexPredicate.isNotLeader(leadership)
+                                .and(Poller.IndexPredicate.isGreaterThan(completedDownstreamProcessingState))
+                                .or(Poller.IndexPredicate.isTrue(() ->
+                                        completedUpstreamProcessingState.isAheadOf(completedDownstreamProcessingState))))
+                        .onProcessingStart(
+                                currentUpstreamProcessingState
+                                        .andThen(Poller.IndexConsumer.transactionInit(downstreamProcessorAppender))
+                                        .andThen(onStartUpstreamProcessingHandler))
+                        .onProcessingComplete(
+                                Poller.IndexConsumer.transactionCommit(downstreamProcessorAppender)
+                                        .andThen(completedUpstreamProcessingState)
+                                        .andThen(onCompleteUpstreamProcessingHandler)
+                        ).build()
+        );
 
         final MessageConsumer upstreamMessageConsumer = upstreamFactory.create(
                 downstreamProcessorAppender,
-                upstreamBeforeState,
-                downstreamAfterState);
+                currentUpstreamProcessingState,
+                completedDownstreamProcessingState);
 
         final MessageConsumer downstreamMessageConsumer = downstreamFactory.create(
-                downstreamBeforeState,
-                downstreamAfterState);
+                currentDownstreamProcessingState,
+                completedDownstreamProcessingState);
 
         final Step upstreamProcessorStep = new PollingProcessStep(this.upstreamProcessorPoller, upstreamMessageConsumer);
 
         this.downstreamProcessorPoller = downstreamQueue.createPoller(
-                Poller.IndexPredicate.never(),
-                Poller.IndexPredicate.never(),
-                downstreamBeforeState.andThen(downstreamBeforeIndexHandler),
-                downstreamAfterState.andThen(downstreamAfterIndexHandler));
+                Poller.Options.builder().skipWhen(
+                                Poller.IndexPredicate.isEqualTo(completedUpstreamProcessingState))
+                        .onProcessingStart(
+                                currentDownstreamProcessingState.andThen(onStartDownstreamProcessingHandler))
+                        .onProcessingComplete(
+                                completedDownstreamProcessingState.andThen(onCompletedDownstreamProcessingHandler))
+                        .onProcessingSkipped(
+                                // skip is equivalent to committed as we apply changes to state in upstream processor and skip when
+                                // downstream matches upstream source/sourceId
+                                currentDownstreamProcessingState.andThen(completedDownstreamProcessingState))
+                        .build()
+        );
 
         final Step downstreamProcessorStep = new PollingProcessStep(this.downstreamProcessorPoller, downstreamMessageConsumer);
 
@@ -105,14 +124,8 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
     }
 
     @Override
-    public Poller createPoller(final Poller.IndexPredicate skipPredicate,
-                               final Poller.IndexPredicate pausePredicate,
-                               final Poller.IndexConsumer beforeIndexHandler,
-                               final Poller.IndexConsumer afterIndexHandler) throws IOException {
-        return downstreamQueue.createPoller(skipPredicate,
-                                            pausePredicate,
-                                            beforeIndexHandler,
-                                            afterIndexHandler);
+    public Poller createPoller(final Poller.Options options) throws IOException {
+        return downstreamQueue.createPoller(options);
     }
 
     @Override
