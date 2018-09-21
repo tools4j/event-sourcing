@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-class MetricIndexConsumer implements Poller.IndexConsumer {
+public class MetricIndexConsumer implements Poller.IndexConsumer {
     final int expected;
     final int warmup;
     final AtomicBoolean stop;

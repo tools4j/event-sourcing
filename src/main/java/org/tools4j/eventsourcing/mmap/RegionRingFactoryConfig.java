@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.config;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.step.ThreadService;
-import org.tools4j.eventsourcing.step.WhileLoop;
+import org.tools4j.eventsourcing.common.ThreadService;
+import org.tools4j.eventsourcing.common.WhileLoop;
 import org.tools4j.mmap.region.api.RegionFactory;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.nobark.loop.Step;

@@ -21,18 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.poller;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.api.RegionAccessorSupplier;
 import org.tools4j.eventsourcing.sbe.IndexDecoder;
 
 import java.util.Objects;
 
-public class IndexedPoller implements Poller {
+public class MmapIndexedPoller implements Poller {
     private static final int LENGTH_OFFSET = 0;
     private static final int LENGTH_LENGTH = 4;
     private static final int INDEX_OFFSET = LENGTH_OFFSET + LENGTH_LENGTH;
@@ -52,9 +51,9 @@ public class IndexedPoller implements Poller {
     private long currentIndex = 0;
     private long currentIndexPosition = 0;
 
-    public IndexedPoller(final RegionAccessorSupplier regionAccessorSupplier,
-                         final Options options,
-                         final BufferPoller bufferPoller) {
+    public MmapIndexedPoller(final RegionAccessorSupplier regionAccessorSupplier,
+                             final Options options,
+                             final BufferPoller bufferPoller) {
         this.regionAccessorSupplier = Objects.requireNonNull(regionAccessorSupplier);
         this.options = Objects.requireNonNull(options);
         this.bufferPoller = Objects.requireNonNull(bufferPoller);

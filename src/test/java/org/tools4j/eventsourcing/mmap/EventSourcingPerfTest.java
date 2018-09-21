@@ -21,19 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.MetricIndexConsumer;
 import org.tools4j.eventsourcing.api.EventProcessingQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.queue.DefaultEventProcessingQueue;
-import org.tools4j.eventsourcing.queue.DefaultIndexedQueue;
-import org.tools4j.eventsourcing.queue.DefaultIndexedTransactionalQueue;
-import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamOnceStep;
-import org.tools4j.eventsourcing.step.PollingProcessStep;
+import org.tools4j.eventsourcing.common.PollingProcessStep;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 import org.tools4j.nobark.loop.Service;
@@ -76,7 +73,7 @@ public class EventSourcingPerfTest {
 
         final EventProcessingQueue queue = EventProcessingQueue.builder()
                 .upstreamQueue(
-                        new DefaultIndexedQueue(
+                        new MmapIndexedQueue(
                             directory,
                             "upstream",
                             true,
@@ -87,7 +84,7 @@ public class EventSourcingPerfTest {
                             maxFileSize,
                             encodingBufferSize))
                 .downstreamQueue(
-                        new DefaultIndexedTransactionalQueue(
+                        new MmapIndexedTransactionalQueue(
                             directory,
                             "downstream",
                             true,

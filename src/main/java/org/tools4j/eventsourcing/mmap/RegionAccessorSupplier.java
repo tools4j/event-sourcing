@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.api;
+package org.tools4j.eventsourcing.mmap;
 
 import org.tools4j.mmap.region.api.FileSizeEnsurer;
 import org.tools4j.mmap.region.api.RegionAccessor;

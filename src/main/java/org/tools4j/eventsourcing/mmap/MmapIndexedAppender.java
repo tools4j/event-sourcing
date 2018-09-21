@@ -21,17 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.appender;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.RegionAccessorSupplier;
 import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
 import org.tools4j.eventsourcing.sbe.IndexDecoder;
 import org.tools4j.eventsourcing.sbe.IndexEncoder;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -43,7 +41,7 @@ import java.util.Objects;
  *  Appendable message is represented as a buffer at offset with length.
  *  Length of a message is a first field in the index record which has a volatile semantic for thread synchronisation.
  */
-public final class IndexedAppender implements IndexedMessageConsumer, Closeable {
+public final class MmapIndexedAppender implements IndexedMessageConsumer, Closeable {
     private static final long NOT_INITIALISED = -1;
     private static final int LENGTH_OFFSET = 0;
     private static final int LENGTH_LENGTH = 4;
@@ -61,7 +59,7 @@ public final class IndexedAppender implements IndexedMessageConsumer, Closeable 
     private long currentIndexPosition = NOT_INITIALISED;
     private long currentMessagePosition = 0;
 
-    public IndexedAppender(final RegionAccessorSupplier regionAccessorSupplier) {
+    public MmapIndexedAppender(final RegionAccessorSupplier regionAccessorSupplier) {
         this.regionAccessorSupplier = Objects.requireNonNull(regionAccessorSupplier);
 
         this.mappedIndexBuffer = new UnsafeBuffer();

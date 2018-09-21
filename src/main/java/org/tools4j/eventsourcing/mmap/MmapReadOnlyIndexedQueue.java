@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.queue;
+package org.tools4j.eventsourcing.mmap;
 
 import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
@@ -31,22 +31,22 @@ import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
 
-public final class ReadOnlyIndexedQueue implements IndexedQueue {
+public final class MmapReadOnlyIndexedQueue implements IndexedQueue {
     private final IndexedMessageConsumer appender;
     private final IndexedPollerFactory pollerFactory;
 
-    public ReadOnlyIndexedQueue(final String directory,
-                                final String filePrefix,
-                                final RegionRingFactory regionRingFactory,
-                                final int regionSize,
-                                final int regionRingSize,
-                                final int regionsToMapAhead) throws IOException {
+    public MmapReadOnlyIndexedQueue(final String directory,
+                                    final String filePrefix,
+                                    final RegionRingFactory regionRingFactory,
+                                    final int regionSize,
+                                    final int regionRingSize,
+                                    final int regionsToMapAhead) throws IOException {
 
         this.appender = (source, sourceId, eventTimeNanos, buffer, offset, length) -> {
             throw new UnsupportedOperationException("append operation is not supported");
         };
 
-        this.pollerFactory = new DefaultIndexedPollerFactory(
+        this.pollerFactory = new MmapIndexedPollerFactory(
                 directory,
                 filePrefix,
                 regionRingFactory,

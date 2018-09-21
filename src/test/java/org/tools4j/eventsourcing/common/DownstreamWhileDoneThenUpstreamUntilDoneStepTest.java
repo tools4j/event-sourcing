@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing;
+package org.tools4j.eventsourcing.common;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamUntilDoneStep;
+import org.tools4j.eventsourcing.common.DownstreamWhileDoneThenUpstreamUntilDoneStep;
 import org.tools4j.nobark.loop.Step;
 
 import static org.mockito.Mockito.*;

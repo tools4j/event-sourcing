@@ -21,33 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.queue;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.api.*;
-import org.tools4j.eventsourcing.appender.IndexedAppender;
-import org.tools4j.eventsourcing.appender.MultiPayloadAppender;
+import org.tools4j.eventsourcing.common.SinglePayloadAppender;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class DefaultIndexedTransactionalQueue implements IndexedTransactionalQueue {
-    private final Transaction appender;
+public final class MmapIndexedQueue implements IndexedQueue {
+    private final IndexedMessageConsumer appender;
     private final IndexedPollerFactory pollerFactory;
-    private final IndexedAppender indexedAppender;
+    private final MmapIndexedAppender mmapIndexedAppender;
 
-    public DefaultIndexedTransactionalQueue(final String directory,
-                                            final String filePrefix,
-                                            final boolean clearFiles,
-                                            final RegionRingFactory regionRingFactory,
-                                            final int regionSize,
-                                            final int regionRingSize,
-                                            final int regionsToMapAhead,
-                                            final long maxFileSize,
-                                            final int encodingBufferSize) throws IOException {
 
-        this.indexedAppender = new IndexedAppender(
+    public MmapIndexedQueue(final String directory,
+                            final String filePrefix,
+                            final boolean clearFiles,
+                            final RegionRingFactory regionRingFactory,
+                            final int regionSize,
+                            final int regionRingSize,
+                            final int regionsToMapAhead,
+                            final long maxFileSize,
+                            final int encodingBufferSize) throws IOException {
+
+        this.mmapIndexedAppender = new MmapIndexedAppender(
                 RegionAccessorSupplier.forReadWrite(
                         directory,
                         filePrefix,
@@ -58,10 +58,10 @@ public class DefaultIndexedTransactionalQueue implements IndexedTransactionalQue
                         regionsToMapAhead,
                         maxFileSize));
 
-        this.appender = new MultiPayloadAppender(this.indexedAppender,
+        this.appender = new SinglePayloadAppender(this.mmapIndexedAppender,
                 new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize)));
 
-        this.pollerFactory = new DefaultIndexedPollerFactory(
+        this.pollerFactory = new MmapIndexedPollerFactory(
                 directory,
                 filePrefix,
                 regionRingFactory,
@@ -71,7 +71,7 @@ public class DefaultIndexedTransactionalQueue implements IndexedTransactionalQue
     }
 
     @Override
-    public Transaction appender() {
+    public IndexedMessageConsumer appender() {
         return this.appender;
     }
 
@@ -82,6 +82,6 @@ public class DefaultIndexedTransactionalQueue implements IndexedTransactionalQue
 
     @Override
     public void close() {
-        indexedAppender.close();
+        mmapIndexedAppender.close();
     }
 }

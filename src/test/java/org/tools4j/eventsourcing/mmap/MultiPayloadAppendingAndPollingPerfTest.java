@@ -21,17 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.MetricIndexConsumer;
 import org.tools4j.eventsourcing.api.*;
-import org.tools4j.eventsourcing.appender.IndexedAppender;
-import org.tools4j.eventsourcing.appender.MultiPayloadAppender;
-import org.tools4j.eventsourcing.config.RegionRingFactoryConfig;
-import org.tools4j.eventsourcing.poller.IndexedPoller;
-import org.tools4j.eventsourcing.poller.PayloadBufferPoller;
+import org.tools4j.eventsourcing.common.MultiPayloadAppender;
+import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 
@@ -60,7 +58,7 @@ public class MultiPayloadAppendingAndPollingPerfTest {
         final long maxFileSize = 64L * 16 * 1024 * 1024 * 4;
 
         final Transaction appender = new MultiPayloadAppender(
-                new IndexedAppender(
+                new MmapIndexedAppender(
                     RegionAccessorSupplier.forReadWriteClear(
                         directory,
                         "multiPayloadTest",
@@ -72,7 +70,7 @@ public class MultiPayloadAppendingAndPollingPerfTest {
                 ),
                 new UnsafeBuffer(ByteBuffer.allocateDirect(8096)));
 
-        final Poller poller = new IndexedPoller(
+        final Poller poller = new MmapIndexedPoller(
                 RegionAccessorSupplier.forReadOnly(
                         directory,
                         "multiPayloadTest",

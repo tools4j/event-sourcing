@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.queue;
+package org.tools4j.eventsourcing.common;
 
 import org.agrona.collections.MutableReference;
+import org.tools4j.eventsourcing.api.IndexedPollerFactory;
 import org.tools4j.eventsourcing.api.IndexedTransactionalQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
@@ -33,11 +34,11 @@ import java.io.IOException;
 import java.util.Objects;
 
 public final class BranchedIndexedTransactionalQueue implements IndexedTransactionalQueue {
-    private final DefaultIndexedPollerFactory basePollerFactory;
+    private final IndexedPollerFactory basePollerFactory;
     private final IndexedTransactionalQueue branchQueue;
     private final Poller.IndexPredicate branchPredicate;
 
-    public BranchedIndexedTransactionalQueue(final DefaultIndexedPollerFactory basePollerFactory,
+    public BranchedIndexedTransactionalQueue(final IndexedPollerFactory basePollerFactory,
                                              final IndexedTransactionalQueue branchQueue,
                                              final Poller.IndexPredicate branchPredicate) {
         this.basePollerFactory = Objects.requireNonNull(basePollerFactory);

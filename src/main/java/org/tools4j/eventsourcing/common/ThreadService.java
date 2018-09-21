@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.step;
+package org.tools4j.eventsourcing.common;
 
 import org.tools4j.nobark.loop.Service;
 
