@@ -23,8 +23,8 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import org.tools4j.eventsourcing.queue.DefaultEventProcessingQueue;
-import org.tools4j.eventsourcing.step.DownstreamWhileDoneThenUpstreamOnceStep;
+import org.tools4j.eventsourcing.common.DefaultEventProcessingQueue;
+import org.tools4j.eventsourcing.common.DownstreamWhileDoneThenUpstreamOnceStep;
 import org.tools4j.nobark.loop.Step;
 
 import java.io.IOException;

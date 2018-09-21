@@ -21,19 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.queue;
+package org.tools4j.eventsourcing.mmap;
 
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.api.RegionAccessorSupplier;
-import org.tools4j.eventsourcing.poller.IndexedPoller;
-import org.tools4j.eventsourcing.poller.PayloadBufferPoller;
+import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
 import java.util.Objects;
 
-public class DefaultIndexedPollerFactory implements IndexedPollerFactory {
+public class MmapIndexedPollerFactory implements IndexedPollerFactory {
     private final String directory;
     private final String filePrefix;
     private final RegionRingFactory regionRingFactory;
@@ -41,12 +39,12 @@ public class DefaultIndexedPollerFactory implements IndexedPollerFactory {
     private final int regionRingSize;
     private final int regionsToMapAhead;
 
-    public DefaultIndexedPollerFactory(final String directory,
-                                       final String filePrefix,
-                                       final RegionRingFactory regionRingFactory,
-                                       final int regionSize,
-                                       final int regionRingSize,
-                                       final int regionsToMapAhead) throws IOException {
+    public MmapIndexedPollerFactory(final String directory,
+                                    final String filePrefix,
+                                    final RegionRingFactory regionRingFactory,
+                                    final int regionSize,
+                                    final int regionRingSize,
+                                    final int regionsToMapAhead) throws IOException {
         this.directory = Objects.requireNonNull(directory);
         this.filePrefix = Objects.requireNonNull(filePrefix);
         this.regionRingFactory = Objects.requireNonNull(regionRingFactory);
@@ -57,7 +55,7 @@ public class DefaultIndexedPollerFactory implements IndexedPollerFactory {
 
     @Override
     public Poller createPoller(final Poller.Options options) throws IOException {
-        return new IndexedPoller(
+        return new MmapIndexedPoller(
                 RegionAccessorSupplier.forReadOnly(
                         directory,
                         filePrefix,

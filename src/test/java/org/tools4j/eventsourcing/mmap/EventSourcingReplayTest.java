@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
@@ -29,10 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.EventProcessingQueue;
 import org.tools4j.eventsourcing.api.EventProcessingState;
 import org.tools4j.eventsourcing.api.MessageConsumer;
-import org.tools4j.eventsourcing.queue.BranchedIndexedTransactionalQueue;
-import org.tools4j.eventsourcing.queue.DefaultIndexedPollerFactory;
-import org.tools4j.eventsourcing.queue.DefaultIndexedTransactionalQueue;
-import org.tools4j.eventsourcing.queue.ReadOnlyIndexedQueue;
+import org.tools4j.eventsourcing.common.BranchedIndexedTransactionalQueue;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 
@@ -69,7 +66,7 @@ public class EventSourcingReplayTest {
 
         final EventProcessingQueue queue = EventProcessingQueue.builder()
                 .upstreamQueue(
-                        new ReadOnlyIndexedQueue(
+                        new MmapReadOnlyIndexedQueue(
                             directory,
                             "upstream",
                             regionRingFactory,
@@ -78,14 +75,14 @@ public class EventSourcingReplayTest {
                             regionsToMapAhead))
                 .downstreamQueue(
                         new BranchedIndexedTransactionalQueue(
-                            new DefaultIndexedPollerFactory(
+                            new MmapIndexedPollerFactory(
                                 directory,
                                 "downstream",
                                 regionRingFactory,
                                 regionSize,
                                 ringSize,
                                 regionsToMapAhead),
-                            new DefaultIndexedTransactionalQueue(
+                            new MmapIndexedTransactionalQueue(
                                 directory,
                                 "downstream_branch",
                                 true,

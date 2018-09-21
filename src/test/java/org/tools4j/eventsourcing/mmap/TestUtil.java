@@ -1,11 +1,10 @@
-package org.tools4j.eventsourcing;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.config.RegionRingFactoryConfig;
-import org.tools4j.eventsourcing.step.ThreadService;
-import org.tools4j.eventsourcing.step.WhileLoop;
+import org.tools4j.eventsourcing.common.ThreadService;
+import org.tools4j.eventsourcing.common.WhileLoop;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;

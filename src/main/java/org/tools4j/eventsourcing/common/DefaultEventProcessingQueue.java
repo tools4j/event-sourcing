@@ -21,11 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.queue;
+package org.tools4j.eventsourcing.common;
 
-import org.tools4j.eventsourcing.api.*;
-import org.tools4j.eventsourcing.poller.DefaultEventProcessingState;
-import org.tools4j.eventsourcing.step.PollingProcessStep;
+import org.tools4j.eventsourcing.api.EventProcessingQueue;
+import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.IndexedQueue;
+import org.tools4j.eventsourcing.api.IndexedTransactionalQueue;
+import org.tools4j.eventsourcing.api.MessageConsumer;
+import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.api.Transaction;
 import org.tools4j.nobark.loop.Step;
 
 import java.io.IOException;

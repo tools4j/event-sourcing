@@ -21,26 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.step;
+package org.tools4j.eventsourcing.common;
 
 import org.tools4j.nobark.loop.Step;
 
 import java.util.Objects;
 
-public final class DownstreamWhileDoneThenUpstreamUntilDoneStep implements Step {
+public final class DownstreamWhileDoneThenUpstreamOnceStep implements Step {
 
     private final Step upstreamProcessStepState;
     private Step downstreamProcessStepState;
     private Step currentStep;
 
 
-    public DownstreamWhileDoneThenUpstreamUntilDoneStep(final Step upstreamProcessStep, final Step downstreamProcessStep) {
+    public DownstreamWhileDoneThenUpstreamOnceStep(final Step upstreamProcessStep, final Step downstreamProcessStep) {
         Objects.requireNonNull(upstreamProcessStep);
         Objects.requireNonNull(downstreamProcessStep);
 
         upstreamProcessStepState = () -> {
             final boolean workDone = upstreamProcessStep.perform();
-            if (workDone) currentStep = downstreamProcessStepState;
+            currentStep = downstreamProcessStepState;
             return workDone;
         };
 

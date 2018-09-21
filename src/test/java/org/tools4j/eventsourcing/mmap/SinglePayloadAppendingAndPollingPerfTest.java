@@ -21,17 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing;
+package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.MetricIndexConsumer;
 import org.tools4j.eventsourcing.api.*;
-import org.tools4j.eventsourcing.appender.IndexedAppender;
-import org.tools4j.eventsourcing.appender.SinglePayloadAppender;
-import org.tools4j.eventsourcing.config.RegionRingFactoryConfig;
-import org.tools4j.eventsourcing.poller.IndexedPoller;
-import org.tools4j.eventsourcing.poller.PayloadBufferPoller;
+import org.tools4j.eventsourcing.common.SinglePayloadAppender;
+import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 
@@ -60,7 +58,7 @@ public class SinglePayloadAppendingAndPollingPerfTest {
         final RegionRingFactory regionRingFactory = getRegionRingFactory(args);
 
         final IndexedMessageConsumer appender = new SinglePayloadAppender(
-                new IndexedAppender(
+                new MmapIndexedAppender(
                         RegionAccessorSupplier.forReadWriteClear(
                                 directory,
                                 "singlePayloadTest",
@@ -74,7 +72,7 @@ public class SinglePayloadAppendingAndPollingPerfTest {
                 new UnsafeBuffer(ByteBuffer.allocateDirect(8096))
         );
 
-        final Poller poller = new IndexedPoller(
+        final Poller poller = new MmapIndexedPoller(
                 RegionAccessorSupplier.forReadOnly(
                         directory,
                         "singlePayloadTest",
