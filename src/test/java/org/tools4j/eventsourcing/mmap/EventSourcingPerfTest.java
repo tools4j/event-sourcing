@@ -32,7 +32,6 @@ import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
 import org.tools4j.mmap.region.api.RegionRingFactory;
-import org.tools4j.mmap.region.impl.MappedFile;
 import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
 
@@ -53,16 +52,8 @@ public class EventSourcingPerfTest {
         final int warmup = 200000;
         final AtomicBoolean stop = new AtomicBoolean(false);
 
-
-        final int regionSize = (int) Math.max(MappedFile.REGION_SIZE_GRANULARITY, 1L << 16) * 1024 * 4;//64 KB
-        LOGGER.info("regionSize: {}", regionSize);
-
         final RegionRingFactory regionRingFactory = TestUtil.getRegionRingFactory(args);
 
-        final int ringSize = 4;
-        final int regionsToMapAhead = 1;
-        final long maxFileSize = 64L * 16 * 1024 * 1024 * 4;
-        final int encodingBufferSize = 8 * 1024;
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
         final BooleanSupplier leadership = () -> true;
@@ -73,27 +64,19 @@ public class EventSourcingPerfTest {
 
         final EventProcessingQueue queue = EventProcessingQueue.builder()
                 .upstreamQueue(
-                        new MmapIndexedQueue(
-                            directory,
-                            "upstream",
-                            true,
-                            regionRingFactory,
-                            regionSize,
-                            ringSize,
-                            regionsToMapAhead,
-                            maxFileSize,
-                            encodingBufferSize))
+                        MmapBuilder.create()
+                                .directory(directory)
+                                .filePrefix("upstream")
+                                .regionRingFactory(regionRingFactory)
+                                .clearFiles(true)
+                                .buildQueue())
                 .downstreamQueue(
-                        new MmapIndexedTransactionalQueue(
-                            directory,
-                            "downstream",
-                            true,
-                            regionRingFactory,
-                            regionSize,
-                            ringSize,
-                            regionsToMapAhead,
-                            maxFileSize,
-                            encodingBufferSize))
+                        MmapBuilder.create()
+                                .directory(directory)
+                                .filePrefix("downstream")
+                                .regionRingFactory(regionRingFactory)
+                                .clearFiles(true)
+                                .buildTransactionalQueue())
                 .upstreamFactory(
                         (downstreamAppender, upstreamBeforeState, downstreamAfterState) -> downstreamAppender)
                 .downstreamFactory(
