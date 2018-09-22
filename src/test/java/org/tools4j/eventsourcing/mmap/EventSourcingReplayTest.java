@@ -31,7 +31,6 @@ import org.tools4j.eventsourcing.api.EventProcessingState;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.common.BranchedIndexedTransactionalQueue;
 import org.tools4j.mmap.region.api.RegionRingFactory;
-import org.tools4j.mmap.region.impl.MappedFile;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
@@ -41,18 +40,8 @@ public class EventSourcingReplayTest {
 
     public static void main(String... args) throws Exception {
 
-        final int regionSize = (int) Math.max(MappedFile.REGION_SIZE_GRANULARITY, 1L << 16) * 1024 * 4;
-        LOGGER.info("regionSize: {}", regionSize);
-
-        final int branchRegionSize = (int) Math.max(MappedFile.REGION_SIZE_GRANULARITY, 1L << 16) * 1024;
-        LOGGER.info("regionSize: {}", regionSize);
-
         final RegionRingFactory regionRingFactory = TestUtil.getRegionRingFactory(args);
 
-        final int ringSize = 4;
-        final int regionsToMapAhead = 1;
-        final long maxFileSize = 64L * 16 * 1024 * 1024 * 4;
-        final int encodingBufferSize = 8 * 1024;
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
         final BooleanSupplier leadership = () -> true;
@@ -66,33 +55,29 @@ public class EventSourcingReplayTest {
 
         final EventProcessingQueue queue = EventProcessingQueue.builder()
                 .upstreamQueue(
-                        new MmapReadOnlyIndexedQueue(
-                            directory,
-                            "upstream",
-                            regionRingFactory,
-                            regionSize,
-                            ringSize,
-                            regionsToMapAhead))
+                        MmapBuilder.create()
+                                .directory(directory)
+                                .filePrefix("upstream")
+                                .regionRingFactory(regionRingFactory)
+                                .buildReadOnlyQueue())
                 .downstreamQueue(
-                        new BranchedIndexedTransactionalQueue(
-                            new MmapIndexedPollerFactory(
-                                directory,
-                                "downstream",
-                                regionRingFactory,
-                                regionSize,
-                                ringSize,
-                                regionsToMapAhead),
-                            new MmapIndexedTransactionalQueue(
-                                directory,
-                                "downstream_branch",
-                                true,
-                                regionRingFactory,
-                                branchRegionSize,
-                                ringSize,
-                                regionsToMapAhead,
-                                maxFileSize,
-                                encodingBufferSize),
-                            (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == replayFromSourceSeq))
+                        BranchedIndexedTransactionalQueue.builder()
+                                .basePollerFactory(
+                                        MmapBuilder.create()
+                                                .directory(directory)
+                                                .filePrefix("downstream")
+                                                .regionRingFactory(regionRingFactory)
+                                                .buildPollerFactory())
+                                .branchQueue(
+                                        MmapBuilder.create()
+                                                .directory(directory)
+                                                .filePrefix("downstream_branch")
+                                                .regionRingFactory(regionRingFactory)
+                                                .clearFiles(true)
+                                                .buildTransactionalQueue())
+                                .branchPredicate(
+                                        (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == replayFromSourceSeq)
+                                .build())
                 .upstreamFactory(
                         (downstreamAppender, upstreamBeforeState, downstreamAfterState) ->
                                 (buffer, offset, length) -> {

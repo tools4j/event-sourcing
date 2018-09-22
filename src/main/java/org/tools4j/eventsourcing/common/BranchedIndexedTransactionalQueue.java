@@ -94,4 +94,53 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
     public void close() {
         branchQueue.close();
     }
+
+    public static Builder builder() {
+        return new BranchedIndexedTransactionalQueueBuilder();
+    }
+
+    public interface Builder {
+        BranchQueueStep basePollerFactory(IndexedPollerFactory basePollerFactory);
+
+        interface BranchQueueStep {
+            BranchPredicateStep branchQueue(IndexedTransactionalQueue branchQueue);
+        }
+
+        interface BranchPredicateStep {
+            BuildStep branchPredicate(Poller.IndexPredicate branchPredicate);
+        }
+
+        interface BuildStep {
+            IndexedTransactionalQueue build();
+        }
+    }
+
+    private static class BranchedIndexedTransactionalQueueBuilder implements Builder, Builder.BranchQueueStep, Builder.BranchPredicateStep, Builder.BuildStep {
+        IndexedPollerFactory basePollerFactory;
+        IndexedTransactionalQueue branchQueue;
+        Poller.IndexPredicate branchPredicate;
+
+        @Override
+        public BranchQueueStep basePollerFactory(final IndexedPollerFactory basePollerFactory) {
+            this.basePollerFactory = basePollerFactory;
+            return this;
+        }
+
+        @Override
+        public BranchPredicateStep branchQueue(final IndexedTransactionalQueue branchQueue) {
+            this.branchQueue = branchQueue;
+            return this;
+        }
+
+        @Override
+        public BuildStep branchPredicate(final Poller.IndexPredicate branchPredicate) {
+            this.branchPredicate = branchPredicate;
+            return this;
+        }
+
+        @Override
+        public IndexedTransactionalQueue build() {
+            return new BranchedIndexedTransactionalQueue(basePollerFactory, branchQueue, branchPredicate);
+        }
+    }
 }

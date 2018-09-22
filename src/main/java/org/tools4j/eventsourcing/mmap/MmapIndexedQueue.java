@@ -27,6 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.common.SinglePayloadAppender;
 import org.tools4j.mmap.region.api.RegionRingFactory;
+import org.tools4j.mmap.region.impl.MappedFile;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
