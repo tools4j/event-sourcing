@@ -46,7 +46,7 @@ public final class MultiPayloadAppender implements Transaction {
     private final MultiPayloadEncoder multiPayloadEncoder = new MultiPayloadEncoder();
 
     private int source;
-    private long sourceId;
+    private long sourceSeq;
     private long eventTimeNanos;
     private boolean allowEmpty;
     private int messageLength;
@@ -61,10 +61,10 @@ public final class MultiPayloadAppender implements Transaction {
     }
 
     @Override
-    public void init(final int source, final long sourceId, final long eventTimeNanos, final boolean allowEmpty) {
+    public void init(final int source, final long sourceSeq, final long eventTimeNanos, final boolean allowEmpty) {
         this.entries = 0;
         this.source  = source;
-        this.sourceId = sourceId;
+        this.sourceSeq = sourceSeq;
         this.eventTimeNanos = eventTimeNanos;
         this.allowEmpty = allowEmpty;
 
@@ -92,7 +92,7 @@ public final class MultiPayloadAppender implements Transaction {
 
             messageLength += multiPayloadEncoder.encodedLength();
             //messageLength = BitUtil.align(messageLength, 64);
-            delegateAppender.accept(source, sourceId, eventTimeNanos, messageEncodingBuffer, 0, messageLength);
+            delegateAppender.accept(source, sourceSeq, eventTimeNanos, messageEncodingBuffer, 0, messageLength);
         }
         return entries;
     }

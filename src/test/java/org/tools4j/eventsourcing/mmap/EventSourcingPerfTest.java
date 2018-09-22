@@ -128,7 +128,7 @@ public class EventSourcingPerfTest {
 
         final long seed = System.currentTimeMillis();
 
-        LOGGER.info("Start sourceId {}", seed);
+        LOGGER.info("Start sourceSeq {}", seed);
 
         for (int i = 0; i < messages; i++) {
             final long start = System.nanoTime();
@@ -140,7 +140,7 @@ public class EventSourcingPerfTest {
             }
         }
 
-        LOGGER.info("End sourceId {}", seed + messages - 1);
+        LOGGER.info("End sourceSeq {}", seed + messages - 1);
 
         eventProcessor.awaitTermination(1, TimeUnit.MINUTES);
         sender.awaitTermination(1, TimeUnit.MINUTES);

@@ -42,7 +42,7 @@ public final class MmapReadOnlyIndexedQueue implements IndexedQueue {
                                     final int regionRingSize,
                                     final int regionsToMapAhead) throws IOException {
 
-        this.appender = (source, sourceId, eventTimeNanos, buffer, offset, length) -> {
+        this.appender = (source, sourceSeq, eventTimeNanos, buffer, offset, length) -> {
             throw new UnsupportedOperationException("append operation is not supported");
         };
 

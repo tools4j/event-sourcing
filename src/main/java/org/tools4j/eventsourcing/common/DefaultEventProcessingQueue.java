@@ -107,7 +107,7 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
                                 completedDownstreamState.andThen(onCompletedDownstreamProcessingHandler))
                         .onProcessingSkipped(
                                 // skip is equivalent to committed as we apply changes to state in upstream processor and skip when
-                                // downstream matches upstream source/sourceId
+                                // downstream matches upstream source/sourceSeq
                                 currentDownstreamState.andThen(completedDownstreamState))
                         .build()
         );

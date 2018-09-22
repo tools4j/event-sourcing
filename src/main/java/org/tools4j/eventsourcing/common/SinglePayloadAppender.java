@@ -51,7 +51,7 @@ public final class SinglePayloadAppender implements IndexedMessageConsumer {
 
     @Override
     public void accept(final int source,
-                       final long sourceId,
+                       final long sourceSeq,
                        final long eventTimeNanos,
                        final DirectBuffer buffer,
                        final int offset,
@@ -70,6 +70,6 @@ public final class SinglePayloadAppender implements IndexedMessageConsumer {
 
         //messageLength = BitUtil.align(messageLength, 64);
 
-        delegateAppender.accept(source, sourceId, eventTimeNanos, messageEncodingBuffer, 0, messageLength);
+        delegateAppender.accept(source, sourceSeq, eventTimeNanos, messageEncodingBuffer, 0, messageLength);
     }
 }

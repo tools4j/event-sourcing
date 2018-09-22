@@ -67,7 +67,7 @@ public final class MmapIndexedAppender implements IndexedMessageConsumer, Closea
     }
 
     @Override
-    public void accept(final int source, final long sourceId, final long eventTimeNanos, final DirectBuffer buffer, final int offset, final int length) {
+    public void accept(final int source, final long sourceSeq, final long eventTimeNanos, final DirectBuffer buffer, final int offset, final int length) {
         advanceIndexToLastAppendPosition();
 
         if (regionAccessorSupplier.messageAccessor().wrap(currentMessagePosition, mappedMessageBuffer)) {
@@ -84,7 +84,7 @@ public final class MmapIndexedAppender implements IndexedMessageConsumer, Closea
                 indexEncoder.wrap(mappedIndexBuffer, INDEX_OFFSET)
                         .position(currentMessagePosition)
                         .source(source)
-                        .sourceId(sourceId)
+                        .sourceSeq(sourceSeq)
                         .eventTimeNanos(eventTimeNanos);
 
                 mappedIndexBuffer.putIntOrdered(LENGTH_OFFSET, length);

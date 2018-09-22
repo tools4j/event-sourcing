@@ -24,7 +24,7 @@
         <composite name="index" description="Index Attributes">
             <type name="position" primitiveType="uint64"/>
             <type name="source" primitiveType="int32"/>
-            <type name="sourceId" primitiveType="uint64"/>
+            <type name="sourceSeq" primitiveType="uint64"/>
             <type name="eventTimeNanos" primitiveType="uint64"/>
         </composite>
     </types>
