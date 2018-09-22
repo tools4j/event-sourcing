@@ -24,10 +24,12 @@
 package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.*;
+import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.IndexedPollerFactory;
+import org.tools4j.eventsourcing.api.IndexedQueue;
+import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.SinglePayloadAppender;
 import org.tools4j.mmap.region.api.RegionRingFactory;
-import org.tools4j.mmap.region.impl.MappedFile;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
