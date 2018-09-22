@@ -23,6 +23,8 @@
  */
 package org.tools4j.eventsourcing.api;
 
+import org.tools4j.eventsourcing.common.TransactionCommitAndPushNoops;
+
 import java.io.Closeable;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -158,11 +160,13 @@ public interface Poller extends Closeable {
         }
 
         static IndexConsumer transactionInit(final Transaction transaction) {
-            return (index, source, sourceId, eventTimeNanos) -> transaction.init(source, sourceId, eventTimeNanos);
+            return (index, source, sourceId, eventTimeNanos) -> transaction.init(source, sourceId, eventTimeNanos, false);
         }
 
-        static IndexConsumer transactionCommit(final Transaction transaction) {
-            return (index, source, sourceId, eventTimeNanos) -> transaction.commit();
+        static IndexConsumer transactionCommitAndPushNoops(final Transaction transaction,
+                                                           final EventProcessingState completedUpstreamState,
+                                                           final EventProcessingState completedDownstreamState) {
+            return new TransactionCommitAndPushNoops(transaction, completedUpstreamState, completedDownstreamState);
         }
 
         static IndexConsumer noop() {

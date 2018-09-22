@@ -48,6 +48,7 @@ public final class MultiPayloadAppender implements Transaction {
     private int source;
     private long sourceId;
     private long eventTimeNanos;
+    private boolean allowEmpty;
     private int messageLength;
     private int entries;
     private int limitBeforeEntries;
@@ -60,11 +61,12 @@ public final class MultiPayloadAppender implements Transaction {
     }
 
     @Override
-    public void init(final int source, final long sourceId, final long eventTimeNanos) {
+    public void init(final int source, final long sourceId, final long eventTimeNanos, final boolean allowEmpty) {
         this.entries = 0;
         this.source  = source;
         this.sourceId = sourceId;
         this.eventTimeNanos = eventTimeNanos;
+        this.allowEmpty = allowEmpty;
 
         final int headerLength = messageHeaderEncoder.wrap(messageEncodingBuffer, 0)
                 .blockLength(MultiPayloadEncoder.BLOCK_LENGTH)
@@ -81,8 +83,8 @@ public final class MultiPayloadAppender implements Transaction {
     }
 
     @Override
-    public void commit() {
-        if (entries > 0) {
+    public int commit() {
+        if (allowEmpty || entries > 0) {
             final int saveLimit = multiPayloadEncoder.limit();
             multiPayloadEncoder.limit(limitBeforeEntries);
             multiPayloadEncoder.entriesCount(entries);
@@ -92,6 +94,7 @@ public final class MultiPayloadAppender implements Transaction {
             //messageLength = BitUtil.align(messageLength, 64);
             delegateAppender.accept(source, sourceId, eventTimeNanos, messageEncodingBuffer, 0, messageLength);
         }
+        return entries;
     }
 
     @Override

@@ -36,7 +36,6 @@ public final class MmapIndexedQueue implements IndexedQueue {
     private final IndexedPollerFactory pollerFactory;
     private final MmapIndexedAppender mmapIndexedAppender;
 
-
     public MmapIndexedQueue(final String directory,
                             final String filePrefix,
                             final boolean clearFiles,

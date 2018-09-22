@@ -108,7 +108,7 @@ public class MultiPayloadAppendingAndPollingPerfTest {
 
         for (int i = 0; i < messages; i++) {
             final long start = System.nanoTime();
-            appender.init(1,1, start);
+            appender.init(1,1, start, false);
             appender.accept(unsafeBuffer, 0, size);
             //appender.accept(unsafeBuffer, 0, size);
             appender.commit();

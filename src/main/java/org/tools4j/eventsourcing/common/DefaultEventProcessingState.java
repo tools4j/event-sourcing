@@ -24,6 +24,7 @@
 package org.tools4j.eventsourcing.common;
 
 import org.agrona.collections.Long2LongHashMap;
+import org.agrona.collections.LongLongConsumer;
 import org.tools4j.eventsourcing.api.EventProcessingState;
 import org.tools4j.eventsourcing.api.Poller;
 
@@ -86,4 +87,10 @@ public final class DefaultEventProcessingState implements EventProcessingState, 
     public long ingestionTimeNanos() {
         return ingestionTimeNanos;
     }
+
+    @Override
+    public void forEachSourceEntry(final LongLongConsumer consumer) {
+        sourceIdMap.longForEach(consumer);
+    }
+
 }

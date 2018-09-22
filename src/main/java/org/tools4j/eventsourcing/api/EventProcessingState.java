@@ -23,6 +23,8 @@
  */
 package org.tools4j.eventsourcing.api;
 
+import org.agrona.collections.LongLongConsumer;
+
 /**
  * Event Processing State provides event details at different stages of processing of the event.
  * There are the following stages when event processing state can be observed:
@@ -64,6 +66,12 @@ public interface EventProcessingState {
      * @return system time when the event is ingested at current stage.
      */
     long ingestionTimeNanos();
+
+    /**
+     * For each source entry containing last sourceId.
+     * @param consumer to run
+     */
+    void forEachSourceEntry(LongLongConsumer consumer);
 
     default boolean isAheadOf(final EventProcessingState another) {
         return sourceId() > 0 && another.sourceId() > 0 &&
