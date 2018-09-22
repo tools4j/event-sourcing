@@ -64,5 +64,4 @@ public final class MmapReadOnlyIndexedQueue implements IndexedQueue {
     public Poller createPoller(final Poller.Options options) throws IOException {
         return pollerFactory.createPoller(options);
     }
-
 }

@@ -81,10 +81,10 @@ public final class DefaultEventProcessingQueue implements EventProcessingQueue {
                                         .andThen(Poller.IndexConsumer.transactionInit(downstreamAppender))
                                         .andThen(onStartUpstreamProcessingHandler))
                         .onProcessingComplete(
-                                Poller.IndexConsumer.transactionCommit(downstreamAppender)
+                                Poller.IndexConsumer.transactionCommitAndPushNoops(downstreamAppender, completedUpstreamState, completedDownstreamState)
                                         .andThen(completedUpstreamState)
-                                        .andThen(onCompleteUpstreamProcessingHandler)
-                        ).build()
+                                        .andThen(onCompleteUpstreamProcessingHandler))
+                        .build()
         );
 
         final MessageConsumer upstreamMessageConsumer = upstreamFactory.create(

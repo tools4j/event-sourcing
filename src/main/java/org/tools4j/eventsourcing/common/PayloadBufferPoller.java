@@ -60,7 +60,7 @@ public final class PayloadBufferPoller implements BufferPoller {
                 multiPayloadDecoder.limit(multiPayloadDecoder.limit() + MultiPayloadDecoder.EntriesDecoder.valueHeaderLength() + entriesDecoder.valueLength());
                 done++;
             }
-            return done;
+            return Math.max(done, 1); //empty multiPayload is treated at one message done.
         } else {
             throw new IllegalStateException("Unexpected message type " + messageHeaderDecoder.templateId());
         }
