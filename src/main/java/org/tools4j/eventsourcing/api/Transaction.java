@@ -32,11 +32,11 @@ public interface Transaction extends MessageConsumer {
     /**
      * Init transaction specifying index details.
      * @param source - source of the event
-     * @param sourceId - id of the event within a source
+     * @param sourceSeq - sequence within a source
      * @param eventTimeNanos - time of the event in nanos
      * @param allowEmpty allow zero entries in transaction for commit
      */
-    void init(int source, long sourceId, long eventTimeNanos, final boolean allowEmpty);
+    void init(int source, long sourceSeq, long eventTimeNanos, final boolean allowEmpty);
 
     /**
      * @return number of entries committed

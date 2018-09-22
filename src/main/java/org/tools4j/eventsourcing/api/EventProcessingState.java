@@ -47,15 +47,15 @@ public interface EventProcessingState {
     int source();
 
     /**
-     * @return Id of the event within the source.
+     * @return sequence within the source.
      */
-    long sourceId();
+    long sourceSeq();
 
     /**
      * @param source given source
-     * @return sourceId of the event from the given source processed so far.
+     * @return sourceSeq of the event from the given source processed so far.
      */
-    long sourceId(int source);
+    long sourceSeq(int source);
 
     /**
      * @return time of the event in nanos
@@ -68,18 +68,18 @@ public interface EventProcessingState {
     long ingestionTimeNanos();
 
     /**
-     * For each source entry containing last sourceId.
+     * For each source entry containing last sourceSeq.
      * @param consumer to run
      */
     void forEachSourceEntry(LongLongConsumer consumer);
 
     default boolean isAheadOf(final EventProcessingState another) {
-        return sourceId() > 0 && another.sourceId() > 0 &&
-                sourceId() > another.sourceId(source());
+        return sourceSeq() > 0 && another.sourceSeq() > 0 &&
+                sourceSeq() > another.sourceSeq(source());
     }
 
     default boolean isEqualTo(final EventProcessingState another) {
-        return sourceId() == another.sourceId() &&
+        return sourceSeq() == another.sourceSeq() &&
                 source() == another.source();
     }
 

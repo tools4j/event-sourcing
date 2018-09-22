@@ -56,8 +56,8 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         final Poller branchQueuePoller = branchQueue.createPoller(options);
         final MutableReference<Poller> currentPollerRef = new MutableReference<>();
 
-        final Poller.IndexPredicate needToSwitchToBranch = (index, source, sourceId, eventTimeNanos) -> {
-            if (this.branchPredicate.test(index, source, sourceId, eventTimeNanos)) {
+        final Poller.IndexPredicate needToSwitchToBranch = (index, source, sourceSeq, eventTimeNanos) -> {
+            if (this.branchPredicate.test(index, source, sourceSeq, eventTimeNanos)) {
                 currentPollerRef.set(branchQueuePoller);
                 return true;
             } else {

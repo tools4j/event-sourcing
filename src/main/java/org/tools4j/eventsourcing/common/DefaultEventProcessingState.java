@@ -33,32 +33,32 @@ import java.util.function.LongSupplier;
 
 public final class DefaultEventProcessingState implements EventProcessingState, Poller.IndexConsumer {
     private static final long MISSING_VALUE = -1;
-    private final Long2LongHashMap sourceIdMap;
+    private final Long2LongHashMap sourceSeqMap;
     private final LongSupplier systemNanoClock;
 
     private long id = NOT_INITIALISED;
     private int source = NOT_INITIALISED;
-    private long sourceId = NOT_INITIALISED;
+    private long sourceSeq = NOT_INITIALISED;
     private long eventTimeNanos = NOT_INITIALISED;
     private long ingestionTimeNanos = NOT_INITIALISED;
 
     public DefaultEventProcessingState(final LongSupplier systemNanoClock) {
         this.systemNanoClock = Objects.requireNonNull(systemNanoClock);
-        this.sourceIdMap = new Long2LongHashMap(MISSING_VALUE);
+        this.sourceSeqMap = new Long2LongHashMap(MISSING_VALUE);
         this.eventTimeNanos = 0;
     }
 
     @Override
-    public long sourceId(final int source) {
-        return sourceIdMap.get(source);
+    public long sourceSeq(final int source) {
+        return sourceSeqMap.get(source);
     }
 
     @Override
-    public void accept(final long id, final int source, final long sourceId, final long eventTimeNanos) {
-        sourceIdMap.put(source, sourceId);
+    public void accept(final long id, final int source, final long sourceSeq, final long eventTimeNanos) {
+        sourceSeqMap.put(source, sourceSeq);
         this.id = id;
         this.source = source;
-        this.sourceId = sourceId;
+        this.sourceSeq = sourceSeq;
         this.eventTimeNanos = eventTimeNanos;
         this.ingestionTimeNanos = systemNanoClock.getAsLong();
     }
@@ -74,8 +74,8 @@ public final class DefaultEventProcessingState implements EventProcessingState, 
     }
 
     @Override
-    public long sourceId() {
-        return sourceId;
+    public long sourceSeq() {
+        return sourceSeq;
     }
 
     @Override
@@ -90,7 +90,7 @@ public final class DefaultEventProcessingState implements EventProcessingState, 
 
     @Override
     public void forEachSourceEntry(final LongLongConsumer consumer) {
-        sourceIdMap.longForEach(consumer);
+        sourceSeqMap.longForEach(consumer);
     }
 
 }

@@ -45,7 +45,7 @@ public class MetricIndexConsumer implements Poller.IndexConsumer {
     }
 
     @Override
-    public void accept(final long index, final int source, final long sourceId, final long eventTimeNanos) {
+    public void accept(final long index, final int source, final long sourceSeq, final long eventTimeNanos) {
         long receivedTime = System.nanoTime();
         received ++;
         if (received > warmup) {

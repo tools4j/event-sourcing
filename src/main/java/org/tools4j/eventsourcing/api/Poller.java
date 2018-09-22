@@ -47,11 +47,11 @@ public interface Poller extends Closeable {
      * Tests index details
      */
     interface IndexPredicate {
-        IndexPredicate NEVER = (index, source, sourceId, eventTimeNanos) -> false;
-        IndexPredicate ALWAYS = (index, source, sourceId, eventTimeNanos) -> true;
+        IndexPredicate NEVER = (index, source, sourceSeq, eventTimeNanos) -> false;
+        IndexPredicate ALWAYS = (index, source, sourceSeq, eventTimeNanos) -> true;
 
 
-        boolean test(long index, int source, long sourceId, long eventTimeNanos);
+        boolean test(long index, int source, long sourceSeq, long eventTimeNanos);
 
         /**
          * Returns a composed predicate that represents a short-circuiting logical
@@ -107,15 +107,15 @@ public interface Poller extends Closeable {
         }
 
         static IndexPredicate isLessThanOrEqual(final EventProcessingState eventProcessingState) {
-            return (index, source, sourceId, eventTimeNanos) -> sourceId <= eventProcessingState.sourceId(source);
+            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= eventProcessingState.sourceSeq(source);
         }
 
         static IndexPredicate isLessThan(final EventProcessingState eventProcessingState) {
-            return (index, source, sourceId, eventTimeNanos) -> sourceId < eventProcessingState.sourceId(source);
+            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq < eventProcessingState.sourceSeq(source);
         }
 
         static IndexPredicate isEqualTo(final EventProcessingState eventProcessingState) {
-            return (index, source, sourceId, eventTimeNanos) -> sourceId == eventProcessingState.sourceId() && source == eventProcessingState.source();
+            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == eventProcessingState.sourceSeq() && source == eventProcessingState.source();
         }
 
         static IndexPredicate isGreaterThan(final EventProcessingState eventProcessingState) {
@@ -123,7 +123,7 @@ public interface Poller extends Closeable {
         }
 
         static IndexPredicate eventTimeBefore(final long timeNanos) {
-            return (index, source, sourceId, eventTimeNanos) -> eventTimeNanos < timeNanos;
+            return (index, source, sourceSeq, eventTimeNanos) -> eventTimeNanos < timeNanos;
         }
 
         static IndexPredicate never() {
@@ -135,7 +135,7 @@ public interface Poller extends Closeable {
         }
 
         static IndexPredicate isTrue(final BooleanSupplier booleanSupplier) {
-            return (index, source, sourceId, eventTimeNanos) -> booleanSupplier.getAsBoolean();
+            return (index, source, sourceSeq, eventTimeNanos) -> booleanSupplier.getAsBoolean();
         }
 
         static IndexPredicate isLeader(final BooleanSupplier leadership) {
@@ -151,8 +151,8 @@ public interface Poller extends Closeable {
      * Index consumer
      */
     interface IndexConsumer {
-        IndexConsumer NO_OP = (index, source, sourceId, eventTimeNanos) -> {};
-        void accept(long index, int source, long sourceId, long eventTimeNanos);
+        IndexConsumer NO_OP = (index, source, sourceSeq, eventTimeNanos) -> {};
+        void accept(long index, int source, long sourceSeq, long eventTimeNanos);
 
         default IndexConsumer andThen(final IndexConsumer after) {
             Objects.requireNonNull(after);
@@ -160,7 +160,7 @@ public interface Poller extends Closeable {
         }
 
         static IndexConsumer transactionInit(final Transaction transaction) {
-            return (index, source, sourceId, eventTimeNanos) -> transaction.init(source, sourceId, eventTimeNanos, false);
+            return (index, source, sourceSeq, eventTimeNanos) -> transaction.init(source, sourceSeq, eventTimeNanos, false);
         }
 
         static IndexConsumer transactionCommitAndPushNoops(final Transaction transaction,

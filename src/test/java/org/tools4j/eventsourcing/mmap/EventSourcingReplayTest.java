@@ -59,8 +59,8 @@ public class EventSourcingReplayTest {
 
         final MessageConsumer stateMessageConsumer = (buffer, offset, length) -> {};
 
-        final long replayFromSourceId = replayFromSourceId(args);
-        final long replayToSourceId = replayToSourceId(args);
+        final long replayFromSourceSeq = replayFromSourceSeq(args);
+        final long replayToSourceSeq = replayToSourceSeq(args);
 
         final MutableReference<EventProcessingState> commitStateRef = new MutableReference<>();
 
@@ -92,11 +92,11 @@ public class EventSourcingReplayTest {
                                 regionsToMapAhead,
                                 maxFileSize,
                                 encodingBufferSize),
-                            (index, source, sourceId, eventTimeNanos) -> sourceId == replayFromSourceId))
+                            (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == replayFromSourceSeq))
                 .upstreamFactory(
                         (downstreamAppender, upstreamBeforeState, downstreamAfterState) ->
                                 (buffer, offset, length) -> {
-                                    LOGGER.info("Replaying sourceId {}, already applied sourceId {}", upstreamBeforeState.sourceId(), downstreamAfterState.sourceId());
+                                    LOGGER.info("Replaying sourceSeq {}, already applied sourceSeq {}", upstreamBeforeState.sourceSeq(), downstreamAfterState.sourceSeq());
                                     downstreamAppender.accept(buffer, offset, length);
                                 })
                 .downstreamFactory(
@@ -112,16 +112,16 @@ public class EventSourcingReplayTest {
 
         TestUtil.startService("replay-processor",
                 queue.processorStep(),
-                () -> commitStateRef.get().sourceId() == replayToSourceId);
+                () -> commitStateRef.get().sourceSeq() == replayToSourceSeq);
     }
 
 
-    private static long replayFromSourceId(final String[] args) {
-        return longArgument(args, "start sourceId", 1);
+    private static long replayFromSourceSeq(final String[] args) {
+        return longArgument(args, "start sourceSeq", 1);
     }
 
-    private static long replayToSourceId(final String[] args) {
-        return longArgument(args, "end sourceId", 2);
+    private static long replayToSourceSeq(final String[] args) {
+        return longArgument(args, "end sourceSeq", 2);
     }
 
     private static long longArgument(final String[] args, final String name, final int position) {

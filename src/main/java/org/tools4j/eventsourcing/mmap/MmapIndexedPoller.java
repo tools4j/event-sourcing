@@ -71,15 +71,15 @@ public class MmapIndexedPoller implements Poller {
 
         final long messagePosition = indexDecoder.position();
         final int source = indexDecoder.source();
-        final long sourceId = indexDecoder.sourceId();
+        final long sourceSeq = indexDecoder.sourceSeq();
         final long eventTimeNanos = indexDecoder.eventTimeNanos();
 
-        if (options.skipWhen().test(currentIndex, source, sourceId, eventTimeNanos)) {
-            options.onProcessingSkipped().accept(currentIndex, source, sourceId, eventTimeNanos);
+        if (options.skipWhen().test(currentIndex, source, sourceSeq, eventTimeNanos)) {
+            options.onProcessingSkipped().accept(currentIndex, source, sourceSeq, eventTimeNanos);
             advanceIndexToNextAppendPosition();
             return 0;
-        } else if (!options.pauseWhen().test(currentIndex, source, sourceId, eventTimeNanos)) {
-            final int done = pollMessages(messagePosition, messageLength,  source, sourceId, eventTimeNanos, processingHandler);
+        } else if (!options.pauseWhen().test(currentIndex, source, sourceSeq, eventTimeNanos)) {
+            final int done = pollMessages(messagePosition, messageLength,  source, sourceSeq, eventTimeNanos, processingHandler);
             advanceIndexToNextAppendPosition();
             return done;
         } else {
@@ -91,14 +91,14 @@ public class MmapIndexedPoller implements Poller {
         return mappedIndexBuffer.getIntVolatile(LENGTH_OFFSET);
     }
 
-    private int pollMessages(final long messagePosition, final int messageLength, final int source, final long sourceId, final long eventTimeNanos,
+    private int pollMessages(final long messagePosition, final int messageLength, final int source, final long sourceSeq, final long eventTimeNanos,
                              final MessageConsumer processingHandler) {
         if (!regionAccessorSupplier.messageAccessor().wrap(messagePosition, mappedMessageBuffer)) {
             throw new IllegalStateException("Failed to wrap message buffer to position " + messagePosition);
         }
-        options.onProcessingStart().accept(currentIndex, source, sourceId, eventTimeNanos);
+        options.onProcessingStart().accept(currentIndex, source, sourceSeq, eventTimeNanos);
         final int done = bufferPoller.poll(mappedMessageBuffer, 0, messageLength, processingHandler);
-        options.onProcessingComplete().accept(currentIndex, source, sourceId, eventTimeNanos);
+        options.onProcessingComplete().accept(currentIndex, source, sourceSeq, eventTimeNanos);
         return done;
     }
 
