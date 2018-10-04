@@ -24,7 +24,7 @@
 package org.tools4j.eventsourcing.common;
 
 import org.agrona.collections.LongLongConsumer;
-import org.tools4j.eventsourcing.api.EventProcessingState;
+import org.tools4j.eventsourcing.api.ProgressState;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.api.Transaction;
 
@@ -32,16 +32,16 @@ import java.util.Objects;
 
 public class TransactionCommitAndPushNoops implements Poller.IndexConsumer {
     private final Transaction transaction;
-    private final EventProcessingState completedUpstreamState;
-    private final EventProcessingState completedDownstreamState;
+    private final ProgressState completedCommandExecutionState;
+    private final ProgressState completedEventApplyingState;
     private final PushMoreUpToDateNoopSourceSeqs pushMoreUpToDateNoopSourceSeqs = new PushMoreUpToDateNoopSourceSeqs();
 
     public TransactionCommitAndPushNoops(final Transaction transaction,
-                                         final EventProcessingState completedUpstreamState,
-                                         final EventProcessingState completedDownstreamState) {
+                                         final ProgressState completedCommandExecutionState,
+                                         final ProgressState completedEventApplyingState) {
         this.transaction = Objects.requireNonNull(transaction);
-        this.completedUpstreamState = Objects.requireNonNull(completedUpstreamState);
-        this.completedDownstreamState = Objects.requireNonNull(completedDownstreamState);
+        this.completedCommandExecutionState = Objects.requireNonNull(completedCommandExecutionState);
+        this.completedEventApplyingState = Objects.requireNonNull(completedEventApplyingState);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class TransactionCommitAndPushNoops implements Poller.IndexConsumer {
         pushMoreUpToDateNoopSourceSeqs.eventTimeNanos = eventTimeNanos;
 
         if (transaction.commit() > 0) {
-            completedUpstreamState.forEachSourceEntry(pushMoreUpToDateNoopSourceSeqs);
+            completedCommandExecutionState.forEachSourceEntry(pushMoreUpToDateNoopSourceSeqs);
         }
     }
 
@@ -63,7 +63,7 @@ public class TransactionCommitAndPushNoops implements Poller.IndexConsumer {
 
         @Override
         public void accept(final long source, final long sourceSeq) {
-            if (source != excludedSource && sourceSeq > completedDownstreamState.sourceSeq((int) source)) {
+            if (source != excludedSource && sourceSeq > completedEventApplyingState.sourceSeq((int) source)) {
                 transaction.init((int) source, sourceSeq, eventTimeNanos, true);
                 transaction.commit();
             }

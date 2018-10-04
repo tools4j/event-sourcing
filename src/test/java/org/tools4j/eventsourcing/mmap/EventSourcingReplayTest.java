@@ -26,8 +26,8 @@ package org.tools4j.eventsourcing.mmap;
 import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.api.EventProcessingQueue;
-import org.tools4j.eventsourcing.api.EventProcessingState;
+import org.tools4j.eventsourcing.api.CommandExecutionQueue;
+import org.tools4j.eventsourcing.api.ProgressState;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.common.BranchedIndexedTransactionalQueue;
 import org.tools4j.mmap.region.api.RegionRingFactory;
@@ -51,16 +51,16 @@ public class EventSourcingReplayTest {
         final long replayFromSourceSeq = replayFromSourceSeq(args);
         final long replayToSourceSeq = replayToSourceSeq(args);
 
-        final MutableReference<EventProcessingState> commitStateRef = new MutableReference<>();
+        final MutableReference<ProgressState> commitStateRef = new MutableReference<>();
 
-        final EventProcessingQueue queue = EventProcessingQueue.builder()
-                .upstreamQueue(
+        final CommandExecutionQueue queue = CommandExecutionQueue.builder()
+                .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
                                 .filePrefix("upstream")
                                 .regionRingFactory(regionRingFactory)
                                 .buildReadOnlyQueue())
-                .downstreamQueue(
+                .eventQueue(
                         BranchedIndexedTransactionalQueue.builder()
                                 .basePollerFactory(
                                         MmapBuilder.create()
@@ -78,13 +78,13 @@ public class EventSourcingReplayTest {
                                 .branchPredicate(
                                         (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == replayFromSourceSeq)
                                 .build())
-                .upstreamFactory(
+                .commandExecutorFactory(
                         (downstreamAppender, upstreamBeforeState, downstreamAfterState) ->
                                 (buffer, offset, length) -> {
                                     LOGGER.info("Replaying sourceSeq {}, already applied sourceSeq {}", upstreamBeforeState.sourceSeq(), downstreamAfterState.sourceSeq());
                                     downstreamAppender.accept(buffer, offset, length);
                                 })
-                .downstreamFactory(
+                .eventApplierFactory(
                         (upstreamBeforeState, downstreamAfterState) -> {
                             commitStateRef.set(downstreamAfterState);
                             return stateMessageConsumer;
@@ -96,7 +96,7 @@ public class EventSourcingReplayTest {
         regionRingFactory.onComplete();
 
         TestUtil.startService("replay-processor",
-                queue.processorStep(),
+                queue.executorStep(),
                 () -> commitStateRef.get().sourceSeq() == replayToSourceSeq);
     }
 

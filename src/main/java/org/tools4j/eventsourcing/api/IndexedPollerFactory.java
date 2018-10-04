@@ -26,7 +26,7 @@ package org.tools4j.eventsourcing.api;
 import java.io.IOException;
 
 /**
- * Factory of pollers with certain behaviour on the event indexes.
+ * Factory of pollers with certain behaviour on the message indexes.
  */
 public interface IndexedPollerFactory {
     /**
