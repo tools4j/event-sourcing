@@ -25,13 +25,13 @@ package org.tools4j.eventsourcing.common;
 
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.LongLongConsumer;
-import org.tools4j.eventsourcing.api.EventProcessingState;
+import org.tools4j.eventsourcing.api.ProgressState;
 import org.tools4j.eventsourcing.api.Poller;
 
 import java.util.Objects;
 import java.util.function.LongSupplier;
 
-public final class DefaultEventProcessingState implements EventProcessingState, Poller.IndexConsumer {
+public final class DefaultProgressState implements ProgressState, Poller.IndexConsumer {
     private static final long MISSING_VALUE = -1;
     private final Long2LongHashMap sourceSeqMap;
     private final LongSupplier systemNanoClock;
@@ -42,7 +42,7 @@ public final class DefaultEventProcessingState implements EventProcessingState, 
     private long eventTimeNanos = NOT_INITIALISED;
     private long ingestionTimeNanos = NOT_INITIALISED;
 
-    public DefaultEventProcessingState(final LongSupplier systemNanoClock) {
+    public DefaultProgressState(final LongSupplier systemNanoClock) {
         this.systemNanoClock = Objects.requireNonNull(systemNanoClock);
         this.sourceSeqMap = new Long2LongHashMap(MISSING_VALUE);
         this.eventTimeNanos = 0;
@@ -92,5 +92,4 @@ public final class DefaultEventProcessingState implements EventProcessingState, 
     public void forEachSourceEntry(final LongLongConsumer consumer) {
         sourceSeqMap.longForEach(consumer);
     }
-
 }
