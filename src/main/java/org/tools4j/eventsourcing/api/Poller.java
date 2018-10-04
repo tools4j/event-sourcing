@@ -34,7 +34,7 @@ import java.util.function.BooleanSupplier;
  */
 public interface Poller extends Closeable {
     /**
-     * polls a queue and invokes the consumer if a message is available for consumption.
+     * polls the queue and invokes the consumer if a message is available for consumption.
      * @param consumer of a polled message if available
      * @return number of polled messages
      */
@@ -106,20 +106,20 @@ public interface Poller extends Closeable {
             return (i, s, sid, etn) -> test(i, s, sid, etn) || other.test(i, s, sid, etn);
         }
 
-        static IndexPredicate isLessThanOrEqual(final EventProcessingState eventProcessingState) {
-            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= eventProcessingState.sourceSeq(source);
+        static IndexPredicate isLessThanOrEqual(final ProgressState progressState) {
+            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= progressState.sourceSeq(source);
         }
 
-        static IndexPredicate isLessThan(final EventProcessingState eventProcessingState) {
-            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq < eventProcessingState.sourceSeq(source);
+        static IndexPredicate isLessThan(final ProgressState progressState) {
+            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq < progressState.sourceSeq(source);
         }
 
-        static IndexPredicate isEqualTo(final EventProcessingState eventProcessingState) {
-            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == eventProcessingState.sourceSeq() && source == eventProcessingState.source();
+        static IndexPredicate isEqualTo(final ProgressState progressState) {
+            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == progressState.sourceSeq() && source == progressState.source();
         }
 
-        static IndexPredicate isGreaterThan(final EventProcessingState eventProcessingState) {
-            return isLessThanOrEqual(eventProcessingState).negate();
+        static IndexPredicate isGreaterThan(final ProgressState progressState) {
+            return isLessThanOrEqual(progressState).negate();
         }
 
         static IndexPredicate eventTimeBefore(final long timeNanos) {
@@ -164,8 +164,8 @@ public interface Poller extends Closeable {
         }
 
         static IndexConsumer transactionCommitAndPushNoops(final Transaction transaction,
-                                                           final EventProcessingState completedUpstreamState,
-                                                           final EventProcessingState completedDownstreamState) {
+                                                           final ProgressState completedUpstreamState,
+                                                           final ProgressState completedDownstreamState) {
             return new TransactionCommitAndPushNoops(transaction, completedUpstreamState, completedDownstreamState);
         }
 

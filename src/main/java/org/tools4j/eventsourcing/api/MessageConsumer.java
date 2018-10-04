@@ -61,44 +61,39 @@ public interface MessageConsumer {
 
 
     /**
-     * Factory for upstream messages consumer.
+     * Factory of a command executor. It should be implemented by the user of the library.
+     * Command executor executes incoming commands and produces state-changing events that are to be applied to
+     * EventApplier.
      */
-    interface UpstreamFactory {
-        UpstreamFactory PASS_THROUGH = (downstreamAppender, currentUpstreamProcessingState, completedDownstreamProcessingState) -> downstreamAppender;
-        UpstreamFactory NO_OP = (downstreamAppender, currentUpstreamProcessingState, completedDownstreamProcessingState) -> MessageConsumer.NO_OP;
+    interface CommandExecutorFactory {
+        CommandExecutorFactory PASS_THROUGH = (eventApplier, currentCommandExecutionState, completedEventApplyingState) -> eventApplier;
+        CommandExecutorFactory NO_OP = (eventApplier, currentCommandExecutionState, completedEventApplyingState) -> MessageConsumer.NO_OP;
         /**
-         * Upstream message consumer is the business logic to process upstream event. Normally this operation
-         * can inspect current in-memory application state and decide which downstream messages are to be created.
-         * Such downstream messages can either be state-changing events to be applied by the downstream message consumer
-         * specified by DownstreamFactory
-         * or just events to be polled by other components like sender or replicator.
-         *
-         * It is injected with a downstreamAppender so that resulting messages can be appended to a downstream queue.
-         * It is also injected with upstream-before and downstream-after processing state instances.
-         *
-         * @param downstreamAppender - resulting message consumer which is a currently initialised transaction.
-         * @param currentUpstreamProcessingState - event processing state before upstream processing
-         * @param completedDownstreamProcessingState - event processing state after downstream processing
-         * @return upstream message consumer.
+         * Constructs a new command executor.
+         * @param eventApplier - resulting event consumer which applies the events to the application.
+         * @param currentCommandExecutionState - current command execution state
+         * @param completedEventApplyingState - completed event applying state
+         * @return command executor.
          */
-        MessageConsumer create(MessageConsumer downstreamAppender,
-                               EventProcessingState currentUpstreamProcessingState,
-                               EventProcessingState completedDownstreamProcessingState);
+        MessageConsumer create(MessageConsumer eventApplier,
+                               ProgressState currentCommandExecutionState,
+                               ProgressState completedEventApplyingState);
     }
 
     /**
-     * Factory for downstream messages consumer.
+     * Factory for event applier. It should be implemented by the user of the library.
+     * Event Applier applies the state-changing events to the application state.
+     * It should be free of side-effects.
      */
-    interface DownstreamFactory {
-        DownstreamFactory NO_OP = (currentDownstreamProcessingState, completedDownstreamProcessingState) -> MessageConsumer.NO_OP;
+    interface EventApplierFactory {
+        EventApplierFactory NO_OP = (currentEventApplyingState, completedEventApplyingState) -> MessageConsumer.NO_OP;
         /**
-         * Downstream message consumer is the business logic to process downstream event. Normally this operation
-         * is to update in-memory application state with the details provided in the downstream message.
-         * @param currentDownstreamProcessingState - event processing state before downstream processing
-         * @param completedDownstreamProcessingState - event processing state after downstream processing
-         * @return downstream message consumer
+         * Constructs a new event applier.
+         * @param currentEventApplyingState - current event applying state
+         * @param completedEventApplyingState - completed event applying state
+         * @return event applier
          */
-        MessageConsumer create(EventProcessingState currentDownstreamProcessingState,
-                               EventProcessingState completedDownstreamProcessingState);
+        MessageConsumer create(ProgressState currentEventApplyingState,
+                               ProgressState completedEventApplyingState);
     }
 }

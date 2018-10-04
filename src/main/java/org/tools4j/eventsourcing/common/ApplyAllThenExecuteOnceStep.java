@@ -23,42 +23,38 @@
  */
 package org.tools4j.eventsourcing.common;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.tools4j.eventsourcing.common.DownstreamWhileDoneThenUpstreamUntilDoneStep;
 import org.tools4j.nobark.loop.Step;
 
-import static org.mockito.Mockito.*;
+import java.util.Objects;
 
-@RunWith(MockitoJUnitRunner.class)
-public class DownstreamWhileDoneThenUpstreamUntilDoneStepTest {
-    @Mock
-    private Step inStep;
-    @Mock
-    private Step outStep;
+public final class ApplyAllThenExecuteOnceStep implements Step {
 
-    @Test
-    public void perform() throws Exception {
-
-        when(outStep.perform()).thenReturn(true, true, false, true, false);
-        when(inStep.perform()).thenReturn(false, false, true);
-
-        final DownstreamWhileDoneThenUpstreamUntilDoneStep processorStep = new DownstreamWhileDoneThenUpstreamUntilDoneStep(inStep::perform, outStep::perform);
+    private final Step commandExecutionStepState;
+    private Step eventApplyingStepState;
+    private Step currentStep;
 
 
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
+    public ApplyAllThenExecuteOnceStep(final Step commandExecutionStep, final Step eventApplyingStep) {
+        Objects.requireNonNull(commandExecutionStep);
+        Objects.requireNonNull(eventApplyingStep);
 
-        verify(outStep, times(5)).perform();
-        verify(inStep, times(3)).perform();
+        commandExecutionStepState = () -> {
+            final boolean workDone = commandExecutionStep.perform();
+            currentStep = eventApplyingStepState;
+            return workDone;
+        };
+
+        eventApplyingStepState = () -> {
+            final boolean workDone = eventApplyingStep.perform();
+            if (!workDone) currentStep = commandExecutionStepState;
+            return workDone;
+        };
+
+        currentStep = eventApplyingStepState;
     }
 
+    @Override
+    public boolean perform() {
+        return currentStep.perform();
+    }
 }
