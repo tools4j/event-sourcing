@@ -97,6 +97,8 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         final MessageConsumer commandExecutor = commandExecutorFactory.create(
                 eventAppender,
                 currentCommandExecutionState,
+                completedCommandExecutionState,
+                currentEventApplyingState,
                 completedEventApplyingState);
 
         final MessageConsumer eventApplier = eventApplierFactory.create(

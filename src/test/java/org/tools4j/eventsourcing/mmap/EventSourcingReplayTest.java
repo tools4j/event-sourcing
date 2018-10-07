@@ -79,7 +79,11 @@ public class EventSourcingReplayTest {
                                         (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == replayFromSourceSeq)
                                 .build())
                 .commandExecutorFactory(
-                        (eventApplier, currentCommandExecutionState, completedEventApplyingState) ->
+                        (eventApplier,
+                         currentCommandExecutionState,
+                         completedCommandExecutionState,
+                         currentEventApplyingState,
+                         completedEventApplyingState) ->
                                 (buffer, offset, length) -> {
                                     LOGGER.info("Replaying sourceSeq {}, already applied sourceSeq {}", currentCommandExecutionState.sourceSeq(), completedEventApplyingState.sourceSeq());
                                     eventApplier.accept(buffer, offset, length);
