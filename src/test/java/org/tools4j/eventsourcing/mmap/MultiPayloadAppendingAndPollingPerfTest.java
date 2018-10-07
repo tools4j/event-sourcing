@@ -27,6 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.MetricIndexConsumer;
+import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.common.MultiPayloadAppender;
 import org.tools4j.eventsourcing.common.PayloadBufferPoller;
@@ -86,12 +87,7 @@ public class MultiPayloadAppendingAndPollingPerfTest {
 
         regionRingFactory.onComplete();
 
-        final String testMessage = "#------------------------------------------------#\n";
-
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(testMessage.getBytes().length));
-        unsafeBuffer.putBytes(0, testMessage.getBytes());
-
-        final int size = testMessage.getBytes().length;
+        final TestMessage message = TestMessage.forDefaultLength();
 
         final MessageConsumer messageConsumer = (buffer, offset, length) -> {};
 
@@ -109,7 +105,7 @@ public class MultiPayloadAppendingAndPollingPerfTest {
         for (int i = 0; i < messages; i++) {
             final long start = System.nanoTime();
             appender.init(1,1, start, false);
-            appender.accept(unsafeBuffer, 0, size);
+            appender.accept(message.buffer, message.offset, message.length);
             //appender.accept(unsafeBuffer, 0, size);
             appender.commit();
             long end = System.nanoTime();
