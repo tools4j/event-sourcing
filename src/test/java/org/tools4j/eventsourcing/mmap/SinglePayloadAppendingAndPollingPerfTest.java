@@ -27,6 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.MetricIndexConsumer;
+import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.common.SinglePayloadAppender;
 import org.tools4j.eventsourcing.common.PayloadBufferPoller;
@@ -90,13 +91,7 @@ public class SinglePayloadAppendingAndPollingPerfTest {
         regionRingFactory.onComplete();
 
 
-        final String testMessage = "#------------------------------------------------#\n";
-
-        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(testMessage.getBytes().length);
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
-        unsafeBuffer.putBytes(0, testMessage.getBytes());
-
-        final int size = testMessage.getBytes().length;
+        final TestMessage message = TestMessage.forDefaultLength();
 
         final MessageConsumer messageConsumer = (buffer, offset, length) -> {};
 
@@ -112,7 +107,7 @@ public class SinglePayloadAppendingAndPollingPerfTest {
 
         for (int i = 0; i < messages; i++) {
             final long start = System.nanoTime();
-            appender.accept(1,1, start, unsafeBuffer, 0, size);
+            appender.accept(1,1, start, message.buffer, message.offset, message.length);
             long end = System.nanoTime();
             final long waitUntil = start + maxNanosPerMessage;
             while (end < waitUntil) {

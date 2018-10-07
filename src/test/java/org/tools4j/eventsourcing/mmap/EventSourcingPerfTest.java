@@ -23,10 +23,10 @@
  */
 package org.tools4j.eventsourcing.mmap;
 
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.MetricIndexConsumer;
+import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.CommandExecutionQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
@@ -35,7 +35,6 @@ import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -105,13 +104,7 @@ public class EventSourcingPerfTest {
         final Service eventProcessor = TestUtil.startService("event-processor", queue.executorStep(), stop::get);
         final Service sender = TestUtil.startService("event-sender", senderStep, stop::get);
 
-        final String testMessage = "#------------------------------------------------#\n";
-
-        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(testMessage.getBytes().length);
-        final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
-        unsafeBuffer.putBytes(0, testMessage.getBytes());
-
-        final int size = testMessage.getBytes().length;
+        final TestMessage message = TestMessage.forDefaultLength();
 
         final long seed = System.currentTimeMillis();
 
@@ -119,7 +112,7 @@ public class EventSourcingPerfTest {
 
         for (int i = 0; i < messages; i++) {
             final long start = System.nanoTime();
-            queue.appender().accept(1, seed + i, start, unsafeBuffer, 0, size);
+            queue.appender().accept(1, seed + i, start, message.buffer, message.offset, message.length);
             long end = System.nanoTime();
             final long waitUntil = start + maxNanosPerMessage;
             while (end < waitUntil) {
