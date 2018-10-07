@@ -83,7 +83,7 @@ public final class MultiPayloadAppender implements Transaction {
     }
 
     @Override
-    public int commit() {
+    public boolean commit() {
         if (allowEmpty || entries > 0) {
             final int saveLimit = multiPayloadEncoder.limit();
             multiPayloadEncoder.limit(limitBeforeEntries);
@@ -93,8 +93,9 @@ public final class MultiPayloadAppender implements Transaction {
             messageLength += multiPayloadEncoder.encodedLength();
             //messageLength = BitUtil.align(messageLength, 64);
             delegateAppender.accept(source, sourceSeq, eventTimeNanos, messageEncodingBuffer, 0, messageLength);
+            return true;
         }
-        return entries;
+        return false;
     }
 
     @Override

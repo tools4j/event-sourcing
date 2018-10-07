@@ -28,6 +28,7 @@ import org.tools4j.eventsourcing.common.TransactionCommitAndPushNoops;
 import java.io.Closeable;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntPredicate;
 
 /**
  * Queue poller
@@ -106,11 +107,11 @@ public interface Poller extends Closeable {
             return (i, s, sid, etn) -> test(i, s, sid, etn) || other.test(i, s, sid, etn);
         }
 
-        static IndexPredicate isLessThanOrEqual(final ProgressState progressState) {
+        static IndexPredicate isNotAheadOf(final ProgressState progressState) {
             return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= progressState.sourceSeq(source);
         }
 
-        static IndexPredicate isLessThan(final ProgressState progressState) {
+        static IndexPredicate isBehindOf(final ProgressState progressState) {
             return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq < progressState.sourceSeq(source);
         }
 
@@ -118,8 +119,8 @@ public interface Poller extends Closeable {
             return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == progressState.sourceSeq() && source == progressState.source();
         }
 
-        static IndexPredicate isGreaterThan(final ProgressState progressState) {
-            return isLessThanOrEqual(progressState).negate();
+        static IndexPredicate isAheadOf(final ProgressState progressState) {
+            return isNotAheadOf(progressState).negate();
         }
 
         static IndexPredicate eventTimeBefore(final long timeNanos) {
@@ -159,14 +160,14 @@ public interface Poller extends Closeable {
             return (i, s, sid, etn) -> { accept(i, s, sid, etn); after.accept(i, s, sid, etn); };
         }
 
-        static IndexConsumer transactionInit(final Transaction transaction) {
-            return (index, source, sourceSeq, eventTimeNanos) -> transaction.init(source, sourceSeq, eventTimeNanos, false);
+        static IndexConsumer transactionInit(final Transaction transaction, final IntPredicate stateChangingSource) {
+            return (index, source, sourceSeq, eventTimeNanos) -> transaction.init(source, sourceSeq, eventTimeNanos, stateChangingSource.test(source));
         }
 
         static IndexConsumer transactionCommitAndPushNoops(final Transaction transaction,
-                                                           final ProgressState completedUpstreamState,
-                                                           final ProgressState completedDownstreamState) {
-            return new TransactionCommitAndPushNoops(transaction, completedUpstreamState, completedDownstreamState);
+                                                           final ProgressState completedCommandExecutionState,
+                                                           final ProgressState completedEventApplyingState) {
+            return new TransactionCommitAndPushNoops(transaction, completedCommandExecutionState, completedEventApplyingState);
         }
 
         static IndexConsumer noop() {
