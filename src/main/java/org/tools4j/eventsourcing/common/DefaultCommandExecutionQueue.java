@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntPredicate;
 import java.util.function.LongSupplier;
 
 public final class DefaultCommandExecutionQueue implements CommandExecutionQueue {
@@ -45,6 +46,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
 
     private final Poller commandExecutionPoller;
     private final Poller eventApplyingPoller;
+
 
     public DefaultCommandExecutionQueue(final IndexedQueue commandQueue,
                                         final IndexedTransactionalQueue eventQueue,
@@ -56,7 +58,8 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                                         final Poller.IndexConsumer onCompletedEventApplyingHandler,
                                         final MessageConsumer.CommandExecutorFactory commandExecutorFactory,
                                         final MessageConsumer.EventApplierFactory eventApplierFactory,
-                                        final BinaryOperator<Step> executorStepFactory) throws IOException {
+                                        final BinaryOperator<Step> executorStepFactory,
+                                        final IntPredicate stateChangingSource) throws IOException {
         this.commandQueue = Objects.requireNonNull(commandQueue);
         this.eventQueue = Objects.requireNonNull(eventQueue);
 
@@ -65,20 +68,24 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         final DefaultProgressState currentEventApplyingState = new DefaultProgressState(systemNanoClock);
         final DefaultProgressState completedEventApplyingState = new DefaultProgressState(systemNanoClock);
 
+        final Poller.IndexPredicate lastCompletedCommandIsNotYetApplied = Poller.IndexPredicate.isTrue(() ->
+                completedCommandExecutionState.isAheadOf(completedEventApplyingState) &&
+                stateChangingSource.test(completedCommandExecutionState.source())
+        );
+
         final Transaction eventAppender = eventQueue.appender();
 
         this.commandExecutionPoller = commandQueue.createPoller(
                 Poller.Options.builder()
                         .skipWhen(
-                            Poller.IndexPredicate.isLessThanOrEqual(completedEventApplyingState))
+                            Poller.IndexPredicate.isNotAheadOf(completedEventApplyingState))
                         .pauseWhen(
                             Poller.IndexPredicate.isNotLeader(leadership)
-                                .and(Poller.IndexPredicate.isGreaterThan(completedEventApplyingState))
-                                .or(Poller.IndexPredicate.isTrue(() ->
-                                        completedCommandExecutionState.isAheadOf(completedEventApplyingState))))
+                                .and(Poller.IndexPredicate.isAheadOf(completedEventApplyingState))
+                                .or(lastCompletedCommandIsNotYetApplied))
                         .onProcessingStart(
                                 currentCommandExecutionState
-                                        .andThen(Poller.IndexConsumer.transactionInit(eventAppender))
+                                        .andThen(Poller.IndexConsumer.transactionInit(eventAppender, stateChangingSource))
                                         .andThen(onStartCommandExecutionHandler))
                         .onProcessingComplete(
                                 Poller.IndexConsumer.transactionCommitAndPushNoops(eventAppender, completedCommandExecutionState, completedEventApplyingState)
@@ -106,8 +113,8 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                         .onProcessingComplete(
                                 completedEventApplyingState.andThen(onCompletedEventApplyingHandler))
                         .onProcessingSkipped(
-                                // skip is equivalent to committed as we apply changes to state in upstream processor and skip when
-                                // downstream matches upstream source/sourceSeq
+                                // skip is equivalent to committed as we apply changes to state in command executor and skip when
+                                // event matches command source/sourceSeq
                                 currentEventApplyingState.andThen(completedEventApplyingState))
                         .build()
         );

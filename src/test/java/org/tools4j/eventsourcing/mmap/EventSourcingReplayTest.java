@@ -57,7 +57,7 @@ public class EventSourcingReplayTest {
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
-                                .filePrefix("upstream")
+                                .filePrefix("command")
                                 .regionRingFactory(regionRingFactory)
                                 .buildReadOnlyQueue())
                 .eventQueue(
@@ -65,13 +65,13 @@ public class EventSourcingReplayTest {
                                 .basePollerFactory(
                                         MmapBuilder.create()
                                                 .directory(directory)
-                                                .filePrefix("downstream")
+                                                .filePrefix("event")
                                                 .regionRingFactory(regionRingFactory)
                                                 .buildPollerFactory())
                                 .branchQueue(
                                         MmapBuilder.create()
                                                 .directory(directory)
-                                                .filePrefix("downstream_branch")
+                                                .filePrefix("event_branch")
                                                 .regionRingFactory(regionRingFactory)
                                                 .clearFiles(true)
                                                 .buildTransactionalQueue())
@@ -79,14 +79,14 @@ public class EventSourcingReplayTest {
                                         (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == replayFromSourceSeq)
                                 .build())
                 .commandExecutorFactory(
-                        (downstreamAppender, upstreamBeforeState, downstreamAfterState) ->
+                        (eventApplier, currentCommandExecutionState, completedEventApplyingState) ->
                                 (buffer, offset, length) -> {
-                                    LOGGER.info("Replaying sourceSeq {}, already applied sourceSeq {}", upstreamBeforeState.sourceSeq(), downstreamAfterState.sourceSeq());
-                                    downstreamAppender.accept(buffer, offset, length);
+                                    LOGGER.info("Replaying sourceSeq {}, already applied sourceSeq {}", currentCommandExecutionState.sourceSeq(), completedEventApplyingState.sourceSeq());
+                                    eventApplier.accept(buffer, offset, length);
                                 })
                 .eventApplierFactory(
-                        (upstreamBeforeState, downstreamAfterState) -> {
-                            commitStateRef.set(downstreamAfterState);
+                        (currentEventApplyingState, completedEventApplyingState) -> {
+                            commitStateRef.set(completedEventApplyingState);
                             return stateMessageConsumer;
                         })
                 .systemNanoClock(systemNanoClock)

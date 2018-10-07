@@ -66,21 +66,21 @@ public class EventSourcingPerfTest {
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
-                                .filePrefix("upstream")
+                                .filePrefix("command")
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
                 .eventQueue(
                         MmapBuilder.create()
                                 .directory(directory)
-                                .filePrefix("downstream")
+                                .filePrefix("event")
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildTransactionalQueue())
                 .commandExecutorFactory(
-                        (downstreamAppender, upstreamBeforeState, downstreamAfterState) -> downstreamAppender)
+                        (eventApplier, currentCommandExecutionState, completedEventApplyingState) -> eventApplier)
                 .eventApplierFactory(
-                        (upstreamBeforeState, downstreamAfterState) -> stateMessageConsumer)
+                        (currentEventApplyingState, completedEventApplyingState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(leadership)
                 .build();

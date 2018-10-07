@@ -39,8 +39,8 @@ public interface Transaction extends MessageConsumer {
     void init(int source, long sourceSeq, long eventTimeNanos, final boolean allowEmpty);
 
     /**
-     * @return number of entries committed
+     * @return true if transaction is committed
      * Commit the transaction.
      */
-    int commit();
+    boolean commit();
 }
