@@ -26,23 +26,23 @@ package org.tools4j.eventsourcing.api;
 import org.agrona.collections.LongLongConsumer;
 
 /**
- * Event Processing State provides event details at different stages of processing of the event.
- * There are the following stages when event processing state can be observed:
- * - current upstream event is being processed
- * - completed the upstream event
- * - current downstream events is processed
- * - completed downstream events
+ * Progress State provides event details at different stages of processing of the command/event.
+ * There are the following stages when progress state can be observed:
+ * - current command progress
+ * - completed command progress
+ * - current event progress
+ * - completed event progress
  */
-public interface EventProcessingState {
+public interface ProgressState {
     int NOT_INITIALISED = -1;
 
     /**
-     * @return Position of the event in the queue. Starts from 0 and increments by 1 (for each event).
+     * @return Position of the event/command in the queue. Starts from 0 and increments by 1 (for each event).
      */
     long id();
 
     /**
-     * @return Source of the event.
+     * @return Source of the event/command.
      */
     int source();
 
@@ -53,17 +53,17 @@ public interface EventProcessingState {
 
     /**
      * @param source given source
-     * @return sourceSeq of the event from the given source processed so far.
+     * @return sourceSeq of the event/command from the given source progressed far.
      */
     long sourceSeq(int source);
 
     /**
-     * @return time of the event in nanos
+     * @return time of the event/command in nanos
      */
     long eventTimeNanos();
 
     /**
-     * @return system time when the event is ingested at current stage.
+     * @return system time when the event/command is ingested at current stage.
      */
     long ingestionTimeNanos();
 
@@ -73,18 +73,16 @@ public interface EventProcessingState {
      */
     void forEachSourceEntry(LongLongConsumer consumer);
 
-    default boolean isAheadOf(final EventProcessingState another) {
-        return sourceSeq() > 0 && another.sourceSeq() > 0 &&
-                sourceSeq() > another.sourceSeq(source());
+    default boolean isAheadOf(final ProgressState another) {
+        return sourceSeq() > another.sourceSeq(source());
     }
 
-    default boolean isEqualTo(final EventProcessingState another) {
+    default boolean isEqualTo(final ProgressState another) {
         return sourceSeq() == another.sourceSeq() &&
                 source() == another.source();
     }
 
-    default boolean isNotEqualTo(final EventProcessingState another) {
+    default boolean isNotEqualTo(final ProgressState another) {
         return !isEqualTo(another);
     }
-
 }

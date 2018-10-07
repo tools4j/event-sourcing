@@ -27,30 +27,30 @@ import org.tools4j.nobark.loop.Step;
 
 import java.util.Objects;
 
-public final class DownstreamWhileDoneThenUpstreamUntilDoneStep implements Step {
+public final class ApplyAllThenExecuteUntilDoneStep implements Step {
 
-    private final Step upstreamProcessStepState;
-    private Step downstreamProcessStepState;
+    private final Step commandExecutionStepState;
+    private Step eventApplyingStepState;
     private Step currentStep;
 
 
-    public DownstreamWhileDoneThenUpstreamUntilDoneStep(final Step upstreamProcessStep, final Step downstreamProcessStep) {
-        Objects.requireNonNull(upstreamProcessStep);
-        Objects.requireNonNull(downstreamProcessStep);
+    public ApplyAllThenExecuteUntilDoneStep(final Step commandExecutionStep, final Step eventApplyingStep) {
+        Objects.requireNonNull(commandExecutionStep);
+        Objects.requireNonNull(eventApplyingStep);
 
-        upstreamProcessStepState = () -> {
-            final boolean workDone = upstreamProcessStep.perform();
-            if (workDone) currentStep = downstreamProcessStepState;
+        commandExecutionStepState = () -> {
+            final boolean workDone = commandExecutionStep.perform();
+            if (workDone) currentStep = eventApplyingStepState;
             return workDone;
         };
 
-        downstreamProcessStepState = () -> {
-            final boolean workDone = downstreamProcessStep.perform();
-            if (!workDone) currentStep = upstreamProcessStepState;
+        eventApplyingStepState = () -> {
+            final boolean workDone = eventApplyingStep.perform();
+            if (!workDone) currentStep = commandExecutionStepState;
             return workDone;
         };
 
-        currentStep = downstreamProcessStepState;
+        currentStep = eventApplyingStepState;
     }
 
     @Override

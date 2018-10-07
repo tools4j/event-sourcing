@@ -27,7 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.MetricIndexConsumer;
-import org.tools4j.eventsourcing.api.EventProcessingQueue;
+import org.tools4j.eventsourcing.api.CommandExecutionQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
@@ -62,25 +62,25 @@ public class EventSourcingPerfTest {
 
         final MessageConsumer senderMessageConsumer = (buffer, offset, length) -> {};
 
-        final EventProcessingQueue queue = EventProcessingQueue.builder()
-                .upstreamQueue(
+        final CommandExecutionQueue queue = CommandExecutionQueue.builder()
+                .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
-                                .filePrefix("upstream")
+                                .filePrefix("command")
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .downstreamQueue(
+                .eventQueue(
                         MmapBuilder.create()
                                 .directory(directory)
-                                .filePrefix("downstream")
+                                .filePrefix("event")
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildTransactionalQueue())
-                .upstreamFactory(
-                        (downstreamAppender, upstreamBeforeState, downstreamAfterState) -> downstreamAppender)
-                .downstreamFactory(
-                        (upstreamBeforeState, downstreamAfterState) -> stateMessageConsumer)
+                .commandExecutorFactory(
+                        (eventApplier, currentCommandExecutionState, completedEventApplyingState) -> eventApplier)
+                .eventApplierFactory(
+                        (currentEventApplyingState, completedEventApplyingState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(leadership)
                 .build();
@@ -98,7 +98,7 @@ public class EventSourcingPerfTest {
 
         regionRingFactory.onComplete();
 
-        final Service eventProcessor = TestUtil.startService("event-processor", queue.processorStep(), stop::get);
+        final Service eventProcessor = TestUtil.startService("event-processor", queue.executorStep(), stop::get);
         final Service sender = TestUtil.startService("event-sender", senderStep, stop::get);
 
         final String testMessage = "#------------------------------------------------#\n";

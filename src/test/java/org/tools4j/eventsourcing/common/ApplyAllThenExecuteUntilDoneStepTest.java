@@ -23,38 +23,41 @@
  */
 package org.tools4j.eventsourcing.common;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.tools4j.nobark.loop.Step;
 
-import java.util.Objects;
+import static org.mockito.Mockito.*;
 
-public final class DownstreamWhileDoneThenUpstreamOnceStep implements Step {
+@RunWith(MockitoJUnitRunner.class)
+public class ApplyAllThenExecuteUntilDoneStepTest {
+    @Mock
+    private Step inStep;
+    @Mock
+    private Step outStep;
 
-    private final Step upstreamProcessStepState;
-    private Step downstreamProcessStepState;
-    private Step currentStep;
+    @Test
+    public void perform() throws Exception {
+
+        when(outStep.perform()).thenReturn(true, true, false, true, false);
+        when(inStep.perform()).thenReturn(false, false, true);
+
+        final ApplyAllThenExecuteUntilDoneStep processorStep = new ApplyAllThenExecuteUntilDoneStep(inStep::perform, outStep::perform);
 
 
-    public DownstreamWhileDoneThenUpstreamOnceStep(final Step upstreamProcessStep, final Step downstreamProcessStep) {
-        Objects.requireNonNull(upstreamProcessStep);
-        Objects.requireNonNull(downstreamProcessStep);
+        processorStep.perform();
+        processorStep.perform();
+        processorStep.perform();
+        processorStep.perform();
+        processorStep.perform();
+        processorStep.perform();
+        processorStep.perform();
+        processorStep.perform();
 
-        upstreamProcessStepState = () -> {
-            final boolean workDone = upstreamProcessStep.perform();
-            currentStep = downstreamProcessStepState;
-            return workDone;
-        };
-
-        downstreamProcessStepState = () -> {
-            final boolean workDone = downstreamProcessStep.perform();
-            if (!workDone) currentStep = upstreamProcessStepState;
-            return workDone;
-        };
-
-        currentStep = downstreamProcessStepState;
+        verify(outStep, times(5)).perform();
+        verify(inStep, times(3)).perform();
     }
 
-    @Override
-    public boolean perform() {
-        return currentStep.perform();
-    }
 }
