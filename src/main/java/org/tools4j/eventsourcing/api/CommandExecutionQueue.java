@@ -23,13 +23,15 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import org.tools4j.eventsourcing.common.DefaultCommandExecutionQueue;
 import org.tools4j.eventsourcing.common.ApplyAllThenExecuteOnceStep;
+import org.tools4j.eventsourcing.common.DefaultCommandExecutionQueue;
 import org.tools4j.nobark.loop.Step;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.BinaryOperator;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntPredicate;
 import java.util.function.LongSupplier;
 
 /**
@@ -83,6 +85,8 @@ public interface CommandExecutionQueue extends IndexedQueue {
 
             OptionalsStep executorStepFactory(BinaryOperator<Step> executionStepFactory);
 
+            OptionalsStep stateChangingSource(IntPredicate stateChangingSource);
+
             CommandExecutionQueue build() throws IOException;
         }
     }
@@ -99,6 +103,7 @@ public interface CommandExecutionQueue extends IndexedQueue {
         private MessageConsumer.CommandExecutorFactory commandExecutorFactory = MessageConsumer.CommandExecutorFactory.PASS_THROUGH;
         private MessageConsumer.EventApplierFactory eventApplierFactory = MessageConsumer.EventApplierFactory.NO_OP;
         private BinaryOperator<Step> executorStepFactory = ApplyAllThenExecuteOnceStep::new;
+        private IntPredicate stateChangingSource = value -> true;
 
         @Override
         public EventQueueStep commandQueue(final IndexedQueue commandQueue) {
@@ -126,43 +131,49 @@ public interface CommandExecutionQueue extends IndexedQueue {
 
         @Override
         public OptionalsStep systemNanoClock(final LongSupplier systemNanoClock) {
-            this.systemNanoClock = systemNanoClock;
+            this.systemNanoClock = Objects.requireNonNull(systemNanoClock);
             return this;
         }
 
         @Override
         public OptionalsStep leadership(final BooleanSupplier leadership) {
-            this.leadership = leadership;
+            this.leadership = Objects.requireNonNull(leadership);
             return this;
         }
 
         @Override
         public OptionalsStep onCommandExecutionStart(final Poller.IndexConsumer onCommandExecutionStart) {
-            this.onCommandExecutionStart = onCommandExecutionStart;
+            this.onCommandExecutionStart = Objects.requireNonNull(onCommandExecutionStart);
             return this;
         }
 
         @Override
         public OptionalsStep onCommandExecutionComplete(final Poller.IndexConsumer onCommandExecutionComplete) {
-            this.onCommandExecutionComplete = onCommandExecutionComplete;
+            this.onCommandExecutionComplete = Objects.requireNonNull(onCommandExecutionComplete);
             return this;
         }
 
         @Override
         public OptionalsStep onEventApplyingStart(final Poller.IndexConsumer onEventApplyingStart) {
-            this.onEventApplyingStart = onEventApplyingStart;
+            this.onEventApplyingStart = Objects.requireNonNull(onEventApplyingStart);
             return this;
         }
 
         @Override
         public OptionalsStep onEventApplyingCompleted(final Poller.IndexConsumer onEventApplyingCompleted) {
-            this.onEventApplyingCompleted = onEventApplyingCompleted;
+            this.onEventApplyingCompleted = Objects.requireNonNull(onEventApplyingCompleted);
             return this;
         }
 
         @Override
         public OptionalsStep executorStepFactory(final BinaryOperator<Step> executionStepFactory) {
-            this.executorStepFactory = executionStepFactory;
+            this.executorStepFactory = Objects.requireNonNull(executionStepFactory);
+            return this;
+        }
+
+        @Override
+        public OptionalsStep stateChangingSource(final IntPredicate stateChangingSource) {
+            this.stateChangingSource = Objects.requireNonNull(stateChangingSource);
             return this;
         }
 
@@ -179,7 +190,8 @@ public interface CommandExecutionQueue extends IndexedQueue {
                     onEventApplyingCompleted,
                     commandExecutorFactory,
                     eventApplierFactory,
-                    executorStepFactory
+                    executorStepFactory,
+                    stateChangingSource
             );
         }
     }

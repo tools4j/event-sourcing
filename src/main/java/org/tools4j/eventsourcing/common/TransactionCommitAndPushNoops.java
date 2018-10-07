@@ -49,7 +49,7 @@ public class TransactionCommitAndPushNoops implements Poller.IndexConsumer {
         pushMoreUpToDateNoopSourceSeqs.excludedSource = source;
         pushMoreUpToDateNoopSourceSeqs.eventTimeNanos = eventTimeNanos;
 
-        if (transaction.commit() > 0) {
+        if (transaction.commit()) {
             completedCommandExecutionState.forEachSourceEntry(pushMoreUpToDateNoopSourceSeqs);
         }
     }

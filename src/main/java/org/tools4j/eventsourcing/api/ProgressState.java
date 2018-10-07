@@ -74,8 +74,7 @@ public interface ProgressState {
     void forEachSourceEntry(LongLongConsumer consumer);
 
     default boolean isAheadOf(final ProgressState another) {
-        return sourceSeq() > 0 && another.sourceSeq() > 0 &&
-                sourceSeq() > another.sourceSeq(source());
+        return sourceSeq() > another.sourceSeq(source());
     }
 
     default boolean isEqualTo(final ProgressState another) {
