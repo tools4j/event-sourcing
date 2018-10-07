@@ -78,7 +78,11 @@ public class EventSourcingPerfTest {
                                 .clearFiles(true)
                                 .buildTransactionalQueue())
                 .commandExecutorFactory(
-                        (eventApplier, currentCommandExecutionState, completedEventApplyingState) -> eventApplier)
+                        (eventApplier,
+                         currentCommandExecutionState,
+                         completedCommandExecutionState,
+                         currentEventApplyingState,
+                         completedEventApplyingState) -> eventApplier)
                 .eventApplierFactory(
                         (currentEventApplyingState, completedEventApplyingState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)

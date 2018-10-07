@@ -53,11 +53,7 @@ public class CommandExecutionQueueTest {
 
     private CommandExecutionQueue commandExecutionQueue;
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    private void initQueue(final MessageConsumer.CommandExecutorFactory commandExecutorFactory) throws IOException {
+    private void initExecutionQueue(final MessageConsumer.CommandExecutorFactory commandExecutorFactory) throws IOException {
         final RegionRingFactory regionRingFactory = RegionRingFactoryConfig.get("SYNC");
 
         final String directory = System.getProperty("user.dir") + "/build";
@@ -96,8 +92,12 @@ public class CommandExecutionQueueTest {
     }
 
     @Test
-    public void nonStateChangingCommandShouldBeExecutedRegardless() throws Exception {
-        initQueue((eventApplier, currentCommandExecutionState, completedEventApplierState) -> commandExecutor);
+    public void nonStateChangingCommandd_should_be_executed_when_no_events_are_produced() throws Exception {
+        initExecutionQueue((eventApplier,
+                            currentCommandExecutionState,
+                            completedCommandExecutionState,
+                            currentEventApplyingState,
+                            completedEventApplierState) -> commandExecutor); //no events are applied to eventApplier
 
         final String testMessage = "#------------------------------------------------#\n";
 
@@ -120,13 +120,18 @@ public class CommandExecutionQueueTest {
         commandExecutionQueue.executorStep().perform(); //attempt apply events produced by command 1 (none expected)
         commandExecutionQueue.executorStep().perform(); //execute command 2
 
+        //then
         verify(commandExecutor, times(2)).accept(any(UnsafeBuffer.class), eq(12), eq(size));
     }
 
 
     @Test
-    public void stateChangingCommandShouldBeExecuted() throws Exception {
-        initQueue((eventApplier, currentCommandExecutionState, completedEventApplierState) -> commandExecutor);
+    public void stateChangingCommand_should_be_executed_when_previous_command_produced_no_events() throws Exception {
+        initExecutionQueue((eventApplier,
+                            currentCommandExecutionState,
+                            completedCommandExecutionState,
+                            currentEventApplyingState,
+                            completedEventApplierState) -> commandExecutor); //no events are applied to eventApplier
 
         final String testMessage = "#------------------------------------------------#\n";
 
@@ -146,9 +151,10 @@ public class CommandExecutionQueueTest {
 
         commandExecutionQueue.executorStep().perform(); //initial apply events
         commandExecutionQueue.executorStep().perform(); //execute command 1
-        commandExecutionQueue.executorStep().perform(); //apply events produced by command 1
+        commandExecutionQueue.executorStep().perform(); //apply events produced by command 1 (non expected)
         commandExecutionQueue.executorStep().perform(); //execute command 2
 
+        //then
         verify(commandExecutor, times(2)).accept(any(UnsafeBuffer.class), eq(12), eq(size));
     }
 

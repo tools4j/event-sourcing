@@ -66,17 +66,29 @@ public interface MessageConsumer {
      * EventApplier.
      */
     interface CommandExecutorFactory {
-        CommandExecutorFactory PASS_THROUGH = (eventApplier, currentCommandExecutionState, completedEventApplyingState) -> eventApplier;
-        CommandExecutorFactory NO_OP = (eventApplier, currentCommandExecutionState, completedEventApplyingState) -> MessageConsumer.NO_OP;
+        CommandExecutorFactory PASS_THROUGH = (eventApplier,
+                                               currentCommandExecutionState,
+                                               completedCommandExecutionState,
+                                               currentEventAppyingState,
+                                               completedEventApplyingState) -> eventApplier;
+        CommandExecutorFactory NO_OP = (eventApplier,
+                                        currentCommandExecutionState,
+                                        completedCommandExecutionState,
+                                        currentEventAppyingState,
+                                        completedEventApplyingState) -> MessageConsumer.NO_OP;
         /**
          * Constructs a new command executor.
          * @param eventApplier - resulting event consumer which applies the events to the application.
          * @param currentCommandExecutionState - current command execution state
+         * @param completedCommandExecutionState - completed command execution state
+         * @param currentEventApplyingState - current event applying state
          * @param completedEventApplyingState - completed event applying state
          * @return command executor.
          */
         MessageConsumer create(MessageConsumer eventApplier,
                                ProgressState currentCommandExecutionState,
+                               ProgressState completedCommandExecutionState,
+                               ProgressState currentEventApplyingState,
                                ProgressState completedEventApplyingState);
     }
 
