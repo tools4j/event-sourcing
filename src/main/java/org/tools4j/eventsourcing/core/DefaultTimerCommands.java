@@ -46,7 +46,7 @@ public class DefaultTimerCommands implements TimerCommands {
     }
 
     @Override
-    public int startTimer(final long timeout, final TimeUnit unit) {
+    public int start(final long timeout, final TimeUnit unit) {
         if (timeout < 0) {
             throw new IllegalArgumentException("Timeout cannot be negative: " + timeout);
         }
@@ -66,7 +66,7 @@ public class DefaultTimerCommands implements TimerCommands {
     }
 
     @Override
-    public void stopTimer(final int timerId) {
+    public void stop(final int timerId) {
         header.stop(timerId);
         header.timeoutMillis(0);
         eventAppender.accept(header);

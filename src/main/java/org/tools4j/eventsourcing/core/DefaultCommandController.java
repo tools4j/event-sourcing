@@ -70,22 +70,22 @@ public class DefaultCommandController implements CommandController {
     }
 
     @Override
-    public TimerCommands timerCommands() {
-        return singleCommandHandler.timerCommands();
+    public TimerCommands timer() {
+        return singleCommandHandler.timer();
     }
 
     @Override
-    public AdminCommands adminCommands() {
-        return singleCommandHandler.adminCommands();
+    public AdminCommands admin() {
+        return singleCommandHandler.admin();
     }
 
     @Override
-    public CommitCommands commitCommands() {
-        return singleCommandHandler.commitCommands();
+    public CommitCommands commit() {
+        return singleCommandHandler.commit();
     }
 
     @Override
     public void close() {
-        singleEventAppender.complete(commitCommands());
+        singleEventAppender.complete(commit());
     }
 }

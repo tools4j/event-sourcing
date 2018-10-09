@@ -24,7 +24,7 @@
 package org.tools4j.eventsourcing.command;
 
 public interface SingleCommandHandler {
-    TimerCommands timerCommands();
-    AdminCommands adminCommands();
-    CommitCommands commitCommands();
+    TimerCommands timer();
+    AdminCommands admin();
+    CommitCommands commit();
 }

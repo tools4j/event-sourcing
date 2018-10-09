@@ -80,7 +80,7 @@ o --> (UNINITIALIZED) --> (SINGLE_STARTED) --> ((SINGLE_APPENDED))
         try {
             switch (state) {
                 case SINGLE_STARTED:
-                    commitCommands.commitNoop(Header.DEFAULT_USER_DATA);
+                    commitCommands.noop(Header.DEFAULT_USER_DATA);
                     break;
                 case MULTI_STARTED:
                     throw new IllegalStateException("Multipart has been started but not completed");

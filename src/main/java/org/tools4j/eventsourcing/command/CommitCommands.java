@@ -27,13 +27,13 @@ import org.agrona.DirectBuffer;
 import org.tools4j.eventsourcing.event.Header;
 
 public interface CommitCommands {
-    default void commitEvent(short subtypeId, DirectBuffer message, int offset, int length) {
-        commitEvent(subtypeId, Header.DEFAULT_USER_DATA, message, offset, length);
+    default void event(short subtypeId, DirectBuffer message, int offset, int length) {
+        event(subtypeId, Header.DEFAULT_USER_DATA, message, offset, length);
     }
-    void commitEvent(short subtypeId, int userData, DirectBuffer message, int offset, int length);
+    void event(short subtypeId, int userData, DirectBuffer message, int offset, int length);
 
-    default void commitNoop() {
-        commitNoop(Header.DEFAULT_USER_DATA);
+    default void noop() {
+        noop(Header.DEFAULT_USER_DATA);
     }
-    void commitNoop(int userData);
+    void noop(int userData);
 }

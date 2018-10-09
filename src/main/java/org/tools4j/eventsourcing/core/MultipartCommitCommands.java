@@ -89,7 +89,7 @@ public class MultipartCommitCommands implements CommitCommands, Consumer<Header>
     }
 
     @Override
-    public void commitEvent(final short subtypeId, final int userData, final DirectBuffer message, final int offset, final int length) {
+    public void event(final short subtypeId, final int userData, final DirectBuffer message, final int offset, final int length) {
         checkStarted();
         partHeader
                 .type(Type.DATA)
@@ -101,7 +101,7 @@ public class MultipartCommitCommands implements CommitCommands, Consumer<Header>
     }
 
     @Override
-    public void commitNoop(final int userData) {
+    public void noop(final int userData) {
         checkStarted();
         partHeader
                 .type(Type.NOOP)

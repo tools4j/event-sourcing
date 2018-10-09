@@ -67,7 +67,7 @@ public class SingleCommitCommands implements CommitCommands, Consumer<Header> {
     }
 
     @Override
-    public void commitEvent(final short subtypeId, final int userData, final DirectBuffer message, final int offset, final int length) {
+    public void event(final short subtypeId, final int userData, final DirectBuffer message, final int offset, final int length) {
         headerInitialised()
                 .type(Type.DATA)
                 .subtypeId(subtypeId)
@@ -80,7 +80,7 @@ public class SingleCommitCommands implements CommitCommands, Consumer<Header> {
     }
 
     @Override
-    public void commitNoop(final int userData) {
+    public void noop(final int userData) {
         headerInitialised()
                 .type(Type.NOOP)
                 .userData(userData)

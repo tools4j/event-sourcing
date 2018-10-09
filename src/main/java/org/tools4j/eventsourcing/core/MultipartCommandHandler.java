@@ -55,17 +55,17 @@ public class MultipartCommandHandler implements CommandHandler.MultipartHandler 
     }
 
     @Override
-    public TimerCommands timerCommands() {
+    public TimerCommands timer() {
         return timerCommands;
     }
 
     @Override
-    public AdminCommands adminCommands() {
+    public AdminCommands admin() {
         return adminCommands;
     }
 
     @Override
-    public CommitCommands commitCommands() {
+    public CommitCommands commit() {
         return multipartCommitCommands;
     }
 

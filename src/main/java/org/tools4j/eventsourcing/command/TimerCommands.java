@@ -26,6 +26,6 @@ package org.tools4j.eventsourcing.command;
 import java.util.concurrent.TimeUnit;
 
 public interface TimerCommands {
-    int startTimer(long timeout, TimeUnit unit);
-    void stopTimer(int timerId);
+    int start(long timeout, TimeUnit unit);
+    void stop(int timerId);
 }
