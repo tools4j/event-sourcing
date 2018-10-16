@@ -21,43 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.common;
+package org.tools4j.eventsourcing.raft.state;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.tools4j.nobark.loop.Step;
+import org.tools4j.eventsourcing.sbe.HeaderDecoder;
 
-import static org.mockito.Mockito.*;
+import java.util.function.Predicate;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ApplyAllThenExecuteUntilDoneStepTest {
+public class DestinationFilterTest {
+    private int serverId = 1;
     @Mock
-    private Step inStep;
-    @Mock
-    private Step outStep;
+    private HeaderDecoder headerDecoder;
+    private Predicate<HeaderDecoder> destinationFilter;
 
-    @Test
-    public void perform() throws Exception {
-
-        when(outStep.perform()).thenReturn(true, true, false, true, false);
-        when(inStep.perform()).thenReturn(false, false, true);
-
-        final ApplyAllThenExecuteUntilDoneStep processorStep = new ApplyAllThenExecuteUntilDoneStep(inStep::perform, outStep::perform);
-
-
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-
-        verify(outStep, times(5)).perform();
-        verify(inStep, times(3)).perform();
+    @Before
+    public void setUp() throws Exception {
+        destinationFilter = DestinationFilter.forServer(serverId);
     }
 
+    @Test
+    public void test_should_return_true_when_header_destinationId_matches_serverId() throws Exception {
+        when(headerDecoder.destinationId()).thenReturn(serverId);
+        assertThat(destinationFilter.test(headerDecoder)).isTrue();
+    }
+
+    @Test
+    public void test_should_return_false_when_header_destinationId_matches_serverId() throws Exception {
+        when(headerDecoder.destinationId()).thenReturn(2);
+        assertThat(destinationFilter.test(headerDecoder)).isFalse();
+    }
 }

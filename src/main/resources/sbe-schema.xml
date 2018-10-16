@@ -27,6 +27,38 @@
             <type name="sourceSeq" primitiveType="uint64"/>
             <type name="eventTimeNanos" primitiveType="uint64"/>
         </composite>
+        <composite name="raftIndex" description="Raft Index Attributes">
+            <type name="length" primitiveType="int32"/>
+            <type name="position" primitiveType="uint64"/>
+            <type name="term" primitiveType="int32"/>
+            <type name="source" primitiveType="int32"/>
+            <type name="sourceSeq" primitiveType="uint64"/>
+            <type name="eventTimeNanos" primitiveType="uint64"/>
+        </composite>
+        <composite name="raftHeader" description="Raft Header Attributes">
+            <type name="currentTerm" primitiveType="int32"/>
+            <type name="votedFor" primitiveType="int32"/>
+        </composite>
+
+        <enum name="BooleanType" encodingType="uint8">
+            <validValue name="F">0</validValue>
+            <validValue name="T">1</validValue>
+        </enum>
+        <type name="LogIndex" primitiveType="int64" minValue="-1"/>
+        <type name="CommandSequence" primitiveType="int64" minValue="0"/>
+        <type name="CommandSource" primitiveType="uint16"/>
+        <type name="CommandTimeNanos" primitiveType="int64" minValue="0"/>
+        <type name="Term" primitiveType="int32"/>
+        <composite name="Header">
+            <type name="sourceId" primitiveType="int32"/>
+            <type name="destinationId" primitiveType="int32"/>
+            <type name="term" primitiveType="int32"/>
+        </composite>
+        <composite name="LogKey">
+            <type name="term" primitiveType="int32"/>
+            <type name="index" primitiveType="int64"/>
+        </composite>
+
     </types>
     <sbe:message id="1" name="SinglePayload" description="Single Payload">
         <data name="value" id="1" type="varDataEncoding"/>
@@ -36,7 +68,39 @@
             <data name="value" id="3" type="varDataEncoding"/>
         </group>
     </sbe:message>
+    <!-- This message is not used. It is only to generate some useful composite types-->
     <sbe:message id="3" name="IndexPayload" description="Index Payload">
         <field name="index" id="4" type="index"/>
+        <field name="raftIndex" id="5" type="raftIndex"/>
+        <field name="raftHeader" id="6" type="raftHeader"/>
     </sbe:message>
+
+    <!-- Raft -->
+    <sbe:message id="4" name="VoteRequest" description="Vote Request">
+        <field name="header" id="7" type="Header"/>
+        <field name="lastLogKey" id="8" type="LogKey"/>
+    </sbe:message>
+    <sbe:message id="5" name="VoteResponse" description="Vote Response">
+        <field name="header" id="7" type="Header"/>
+        <field name="voteGranted" id="9" type="BooleanType"/>
+    </sbe:message>
+    <sbe:message id="6" name="AppendRequest" description="Append Request">
+        <field name="header" id="7" type="Header"/>
+        <field name="prevLogKey" id="10" type="LogKey"/>
+        <field name="commitLogIndex" id="11" type="LogIndex"/>
+        <group name="logEntries" id="12" dimensionType="groupSizeEncoding">
+            <field name="term" id="13" type="Term"/>
+            <field name="commandSource" id="14" type="CommandSource"/>
+            <field name="commandSequence" id="15" type="CommandSequence"/>
+            <field name="commandTimeNanos" id="16" type="CommandTimeNanos"/>
+            <data name="command" id="17" type="varDataEncoding"/>
+        </group>
+    </sbe:message>
+    <sbe:message id="7" name="AppendResponse" description="Append Response">
+        <field name="header" id="7" type="Header"/>
+        <field name="matchLogIndex" id="18" type="LogIndex"/>
+        <field name="prevLogIndex" id="19" type="LogIndex"/>
+        <field name="successful" id="20" type="BooleanType"/>
+    </sbe:message>
+
 </sbe:messageSchema>

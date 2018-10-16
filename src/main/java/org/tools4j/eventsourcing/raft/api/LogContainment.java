@@ -21,43 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.common;
+package org.tools4j.eventsourcing.raft.api;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.tools4j.nobark.loop.Step;
+public enum LogContainment {
+    IN, OUT, CONFLICT;
 
-import static org.mockito.Mockito.*;
-
-@RunWith(MockitoJUnitRunner.class)
-public class ApplyAllThenExecuteUntilDoneStepTest {
-    @Mock
-    private Step inStep;
-    @Mock
-    private Step outStep;
-
-    @Test
-    public void perform() throws Exception {
-
-        when(outStep.perform()).thenReturn(true, true, false, true, false);
-        when(inStep.perform()).thenReturn(false, false, true);
-
-        final ApplyAllThenExecuteUntilDoneStep processorStep = new ApplyAllThenExecuteUntilDoneStep(inStep::perform, outStep::perform);
-
-
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-
-        verify(outStep, times(5)).perform();
-        verify(inStep, times(3)).perform();
+    public static LogContainment containmentFor(final long index, final long termAtIndex, final RaftLog raftLog) {
+        if (index >= raftLog.size()) {
+            return OUT;
+        } else {
+            if (index < 0) return IN;
+            final int logTermAtIndex = raftLog.term(index);
+            return termAtIndex == logTermAtIndex ? IN : CONFLICT;
+        }
     }
-
 }

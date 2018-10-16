@@ -29,7 +29,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
