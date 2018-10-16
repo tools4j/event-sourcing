@@ -365,7 +365,7 @@ public class LeaderServerStateTest {
         commandDecoderBuffer.wrap(commandArray, 0 , commandArray.length);
 
         //when
-        leaderServerState.appendCommand(source, sourceSeq, timeNanos, commandDecoderBuffer, 0, commandArray.length);
+        leaderServerState.accept(source, sourceSeq, timeNanos, commandDecoderBuffer, 0, commandArray.length);
 
         //then
         verify(raftLog).append(currentTerm, source, sourceSeq, timeNanos, commandDecoderBuffer, 0, commandArray.length);

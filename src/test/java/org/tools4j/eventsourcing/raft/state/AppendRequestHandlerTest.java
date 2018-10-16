@@ -31,7 +31,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
-import org.tools4j.eventsourcing.raft.api.LogContainment;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.timer.Timer;
 import org.tools4j.eventsourcing.raft.transport.Publisher;
@@ -108,8 +107,8 @@ public class AppendRequestHandlerTest {
         when(appendRequestDecoder.commitLogIndex()).thenReturn(leaderCommitIndex);
         when(raftLog.commitIndex()).thenReturn(-1L);
 
-        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(LogContainment.IN);
-        when(raftLog.contains(nextLogIndex, nextLogTerm)).thenReturn(LogContainment.OUT);
+        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(RaftLog.Containment.IN);
+        when(raftLog.contains(nextLogIndex, nextLogTerm)).thenReturn(RaftLog.Containment.OUT);
 
         when(appendRequestDecoder.logEntries()).thenReturn(logEntriesDecoder);
         when(logEntriesDecoder.iterator()).thenReturn(logEntriesDecoder);
@@ -175,8 +174,8 @@ public class AppendRequestHandlerTest {
         when(appendRequestDecoder.commitLogIndex()).thenReturn(leaderCommitIndex);
         when(raftLog.commitIndex()).thenReturn(-1L);
 
-        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(LogContainment.IN);
-        when(raftLog.contains(nextLogIndex, nextLogTerm)).thenReturn(LogContainment.IN);
+        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(RaftLog.Containment.IN);
+        when(raftLog.contains(nextLogIndex, nextLogTerm)).thenReturn(RaftLog.Containment.IN);
 
         when(appendRequestDecoder.logEntries()).thenReturn(logEntriesDecoder);
         when(logEntriesDecoder.iterator()).thenReturn(logEntriesDecoder);
@@ -234,8 +233,8 @@ public class AppendRequestHandlerTest {
         when(prevLogKeyDecoder.term()).thenReturn(prevLogTerm);
         when(appendRequestDecoder.commitLogIndex()).thenReturn(leaderCommitIndex);
 
-        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(LogContainment.IN);
-        when(raftLog.contains(nextLogIndex, nextLogTerm)).thenReturn(LogContainment.CONFLICT);
+        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(RaftLog.Containment.IN);
+        when(raftLog.contains(nextLogIndex, nextLogTerm)).thenReturn(RaftLog.Containment.CONFLICT);
 
         when(appendRequestDecoder.logEntries()).thenReturn(logEntriesDecoder);
         when(logEntriesDecoder.iterator()).thenReturn(logEntriesDecoder);
@@ -271,7 +270,7 @@ public class AppendRequestHandlerTest {
         when(prevLogKeyDecoder.term()).thenReturn(prevLogTerm);
         when(appendRequestDecoder.commitLogIndex()).thenReturn(leaderCommitIndex);
 
-        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(LogContainment.OUT);
+        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(RaftLog.Containment.OUT);
 
         //when
         final Transition transition = appendRequestHandler.apply(appendRequestDecoder, logger);
@@ -313,7 +312,7 @@ public class AppendRequestHandlerTest {
         when(prevLogKeyDecoder.term()).thenReturn(prevLogTerm);
         when(appendRequestDecoder.commitLogIndex()).thenReturn(leaderCommitIndex);
 
-        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(LogContainment.CONFLICT);
+        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(RaftLog.Containment.CONFLICT);
 
         //when
         final Transition transition = appendRequestHandler.apply(appendRequestDecoder, logger);

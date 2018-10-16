@@ -51,6 +51,11 @@ public class HeaderFilteringServerState implements ServerState {
     }
 
     @Override
+    public void accept(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {
+        delegateServerState.accept(source, sourceSeq, timeNanos, buffer, offset, length);
+    }
+
+    @Override
     public Transition processTick() {
         return delegateServerState.processTick();
     }
@@ -77,11 +82,6 @@ public class HeaderFilteringServerState implements ServerState {
     public Transition onAppendResponse(final AppendResponseDecoder appendResponseDecoder) {
         if (!filter.test(appendResponseDecoder.header())) return Transition.STEADY;
         return delegateServerState.onAppendResponse(appendResponseDecoder);
-    }
-
-    @Override
-    public void appendCommand(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {
-        delegateServerState.appendCommand(source, sourceSeq, timeNanos, buffer, offset, length);
     }
 
     @Override

@@ -54,6 +54,11 @@ public class HighTermHandlingServerState implements ServerState {
     }
 
     @Override
+    public void accept(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {
+        delegateServerState.accept(source, sourceSeq, timeNanos, buffer, offset, length);
+    }
+
+    @Override
     public Transition processTick() {
         return delegateServerState.processTick();
     }
@@ -88,11 +93,6 @@ public class HighTermHandlingServerState implements ServerState {
             return Transition.TO_FOLLOWER_NO_REPLAY;
         }
         return delegateServerState.onAppendResponse(appendResponseDecoder);
-    }
-
-    @Override
-    public void appendCommand(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {
-        delegateServerState.appendCommand(source, sourceSeq, timeNanos, buffer, offset, length);
     }
 
     @Override

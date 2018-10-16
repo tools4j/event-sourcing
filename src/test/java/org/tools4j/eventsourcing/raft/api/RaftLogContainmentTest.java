@@ -21,22 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.raft.state;
+package org.tools4j.eventsourcing.raft.api;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.tools4j.eventsourcing.raft.api.LogContainment;
-import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.spockito.Spockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @RunWith(Spockito.class)
-public class LogContainmentTest {
+public class RaftLogContainmentTest {
     @Mock
     private RaftLog raftLog;
 
@@ -57,12 +55,12 @@ public class LogContainmentTest {
                                final int term,
                                final long logSize,
                                final int logTermAtIndex,
-                               final LogContainment containment) throws Exception {
+                               final RaftLog.Containment containment) throws Exception {
         when(raftLog.size()).thenReturn(logSize);
         when(raftLog.term(index)).thenReturn(logTermAtIndex);
 
 
-        assertThat(LogContainment.containmentFor(index, term, raftLog)).isEqualTo(containment);
+        assertThat(RaftLog.Containment.of(index, term, raftLog)).isEqualTo(containment);
     }
 
 }

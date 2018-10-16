@@ -90,7 +90,7 @@ public final class ServerMessageHandler implements IndexedMessageConsumer, Messa
 
     @Override
     public void accept(final int source, final long sourceSeq, final long eventTimeNanos, final DirectBuffer buffer, final int offset, final int length) {
-        serverState.appendCommand(source, sourceSeq, eventTimeNanos, buffer, offset, length);
+        serverState.accept(source, sourceSeq, eventTimeNanos, buffer, offset, length);
     }
 
     public boolean leader() {

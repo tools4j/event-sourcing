@@ -25,7 +25,6 @@ package org.tools4j.eventsourcing.raft.state;
 
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
-import org.tools4j.eventsourcing.raft.api.LogContainment;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.timer.Timer;
 import org.tools4j.eventsourcing.raft.transport.Publisher;
@@ -78,7 +77,7 @@ public class AppendRequestHandler implements BiFunction<AppendRequestDecoder, Lo
         } else {
             final long leaderCommitIndex = appendRequestDecoder.commitLogIndex();
 
-            final LogContainment containment = raftLog.contains(requestPrevIndex, requestPrevTermAtIndex);
+            final RaftLog.Containment containment = raftLog.contains(requestPrevIndex, requestPrevTermAtIndex);
 
             switch (containment) {
                 case IN:
@@ -101,7 +100,7 @@ public class AppendRequestHandler implements BiFunction<AppendRequestDecoder, Lo
                     successful = false;
                     break;
                 default:
-                    throw new IllegalStateException("Unknown LogContainment " + containment);
+                    throw new IllegalStateException("Unknown RaftLog.Containment " + containment);
             }
             electionTimeout.restart();
         }
@@ -141,7 +140,7 @@ public class AppendRequestHandler implements BiFunction<AppendRequestDecoder, Lo
             final int offset = appendRequestDecoder.limit() + commandHeaderLength;
             final int length = logEntryDecoder.commandLength();
 
-            final LogContainment containment = raftLog.contains(nextIndex, nextTermAtIndex);
+            final RaftLog.Containment containment = raftLog.contains(nextIndex, nextTermAtIndex);
             switch (containment) {
                 case OUT:
                     raftLog.append(nextTermAtIndex, commandSource, commandSequence, commandTimeNanos,

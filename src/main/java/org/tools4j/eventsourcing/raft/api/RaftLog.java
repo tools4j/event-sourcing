@@ -91,8 +91,8 @@ public interface RaftLog extends Closeable {
         return incTerm;
     }
 
-    default LogContainment contains(final long index, int termAtIndex) {
-        return LogContainment.containmentFor(index, termAtIndex, this);
+    default Containment contains(final long index, int termAtIndex) {
+        return Containment.of(index, termAtIndex, this);
     }
 
     default int lastKeyCompareTo(final long index, final int term) {
@@ -103,4 +103,18 @@ public interface RaftLog extends Closeable {
 
     @Override
     void close();
+
+    enum Containment {
+        IN, OUT, CONFLICT;
+
+        public static Containment of(final long index, final long termAtIndex, final RaftLog raftLog) {
+            if (index >= raftLog.size()) {
+                return OUT;
+            } else {
+                if (index < 0) return IN;
+                final int logTermAtIndex = raftLog.term(index);
+                return termAtIndex == logTermAtIndex ? IN : CONFLICT;
+            }
+        }
+    }
 }
