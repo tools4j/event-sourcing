@@ -21,43 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.common;
+package org.tools4j.eventsourcing.raft.state;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.tools4j.nobark.loop.Step;
+/**
+ * Transition from current state, either STEADY (no change) or into a new {@link Role}.
+ */
+public enum Transition {
+    STEADY(null, false),
+    TO_FOLLOWER_REPLAY(Role.FOLLOWER, true),
+    TO_FOLLOWER_NO_REPLAY(Role.FOLLOWER, false),
+    TO_CANDIDATE_NO_REPLAY(Role.CANDIDATE, false),
+    TO_LEADER_NO_REPLAY(Role.LEADER, false);
 
-import static org.mockito.Mockito.*;
+    private final Role targetRole;
+    private final boolean replayEvent;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ApplyAllThenExecuteUntilDoneStepTest {
-    @Mock
-    private Step inStep;
-    @Mock
-    private Step outStep;
-
-    @Test
-    public void perform() throws Exception {
-
-        when(outStep.perform()).thenReturn(true, true, false, true, false);
-        when(inStep.perform()).thenReturn(false, false, true);
-
-        final ApplyAllThenExecuteUntilDoneStep processorStep = new ApplyAllThenExecuteUntilDoneStep(inStep::perform, outStep::perform);
-
-
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-
-        verify(outStep, times(5)).perform();
-        verify(inStep, times(3)).perform();
+    Transition(final Role targetRole, final boolean replayEvent) {
+        this.targetRole = targetRole;//nullable
+        this.replayEvent = replayEvent;
     }
 
+    public Role targetRole() {
+        return targetRole;
+    }
+
+    public final boolean replayEvent() {
+        return replayEvent;
+    }
 }

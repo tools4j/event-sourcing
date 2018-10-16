@@ -21,43 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.common;
+package org.tools4j.eventsourcing.raft.state;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.tools4j.nobark.loop.Step;
+import org.agrona.DirectBuffer;
+import org.tools4j.eventsourcing.sbe.AppendRequestDecoder;
+import org.tools4j.eventsourcing.sbe.AppendResponseDecoder;
+import org.tools4j.eventsourcing.sbe.VoteRequestDecoder;
+import org.tools4j.eventsourcing.sbe.VoteResponseDecoder;
 
-import static org.mockito.Mockito.*;
-
-@RunWith(MockitoJUnitRunner.class)
-public class ApplyAllThenExecuteUntilDoneStepTest {
-    @Mock
-    private Step inStep;
-    @Mock
-    private Step outStep;
-
-    @Test
-    public void perform() throws Exception {
-
-        when(outStep.perform()).thenReturn(true, true, false, true, false);
-        when(inStep.perform()).thenReturn(false, false, true);
-
-        final ApplyAllThenExecuteUntilDoneStep processorStep = new ApplyAllThenExecuteUntilDoneStep(inStep::perform, outStep::perform);
-
-
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-
-        verify(outStep, times(5)).perform();
-        verify(inStep, times(3)).perform();
-    }
-
+public interface ServerState {
+    Role role();
+    default void onTransition() {}
+    default Transition processTick() {return Transition.STEADY;}
+    default Transition onVoteRequest(final VoteRequestDecoder voteRequestDecoder) {return Transition.STEADY;}
+    default Transition onVoteResponse(final VoteResponseDecoder voteResponseDecoder) {return Transition.STEADY;}
+    default Transition onAppendRequest(final AppendRequestDecoder appendRequestDecoder) {return Transition.STEADY;}
+    default Transition onAppendResponse(final AppendResponseDecoder appendResponseDecoder) {return Transition.STEADY;}
+    default void appendCommand(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {}
+    default Transition onTimeoutNow() {return Transition.STEADY;}
 }

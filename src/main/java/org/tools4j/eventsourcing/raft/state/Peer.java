@@ -21,43 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.common;
+package org.tools4j.eventsourcing.raft.state;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.tools4j.nobark.loop.Step;
+import org.tools4j.eventsourcing.raft.timer.Timer;
 
-import static org.mockito.Mockito.*;
+public interface Peer {
+    long NULL_INDEX = -1;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ApplyAllThenExecuteUntilDoneStepTest {
-    @Mock
-    private Step inStep;
-    @Mock
-    private Step outStep;
+    int serverId();
 
-    @Test
-    public void perform() throws Exception {
+    Timer heartbeatTimer();
 
-        when(outStep.perform()).thenReturn(true, true, false, true, false);
-        when(inStep.perform()).thenReturn(false, false, true);
+    long nextIndex();
 
-        final ApplyAllThenExecuteUntilDoneStep processorStep = new ApplyAllThenExecuteUntilDoneStep(inStep::perform, outStep::perform);
-
-
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-        processorStep.perform();
-
-        verify(outStep, times(5)).perform();
-        verify(inStep, times(3)).perform();
+    default long previousIndex() {
+        return nextIndex() - 1;
     }
 
+    long matchIndex();
+
+    Peer nextIndex(long index);
+
+    boolean grantedVote();
+
+    Peer setGrantedVote(boolean grantedVote);
+
+    boolean comparePreviousAndDecrementNextIndex(long previousIndex);
+
+    boolean comparePreviousAndUpdateMatchAndNextIndex(long previousIndex, long matchIndex);
+
+    Peer reset();
 }
