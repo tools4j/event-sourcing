@@ -24,19 +24,20 @@
 package org.tools4j.eventsourcing.raft.state;
 
 import org.agrona.DirectBuffer;
+import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
 import org.tools4j.eventsourcing.sbe.AppendRequestDecoder;
 import org.tools4j.eventsourcing.sbe.AppendResponseDecoder;
 import org.tools4j.eventsourcing.sbe.VoteRequestDecoder;
 import org.tools4j.eventsourcing.sbe.VoteResponseDecoder;
 
-public interface ServerState {
+public interface ServerState extends IndexedMessageConsumer {
     Role role();
     default void onTransition() {}
+    default void accept(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {}
     default Transition processTick() {return Transition.STEADY;}
     default Transition onVoteRequest(final VoteRequestDecoder voteRequestDecoder) {return Transition.STEADY;}
     default Transition onVoteResponse(final VoteResponseDecoder voteResponseDecoder) {return Transition.STEADY;}
     default Transition onAppendRequest(final AppendRequestDecoder appendRequestDecoder) {return Transition.STEADY;}
     default Transition onAppendResponse(final AppendResponseDecoder appendResponseDecoder) {return Transition.STEADY;}
-    default void appendCommand(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {}
     default Transition onTimeoutNow() {return Transition.STEADY;}
 }

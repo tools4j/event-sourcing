@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
-import org.tools4j.eventsourcing.raft.api.LogContainment;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.sbe.RaftIndexDecoder;
 import org.tools4j.mmap.region.api.RegionRingFactory;
@@ -311,9 +310,9 @@ public class MmapRaftLogTest {
         })).isEqualTo(1);
 
         //===================
-        assertThat(raftLog.contains(1, term4)).isEqualTo(LogContainment.IN);
-        assertThat(raftLog.contains(2, term5)).isEqualTo(LogContainment.IN);
-        assertThat(raftLog.contains(3, term5)).isEqualTo(LogContainment.OUT);
+        assertThat(raftLog.contains(1, term4)).isEqualTo(RaftLog.Containment.IN);
+        assertThat(raftLog.contains(2, term5)).isEqualTo(RaftLog.Containment.IN);
+        assertThat(raftLog.contains(3, term5)).isEqualTo(RaftLog.Containment.OUT);
 
         assertThat(raftLog.lastKeyCompareTo(3, term5)).isEqualTo(-1);
         assertThat(raftLog.lastKeyCompareTo(2, term5)).isEqualTo(0);

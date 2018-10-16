@@ -106,6 +106,13 @@ public class LeaderServerState implements ServerState {
     }
 
     @Override
+    public void accept(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {
+        //LOGGER.info("Command received, length={}", length);
+        raftLog.append(raftLog.currentTerm(), source, sourceSeq, timeNanos, buffer, offset, length);
+        sendAppendRequestToAllAndResetHeartbeatTimer();
+    }
+
+    @Override
     public Transition processTick() {
         peers.forEach(peer -> {
             if (peer.heartbeatTimer().hasTimeoutElapsed()) {
@@ -147,13 +154,6 @@ public class LeaderServerState implements ServerState {
         peer.heartbeatTimer().reset();
         updateCommitIndex();
         return Transition.STEADY;
-    }
-
-    @Override
-    public void appendCommand(final int source, final long sourceSeq, final long timeNanos, final DirectBuffer buffer, final int offset, final int length) {
-        //LOGGER.info("Command received, length={}", length);
-        raftLog.append(raftLog.currentTerm(), source, sourceSeq, timeNanos, buffer, offset, length);
-        sendAppendRequestToAllAndResetHeartbeatTimer();
     }
 
     private void updateCommitIndex() {
