@@ -25,7 +25,6 @@ package org.tools4j.eventsourcing.mmap;
 
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
@@ -63,7 +62,7 @@ public class MmapIndexedPollerFactory implements IndexedPollerFactory {
                         regionSize,
                         regionRingSize,
                         regionsToMapAhead),
-                options,
-                new PayloadBufferPoller());
+                options
+        );
     }
 }

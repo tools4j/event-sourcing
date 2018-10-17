@@ -71,6 +71,7 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
                         .pauseWhen(options.pauseWhen())
                         .onProcessingStart(options.onProcessingStart())
                         .onProcessingComplete(options.onProcessingComplete())
+                        .bufferPoller(options.bufferPoller())
                         .build()
         );
 
