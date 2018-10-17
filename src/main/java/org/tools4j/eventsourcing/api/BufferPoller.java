@@ -30,6 +30,14 @@ import org.agrona.DirectBuffer;
  */
 public interface BufferPoller {
     /**
+     * WHole buffer is treated as single message to be handled by consumer
+     */
+    BufferPoller PASS_THROUGH = (srcBuffer, srcOffset, srcLength, consumer) -> {
+        consumer.accept(srcBuffer, srcOffset, srcLength);
+        return 1;
+    };
+
+    /**
      * Polls a buffer that may contain multiple messages and delegates the messages to the consumer.
      * @param srcBuffer source buffer where the messages are encoded
      * @param srcOffset offset of the message that contains multiple encoded messages

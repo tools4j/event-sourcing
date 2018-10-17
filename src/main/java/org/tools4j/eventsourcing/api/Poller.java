@@ -111,10 +111,6 @@ public interface Poller extends Closeable {
             return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= progressState.sourceSeq(source);
         }
 
-        static IndexPredicate isBehindOf(final ProgressState progressState) {
-            return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq < progressState.sourceSeq(source);
-        }
-
         static IndexPredicate isEqualTo(final ProgressState progressState) {
             return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == progressState.sourceSeq() && source == progressState.source();
         }
@@ -129,10 +125,6 @@ public interface Poller extends Closeable {
 
         static IndexPredicate never() {
             return NEVER;
-        }
-
-        static IndexPredicate always() {
-            return ALWAYS;
         }
 
         static IndexPredicate isTrue(final BooleanSupplier booleanSupplier) {

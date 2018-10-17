@@ -69,12 +69,12 @@ public interface MessageConsumer {
         CommandExecutorFactory PASS_THROUGH = (eventApplier,
                                                currentCommandExecutionState,
                                                completedCommandExecutionState,
-                                               currentEventAppyingState,
+                                               currentEventApplyingState,
                                                completedEventApplyingState) -> eventApplier;
         CommandExecutorFactory NO_OP = (eventApplier,
                                         currentCommandExecutionState,
                                         completedCommandExecutionState,
-                                        currentEventAppyingState,
+                                        currentEventApplyingState,
                                         completedEventApplyingState) -> MessageConsumer.NO_OP;
         /**
          * Constructs a new command executor.

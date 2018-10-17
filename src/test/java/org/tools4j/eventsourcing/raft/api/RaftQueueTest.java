@@ -34,6 +34,7 @@ import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.CommandExecutionQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
 import org.tools4j.eventsourcing.mmap.MmapTransactionalQueue;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
@@ -91,6 +92,7 @@ public class RaftQueueTest {
                 .clearFiles(true)
                 .logInMessages(false)
                 .logOutMessages(false)
+                .bufferPoller(new PayloadBufferPoller())
                 .build();
 
         final RaftQueue raftQueue1 = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
@@ -102,6 +104,7 @@ public class RaftQueueTest {
                 .clearFiles(true)
                 .logInMessages(false)
                 .logOutMessages(false)
+                .bufferPoller(new PayloadBufferPoller())
                 .build();
 
         final RaftQueue raftQueue2 = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
@@ -113,6 +116,7 @@ public class RaftQueueTest {
                 .clearFiles(true)
                 .logInMessages(false)
                 .logOutMessages(false)
+                .bufferPoller(new PayloadBufferPoller())
                 .build();
 
         final CommandExecutionQueue commandExecutionQueue0 = CommandExecutionQueue.builder()
