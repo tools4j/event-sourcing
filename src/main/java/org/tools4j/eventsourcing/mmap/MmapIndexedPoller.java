@@ -24,7 +24,6 @@
 package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.sbe.IndexDecoder;
@@ -43,7 +42,6 @@ public class MmapIndexedPoller implements Poller {
     private final UnsafeBuffer mappedMessageBuffer;
 
     private final Options options;
-    private final BufferPoller bufferPoller;
 
 
     private final IndexDecoder indexDecoder = new IndexDecoder();
@@ -52,11 +50,9 @@ public class MmapIndexedPoller implements Poller {
     private long currentIndexPosition = 0;
 
     public MmapIndexedPoller(final RegionAccessorSupplier regionAccessorSupplier,
-                             final Options options,
-                             final BufferPoller bufferPoller) {
+                             final Options options) {
         this.regionAccessorSupplier = Objects.requireNonNull(regionAccessorSupplier);
         this.options = Objects.requireNonNull(options);
-        this.bufferPoller = Objects.requireNonNull(bufferPoller);
 
         this.mappedIndexBuffer = new UnsafeBuffer();
         this.mappedMessageBuffer = new UnsafeBuffer();
@@ -97,7 +93,7 @@ public class MmapIndexedPoller implements Poller {
             throw new IllegalStateException("Failed to wrap message buffer to position " + messagePosition);
         }
         options.onProcessingStart().accept(currentIndex, source, sourceSeq, eventTimeNanos);
-        final int done = bufferPoller.poll(mappedMessageBuffer, 0, messageLength, processingHandler);
+        final int done = options.bufferPoller().poll(mappedMessageBuffer, 0, messageLength, processingHandler);
         options.onProcessingComplete().accept(currentIndex, source, sourceSeq, eventTimeNanos);
         return done;
     }

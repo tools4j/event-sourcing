@@ -23,6 +23,7 @@
  */
 package org.tools4j.eventsourcing.api;
 
+import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.common.TransactionCommitAndPushNoops;
 
 import java.io.Closeable;
@@ -49,7 +50,6 @@ public interface Poller extends Closeable {
      */
     interface IndexPredicate {
         IndexPredicate NEVER = (index, source, sourceSeq, eventTimeNanos) -> false;
-        IndexPredicate ALWAYS = (index, source, sourceSeq, eventTimeNanos) -> true;
 
 
         boolean test(long index, int source, long sourceSeq, long eventTimeNanos);
@@ -173,6 +173,7 @@ public interface Poller extends Closeable {
         IndexConsumer onProcessingStart();
         IndexConsumer onProcessingComplete();
         IndexConsumer onProcessingSkipped();
+        BufferPoller bufferPoller();
 
         interface Builder {
             Builder skipWhen(IndexPredicate skipWhen);
@@ -180,6 +181,7 @@ public interface Poller extends Closeable {
             Builder onProcessingStart(IndexConsumer onProcessingStart);
             Builder onProcessingComplete(IndexConsumer onProcessingComplete);
             Builder onProcessingSkipped(IndexConsumer onProcessingSkipped);
+            Builder bufferPoller(BufferPoller bufferPoller);
             Options build();
         }
 
@@ -190,34 +192,41 @@ public interface Poller extends Closeable {
                 private IndexConsumer onProcessingStart = IndexConsumer.noop();
                 private IndexConsumer onProcessingComplete = IndexConsumer.noop();
                 private IndexConsumer onProcessingSkipped = IndexConsumer.noop();
+                private BufferPoller bufferPoller = new PayloadBufferPoller();
 
                 @Override
                 public Builder skipWhen(final IndexPredicate skipWhen) {
-                    this.skipWhen = skipWhen;
+                    this.skipWhen = Objects.requireNonNull(skipWhen);
                     return this;
                 }
 
                 @Override
                 public Builder pauseWhen(final IndexPredicate pauseWhen) {
-                    this.pauseWhen = pauseWhen;
+                    this.pauseWhen = Objects.requireNonNull(pauseWhen);
                     return this;
                 }
 
                 @Override
                 public Builder onProcessingStart(final IndexConsumer onProcessingStart) {
-                    this.onProcessingStart = onProcessingStart;
+                    this.onProcessingStart = Objects.requireNonNull(onProcessingStart);
                     return this;
                 }
 
                 @Override
                 public Builder onProcessingComplete(final IndexConsumer onProcessingComplete) {
-                    this.onProcessingComplete = onProcessingComplete;
+                    this.onProcessingComplete = Objects.requireNonNull(onProcessingComplete);
                     return this;
                 }
 
                 @Override
                 public Builder onProcessingSkipped(final IndexConsumer onProcessingSkipped) {
-                    this.onProcessingSkipped = onProcessingSkipped;
+                    this.onProcessingSkipped = Objects.requireNonNull(onProcessingSkipped);
+                    return this;
+                }
+
+                @Override
+                public Builder bufferPoller(final BufferPoller bufferPoller) {
+                    this.bufferPoller = Objects.requireNonNull(bufferPoller);
                     return this;
                 }
 
@@ -247,6 +256,11 @@ public interface Poller extends Closeable {
                         @Override
                         public IndexConsumer onProcessingSkipped() {
                             return onProcessingSkipped;
+                        }
+
+                        @Override
+                        public BufferPoller bufferPoller() {
+                            return bufferPoller;
                         }
                     };
                 }

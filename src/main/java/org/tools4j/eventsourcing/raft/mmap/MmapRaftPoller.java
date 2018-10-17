@@ -42,7 +42,6 @@ public class MmapRaftPoller implements Poller {
     private final UnsafeBuffer mappedMessageBuffer;
 
     private final Options options;
-    private final BufferPoller bufferPoller;
 
 
     private final RaftIndexDecoder raftIndexDecoder = new RaftIndexDecoder();
@@ -51,11 +50,9 @@ public class MmapRaftPoller implements Poller {
     private long currentIndexPosition = 0;
 
     public MmapRaftPoller(final RaftRegionAccessorSupplier regionAccessorSupplier,
-                          final Options options,
-                          final BufferPoller bufferPoller) {
+                          final Options options) {
         this.regionAccessorSupplier = Objects.requireNonNull(regionAccessorSupplier);
         this.options = Objects.requireNonNull(options);
-        this.bufferPoller = Objects.requireNonNull(bufferPoller);
 
         this.headerBuffer = new UnsafeBuffer();
         this.mappedIndexBuffer = new UnsafeBuffer();
@@ -101,7 +98,7 @@ public class MmapRaftPoller implements Poller {
             throw new IllegalStateException("Failed to wrap message buffer to position " + messagePosition);
         }
         options.onProcessingStart().accept(currentIndex, source, sourceSeq, eventTimeNanos);
-        final int done = bufferPoller.poll(mappedMessageBuffer, 0, messageLength, processingHandler);
+        final int done = options.bufferPoller().poll(mappedMessageBuffer, 0, messageLength, processingHandler);
         options.onProcessingComplete().accept(currentIndex, source, sourceSeq, eventTimeNanos);
         return done;
     }

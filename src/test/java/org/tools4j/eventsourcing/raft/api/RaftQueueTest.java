@@ -92,7 +92,6 @@ public class RaftQueueTest {
                 .clearFiles(true)
                 .logInMessages(false)
                 .logOutMessages(false)
-                .bufferPoller(new PayloadBufferPoller())
                 .build();
 
         final RaftQueue raftQueue1 = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
@@ -104,7 +103,6 @@ public class RaftQueueTest {
                 .clearFiles(true)
                 .logInMessages(false)
                 .logOutMessages(false)
-                .bufferPoller(new PayloadBufferPoller())
                 .build();
 
         final RaftQueue raftQueue2 = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
@@ -116,7 +114,6 @@ public class RaftQueueTest {
                 .clearFiles(true)
                 .logInMessages(false)
                 .logOutMessages(false)
-                .bufferPoller(new PayloadBufferPoller())
                 .build();
 
         final CommandExecutionQueue commandExecutionQueue0 = CommandExecutionQueue.builder()

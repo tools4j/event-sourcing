@@ -27,10 +27,8 @@ import io.aeron.Aeron;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
-import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.api.RaftQueue;
 import org.tools4j.eventsourcing.raft.state.*;
@@ -94,7 +92,6 @@ public interface MmapRaftQueueBuilder {
         Optionals clock(final Clock clock);
         Optionals logInMessages(boolean logInMessages);
         Optionals logOutMessages(boolean logOutMessages);
-        Optionals bufferPoller(BufferPoller bufferPoller);
 
         RaftQueue build() throws IOException;
     }
@@ -135,7 +132,6 @@ public interface MmapRaftQueueBuilder {
         private Clock clock = Clock.DEFAULT;
         private boolean logInMessages = false;
         private boolean logOutMessages = false;
-        private BufferPoller bufferPoller = BufferPoller.PASS_THROUGH;
 
         public DefaultMmapRaftQueueBuilder(final Aeron aeron,
                                            final IntFunction<String> serverToChannel) {
@@ -279,12 +275,6 @@ public interface MmapRaftQueueBuilder {
         }
 
         @Override
-        public Optionals bufferPoller(final BufferPoller bufferPoller) {
-            this.bufferPoller = Objects.requireNonNull(bufferPoller);
-            return this;
-        }
-
-        @Override
         public RaftQueue build() throws IOException {
             Objects.requireNonNull(directory);
 
@@ -342,8 +332,7 @@ public interface MmapRaftQueueBuilder {
                                     .onProcessingStart(options.onProcessingStart())
                                     .onProcessingComplete(options.onProcessingComplete())
                                     .onProcessingSkipped(options.onProcessingSkipped())
-                                    .build(),
-                            bufferPoller);
+                                    .build());
 
             final Supplier<Timer> heartbeatTimerFactory = () -> new DefaultTimer(clock, heartbeatTimeoutMillis, heartbeatTimeoutMillis);
 

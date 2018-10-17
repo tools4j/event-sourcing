@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.TestMessage;
+import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
@@ -79,11 +80,7 @@ public class MmapRaftLogTest {
                     regionSize,
                     ringSize,
                     regionsToMapAhead),
-                Poller.Options.builder().build(),
-                (srcBuffer, srcOffset, srcLength, consumer) -> {
-                    consumer.accept(srcBuffer, srcOffset, srcLength);
-                    return 1;
-                });
+                Poller.Options.builder().bufferPoller(BufferPoller.PASS_THROUGH).build());
     }
 
     @After

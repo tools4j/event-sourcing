@@ -30,7 +30,6 @@ import org.tools4j.eventsourcing.MetricIndexConsumer;
 import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.common.SinglePayloadAppender;
-import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 
@@ -84,8 +83,7 @@ public class SinglePayloadAppendingAndPollingPerfTest {
                 ),
                 Poller.Options.builder().
                         onProcessingStart(new MetricIndexConsumer(messages, warmup, stop))
-                        .build(),
-                new PayloadBufferPoller()
+                        .build()
         );
 
         regionRingFactory.onComplete();
