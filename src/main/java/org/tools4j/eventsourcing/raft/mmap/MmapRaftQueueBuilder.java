@@ -27,6 +27,7 @@ import io.aeron.Aeron;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
 import org.tools4j.eventsourcing.common.PayloadBufferPoller;
@@ -93,6 +94,7 @@ public interface MmapRaftQueueBuilder {
         Optionals clock(final Clock clock);
         Optionals logInMessages(boolean logInMessages);
         Optionals logOutMessages(boolean logOutMessages);
+        Optionals bufferPoller(BufferPoller bufferPoller);
 
         RaftQueue build() throws IOException;
     }
@@ -133,6 +135,7 @@ public interface MmapRaftQueueBuilder {
         private Clock clock = Clock.DEFAULT;
         private boolean logInMessages = false;
         private boolean logOutMessages = false;
+        private BufferPoller bufferPoller = BufferPoller.PASS_THROUGH;
 
         public DefaultMmapRaftQueueBuilder(final Aeron aeron,
                                            final IntFunction<String> serverToChannel) {
@@ -161,19 +164,19 @@ public interface MmapRaftQueueBuilder {
 
         @Override
         public FilePrefixStep directory(final String directory) {
-            this.directory = directory;
+            this.directory = Objects.requireNonNull(directory);
             return this;
         }
 
         @Override
         public RegionRingFactoryStep filePrefix(final String filePrefix) {
-            this.filePrefix = filePrefix;
+            this.filePrefix = Objects.requireNonNull(filePrefix);
             return this;
         }
 
         @Override
         public Optionals regionRingFactory(final RegionRingFactory regionRingFactory) {
-            this.regionRingFactory = regionRingFactory;
+            this.regionRingFactory = Objects.requireNonNull(regionRingFactory);
             return this;
         }
 
@@ -276,6 +279,12 @@ public interface MmapRaftQueueBuilder {
         }
 
         @Override
+        public Optionals bufferPoller(final BufferPoller bufferPoller) {
+            this.bufferPoller = Objects.requireNonNull(bufferPoller);
+            return this;
+        }
+
+        @Override
         public RaftQueue build() throws IOException {
             Objects.requireNonNull(directory);
 
@@ -334,7 +343,7 @@ public interface MmapRaftQueueBuilder {
                                     .onProcessingComplete(options.onProcessingComplete())
                                     .onProcessingSkipped(options.onProcessingSkipped())
                                     .build(),
-                            new PayloadBufferPoller());
+                            bufferPoller);
 
             final Supplier<Timer> heartbeatTimerFactory = () -> new DefaultTimer(clock, heartbeatTimeoutMillis, heartbeatTimeoutMillis);
 
