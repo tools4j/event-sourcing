@@ -73,6 +73,10 @@ public interface ProgressState {
      */
     void forEachSourceEntry(LongLongConsumer consumer);
 
+    void reset();
+    boolean pollerResetRequired(long currentPosition);
+    void resetPoller(long resetPosition);
+
     default boolean isAheadOf(final ProgressState another) {
         return sourceSeq() > another.sourceSeq(source());
     }

@@ -24,7 +24,6 @@
 package org.tools4j.eventsourcing.raft.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.sbe.RaftIndexDecoder;
@@ -63,6 +62,13 @@ public class MmapRaftPoller implements Poller {
     public int poll(final MessageConsumer processingHandler) {
         if (!regionAccessorSupplier.headerAccessor().wrap(0, headerBuffer)) {
             throw new IllegalStateException("Failed to wrap header buffer");
+        }
+
+        if (options.resetWhen().test(currentIndex)) {
+            final long indexBeforeReset = currentIndex;
+            currentIndex = 0;
+            currentIndexPosition = 0;
+            options.onReset().accept(indexBeforeReset);
         }
 
         final long lastIndexPosition = headerBuffer.getLongVolatile(0);

@@ -82,9 +82,24 @@ task(generateCodecs, type: JavaExec) {
     args = ['src/main/resources/sbe-schema.xml']
 }
 
+task(generateTestCodecs, type: JavaExec) {
+    main = 'uk.co.real_logic.sbe.SbeTool'
+    classpath = configurations.codecGeneration
+    systemProperties(
+            'sbe.output.dir': generatedSrc,
+            'sbe.target.language': 'Java',
+            'sbe.java.generate.interfaces': 'false',
+            'sbe.validation.stop.on.error': 'true',
+            'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd'
+    )
+    args = ['src/test/resources/sbe-test-schema.xml']
+}
+
+
 copyLicense.dependsOn processResources
 copyLicenseToSrc.dependsOn copyLicense
 compileJava.dependsOn licenseFormat,copyLicense,copyLicenseToSrc,generateCodecs
+compileTestJava.dependsOn generateTestCodecs
 
 javadoc {
 	options.showFromPackage()

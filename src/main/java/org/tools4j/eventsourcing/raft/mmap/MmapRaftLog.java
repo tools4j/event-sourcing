@@ -32,6 +32,7 @@ import org.tools4j.eventsourcing.sbe.RaftIndexDecoder;
 import org.tools4j.eventsourcing.sbe.RaftIndexEncoder;
 
 import java.util.Objects;
+import java.util.function.LongConsumer;
 
 /**
  * Non-thread safe!
@@ -55,14 +56,17 @@ public final class MmapRaftLog implements RaftLog {
     private final RaftIndexDecoder raftIndexDecoder = new RaftIndexDecoder();
     private final RaftHeaderEncoder raftHeaderEncoder = new RaftHeaderEncoder();
     private final RaftHeaderDecoder raftHeaderDecoder = new RaftHeaderDecoder();
+    private final LongConsumer truncateHandler;
 
 
     private long currentIndexPosition = NOT_INITIALISED;
     private long currentMessagePosition = 0;
     private volatile long commitIndex = NULL_INDEX;
 
-    public MmapRaftLog(final RaftRegionAccessorSupplier regionAccessorSupplier) {
+    public MmapRaftLog(final RaftRegionAccessorSupplier regionAccessorSupplier,
+                       final LongConsumer truncateHandler) {
         this.regionAccessorSupplier = Objects.requireNonNull(regionAccessorSupplier);
+        this.truncateHandler = Objects.requireNonNull(truncateHandler);
 
         this.mappedHeaderBuffer = new UnsafeBuffer();
         this.mappedIndexBuffer = new UnsafeBuffer();
@@ -197,6 +201,7 @@ public final class MmapRaftLog implements RaftLog {
                 currentMessagePosition = raftIndexDecoder.position() + raftIndexDecoder.length();
             }
             mappedHeaderBuffer.putLongOrdered(LAST_INDEX_POSITION_OFFSET, currentIndexPosition);
+            truncateHandler.accept(size);
         } else {
             throw new IllegalArgumentException("Size [" + size + "] must be positive and <= current size " + currentSize);
         }

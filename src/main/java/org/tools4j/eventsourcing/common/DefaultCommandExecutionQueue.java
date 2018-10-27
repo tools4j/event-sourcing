@@ -23,13 +23,7 @@
  */
 package org.tools4j.eventsourcing.common;
 
-import org.tools4j.eventsourcing.api.CommandExecutionQueue;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
-import org.tools4j.eventsourcing.api.IndexedQueue;
-import org.tools4j.eventsourcing.api.IndexedTransactionalQueue;
-import org.tools4j.eventsourcing.api.MessageConsumer;
-import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.api.Transaction;
+import org.tools4j.eventsourcing.api.*;
 import org.tools4j.nobark.loop.Step;
 
 import java.io.IOException;
@@ -40,12 +34,13 @@ import java.util.function.IntPredicate;
 import java.util.function.LongSupplier;
 
 public final class DefaultCommandExecutionQueue implements CommandExecutionQueue {
+
     private final IndexedQueue commandQueue;
     private final IndexedTransactionalQueue eventQueue;
     private final Step executorStep;
 
     private final Poller commandExecutionPoller;
-    private final Poller eventApplyingPoller;
+    private final Poller committedEventApplyingPoller;
 
 
     public DefaultCommandExecutionQueue(final IndexedQueue commandQueue,
@@ -70,10 +65,16 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
 
         final Poller.IndexPredicate lastCompletedCommandIsNotYetApplied = Poller.IndexPredicate.isTrue(() ->
                 completedCommandExecutionState.isAheadOf(completedEventApplyingState) &&
-                stateChangingSource.test(completedCommandExecutionState.source())
+                            stateChangingSource.test(completedCommandExecutionState.source())
         );
 
         final Transaction eventAppender = eventQueue.appender();
+
+        final MessageConsumer uncommittedEventApplier = eventApplierFactory.create(
+                currentCommandExecutionState,
+                completedCommandExecutionState);
+
+        final MessageConsumer appenderAndApplierOfUncommittedEvents = eventAppender.andThen(uncommittedEventApplier);
 
         this.commandExecutionPoller = commandQueue.createPoller(
                 Poller.Options.builder()
@@ -95,21 +96,23 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         );
 
         final MessageConsumer commandExecutor = commandExecutorFactory.create(
-                eventAppender,
+                appenderAndApplierOfUncommittedEvents,
                 currentCommandExecutionState,
                 completedCommandExecutionState,
                 currentEventApplyingState,
                 completedEventApplyingState);
 
-        final MessageConsumer eventApplier = eventApplierFactory.create(
+        final Step commandExecutionStep = new PollingProcessStep(this.commandExecutionPoller, commandExecutor);
+
+        final MessageConsumer committedEventApplier = eventApplierFactory.create(
                 currentEventApplyingState,
                 completedEventApplyingState);
 
-        final Step commandExecutionStep = new PollingProcessStep(this.commandExecutionPoller, commandExecutor);
-
-        this.eventApplyingPoller = eventQueue.createPoller(
-                Poller.Options.builder().skipWhen(
+        this.committedEventApplyingPoller = eventQueue.createPoller(
+                Poller.Options.builder()
+                        .skipWhen(
                                 Poller.IndexPredicate.isEqualTo(completedCommandExecutionState))
+                        .resetWhen(currentEventApplyingState::pollerResetRequired)
                         .onProcessingStart(
                                 currentEventApplyingState.andThen(onStartEventApplyingHandler))
                         .onProcessingComplete(
@@ -118,12 +121,13 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                                 // skip is equivalent to committed as we apply changes to state in command executor and skip when
                                 // event matches command source/sourceSeq
                                 currentEventApplyingState.andThen(completedEventApplyingState))
+                        .onReset(currentEventApplyingState::resetPoller)
                         .build()
         );
 
-        final Step eventApplyingStep = new PollingProcessStep(this.eventApplyingPoller, eventApplier);
+        final Step committedEventApplyingStep = new PollingProcessStep(this.committedEventApplyingPoller, committedEventApplier);
 
-        this.executorStep = executorStepFactory.apply(commandExecutionStep, eventApplyingStep);
+        this.executorStep = executorStepFactory.apply(commandExecutionStep, committedEventApplyingStep);
     }
 
     @Override
@@ -146,6 +150,6 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         commandQueue.close();
         eventQueue.close();
         commandExecutionPoller.close();
-        eventApplyingPoller.close();
+        committedEventApplyingPoller.close();
     }
 }

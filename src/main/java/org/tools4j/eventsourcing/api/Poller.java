@@ -30,6 +30,8 @@ import java.io.Closeable;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
+import java.util.function.LongConsumer;
+import java.util.function.LongPredicate;
 
 /**
  * Queue poller
@@ -169,10 +171,12 @@ public interface Poller extends Closeable {
 
     interface Options {
         IndexPredicate skipWhen();
-        IndexPredicate pauseWhen();
+        LongPredicate resetWhen();
         IndexConsumer onProcessingStart();
         IndexConsumer onProcessingComplete();
         IndexConsumer onProcessingSkipped();
+        IndexPredicate pauseWhen();
+        LongConsumer onReset();
         BufferPoller bufferPoller();
 
         interface Builder {
@@ -181,6 +185,8 @@ public interface Poller extends Closeable {
             Builder onProcessingStart(IndexConsumer onProcessingStart);
             Builder onProcessingComplete(IndexConsumer onProcessingComplete);
             Builder onProcessingSkipped(IndexConsumer onProcessingSkipped);
+            Builder resetWhen(LongPredicate resetWhen);
+            Builder onReset(LongConsumer onReset);
             Builder bufferPoller(BufferPoller bufferPoller);
             Options build();
         }
@@ -189,10 +195,13 @@ public interface Poller extends Closeable {
             return new Builder() {
                 private IndexPredicate skipWhen = IndexPredicate.never();
                 private IndexPredicate pauseWhen = IndexPredicate.never();
+                private LongPredicate resetWhen = currentPosition -> false;
                 private IndexConsumer onProcessingStart = IndexConsumer.noop();
                 private IndexConsumer onProcessingComplete = IndexConsumer.noop();
                 private IndexConsumer onProcessingSkipped = IndexConsumer.noop();
+                private LongConsumer onReset = resetPosition -> {};
                 private BufferPoller bufferPoller = new PayloadBufferPoller();
+
 
                 @Override
                 public Builder skipWhen(final IndexPredicate skipWhen) {
@@ -203,6 +212,12 @@ public interface Poller extends Closeable {
                 @Override
                 public Builder pauseWhen(final IndexPredicate pauseWhen) {
                     this.pauseWhen = Objects.requireNonNull(pauseWhen);
+                    return this;
+                }
+
+                @Override
+                public Builder resetWhen(final LongPredicate resetWhen) {
+                    this.resetWhen = Objects.requireNonNull(resetWhen);
                     return this;
                 }
 
@@ -221,6 +236,12 @@ public interface Poller extends Closeable {
                 @Override
                 public Builder onProcessingSkipped(final IndexConsumer onProcessingSkipped) {
                     this.onProcessingSkipped = Objects.requireNonNull(onProcessingSkipped);
+                    return this;
+                }
+
+                @Override
+                public Builder onReset(final LongConsumer onReset) {
+                    this.onReset = Objects.requireNonNull(onReset);
                     return this;
                 }
 
@@ -244,6 +265,11 @@ public interface Poller extends Closeable {
                         }
 
                         @Override
+                        public LongPredicate resetWhen() {
+                            return resetWhen;
+                        }
+
+                        @Override
                         public IndexConsumer onProcessingStart() {
                             return onProcessingStart;
                         }
@@ -256,6 +282,11 @@ public interface Poller extends Closeable {
                         @Override
                         public IndexConsumer onProcessingSkipped() {
                             return onProcessingSkipped;
+                        }
+
+                        @Override
+                        public LongConsumer onReset() {
+                            return onReset;
                         }
 
                         @Override
