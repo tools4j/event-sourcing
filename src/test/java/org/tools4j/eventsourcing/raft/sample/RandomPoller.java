@@ -21,24 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.api;
+package org.tools4j.eventsourcing.raft.sample;
 
-import java.io.IOException;
+import org.tools4j.eventsourcing.raft.transport.Poller;
 
-/**
- * Factory of pollers with certain behaviour on the message indexes.
- */
-public interface IndexedPollerFactory {
-    /**
-     * Creates a poller with parametrised index behaviour.
-     *
-     * @param options poller factory options
-     * @return new instance of a poller.
-     * @throws IOException when a backing file could not be read/mapped.
-     */
-    Poller createPoller(Poller.Options options) throws IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
 
-    default Poller createPoller() throws IOException {
-        return createPoller(Poller.Options.builder().build());
+public class RandomPoller implements Poller {
+    final List<Poller> pollers = new ArrayList<>();
+    final Consumer<Poller> pollerDelegate = Poller::poll;
+
+    public RandomPoller(final List<Poller> pollers) {
+        this.pollers.addAll(pollers);
+    }
+
+    @Override
+    public boolean poll() {
+        Collections.shuffle(pollers);
+        pollers.forEach(pollerDelegate);
+        return true;
     }
 }

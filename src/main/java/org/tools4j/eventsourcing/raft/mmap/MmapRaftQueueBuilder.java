@@ -49,10 +49,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.IntConsumer;
-import java.util.function.IntFunction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.IntStream;
 
 public interface MmapRaftQueueBuilder {
@@ -92,6 +89,7 @@ public interface MmapRaftQueueBuilder {
         Optionals clock(final Clock clock);
         Optionals logInMessages(boolean logInMessages);
         Optionals logOutMessages(boolean logOutMessages);
+        Optionals truncateHandler(LongConsumer truncateHandler);
 
         RaftQueue build() throws IOException;
     }
@@ -132,6 +130,7 @@ public interface MmapRaftQueueBuilder {
         private Clock clock = Clock.DEFAULT;
         private boolean logInMessages = false;
         private boolean logOutMessages = false;
+        private LongConsumer truncateHandler = size -> {};
 
         public DefaultMmapRaftQueueBuilder(final Aeron aeron,
                                            final IntFunction<String> serverToChannel) {
@@ -275,6 +274,12 @@ public interface MmapRaftQueueBuilder {
         }
 
         @Override
+        public Optionals truncateHandler(final LongConsumer truncateHandler) {
+            this.truncateHandler = Objects.requireNonNull(truncateHandler);
+            return this;
+        }
+
+        @Override
         public RaftQueue build() throws IOException {
             Objects.requireNonNull(directory);
 
@@ -316,7 +321,8 @@ public interface MmapRaftQueueBuilder {
                             regionSize,
                             regionRingSize,
                             regionsToMapAhead,
-                            maxFileSize));
+                            maxFileSize),
+                    truncateHandler);
 
             final IndexedPollerFactory committedLogPollerFactory = options ->
                     new MmapRaftPoller(RaftRegionAccessorSupplier.forReadOnly(
@@ -327,11 +333,15 @@ public interface MmapRaftQueueBuilder {
                             regionRingSize,
                             regionsToMapAhead),
                             org.tools4j.eventsourcing.api.Poller.Options.builder()
-                                    .skipWhen(options.skipWhen())
-                                    .pauseWhen(options.pauseWhen().and((index, source, sourceSeq, eventTimeNanos) -> index > raftLog.commitIndex()))
+                                    .skipWhen(options.skipWhen().and(
+                                            (index, source, sourceSeq, eventTimeNanos) -> index <= raftLog.commitIndex()))
+                                    .pauseWhen(options.pauseWhen().or(
+                                            (index, source, sourceSeq, eventTimeNanos) ->  index > raftLog.commitIndex()))
+                                    .resetWhen(options.resetWhen())
                                     .onProcessingStart(options.onProcessingStart())
                                     .onProcessingComplete(options.onProcessingComplete())
                                     .onProcessingSkipped(options.onProcessingSkipped())
+                                    .onReset(options.onReset())
                                     .build());
 
             final Supplier<Timer> heartbeatTimerFactory = () -> new DefaultTimer(clock, heartbeatTimeoutMillis, heartbeatTimeoutMillis);

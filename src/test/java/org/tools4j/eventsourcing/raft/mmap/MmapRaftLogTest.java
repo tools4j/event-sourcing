@@ -40,6 +40,8 @@ import org.tools4j.eventsourcing.sbe.RaftIndexDecoder;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 
+import java.util.function.LongConsumer;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MmapRaftLogTest {
@@ -47,6 +49,7 @@ public class MmapRaftLogTest {
 
     private RaftLog raftLog;
     private Poller raftLogPoller;
+    private LongConsumer truncateHandler = size -> {};
 
     @Before
     public void setUp() throws Exception {
@@ -69,7 +72,8 @@ public class MmapRaftLogTest {
                         regionSize,
                         ringSize,
                         regionsToMapAhead,
-                        maxFileSize)
+                        maxFileSize),
+                truncateHandler
         );
 
         raftLogPoller = new MmapRaftPoller(

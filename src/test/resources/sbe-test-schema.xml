@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="org.tools4j.eventsourcing.sbe.test"
+                   id="1"
+                   version="0"
+                   semanticVersion="1.0"
+                   description="Event sourcing test schema"
+                   byteOrder="littleEndian">
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId" primitiveType="uint16"/>
+            <type name="schemaId" primitiveType="uint16"/>
+            <type name="version" primitiveType="uint16"/>
+        </composite>
+        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup" primitiveType="uint16"/>
+        </composite>
+        <composite name="varDataEncoding">
+            <type name="length" primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData" primitiveType="uint8" length="0"/>
+        </composite>
+        <type name="CommandSequence" primitiveType="int64" minValue="0"/>
+        <type name="CommandSource" primitiveType="uint16"/>
+        <type name="DoubleValue" primitiveType="double"/>
+    </types>
+
+    <sbe:message id="1" name="AddCommand" description="AddCommand">
+        <field name="source" id="1" type="CommandSource"/>
+        <field name="sourceSeq" id="2" type="CommandSequence"/>
+        <field name="value" id="3" type="DoubleValue"/>
+    </sbe:message>
+    <sbe:message id="2" name="DivideCommand" description="DivideCommand">
+        <field name="source" id="1" type="CommandSource"/>
+        <field name="sourceSeq" id="2" type="CommandSequence"/>
+        <field name="value" id="3" type="DoubleValue"/>
+    </sbe:message>
+    <sbe:message id="3" name="UpdateEvent" description="UpdateEvent">
+        <field name="value" id="3" type="DoubleValue"/>
+    </sbe:message>
+
+</sbe:messageSchema>
