@@ -21,34 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.store;
 
-public interface ServerConfig {
-    int instanceIndex();
-    int instanceId();
-    int serverCount();
-    int serverId(int index);
+public interface EventStore {
 
-    int inputSourceCount();
-    int inputSourceId(int index);
-
-    default int serverIndexOf(final int serverId) {
-        final int count = serverCount();
-        for (int i = 0; i < count; i++) {
-            if (serverId(i) == serverId) {
-                return i;
-            }
-        }
-        return -1;
+    interface CommandId {
+        int sourceId();
+        long sourceSeq();
     }
 
-    default int inputSourceIndexOf(final int inputSourceId) {
-        final int count = inputSourceCount();
-        for (int i = 0; i < count; i++) {
-            if (inputSourceId(i) == inputSourceId) {
-                return i;
-            }
-        }
-        return -1;
+    interface EventId {
+        CommandId commandId();
+        int eventSeq();
     }
 }

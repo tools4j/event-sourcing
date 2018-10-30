@@ -26,7 +26,6 @@ package org.tools4j.eventsourcing.ioc;
 import org.tools4j.eventsourcing.application.ServerConfig;
 import org.tools4j.eventsourcing.application.ServerContext;
 
-import java.util.function.IntSupplier;
 import java.util.function.LongConsumer;
 
 public class ServerBuilder {
@@ -36,10 +35,6 @@ public class ServerBuilder {
     }
 
     public ServerContext serverContext() {
-        throw new RuntimeException("not implemented");//FIXME
-    }
-
-    public IntSupplier timerIdProvider() {
         throw new RuntimeException("not implemented");//FIXME
     }
 

@@ -21,34 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.application;
+package org.tools4j.eventsourcing.ioc;
 
-public interface ServerConfig {
-    int instanceIndex();
-    int instanceId();
-    int serverCount();
-    int serverId(int index);
+import org.tools4j.eventsourcing.event.Event;
+import org.tools4j.nobark.loop.Step;
 
-    int inputSourceCount();
-    int inputSourceId(int index);
+import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 
-    default int serverIndexOf(final int serverId) {
-        final int count = serverCount();
-        for (int i = 0; i < count; i++) {
-            if (serverId(i) == serverId) {
-                return i;
-            }
-        }
-        return -1;
+public class TimerControllerBuilder {
+
+    public IntSupplier timerIdProvider() {
+        throw new RuntimeException("not implemented");//FIXME
     }
 
-    default int inputSourceIndexOf(final int inputSourceId) {
-        final int count = inputSourceCount();
-        for (int i = 0; i < count; i++) {
-            if (inputSourceId(i) == inputSourceId) {
-                return i;
-            }
-        }
-        return -1;
+    public Consumer<Event> startStopEventConsumer() {
+        throw new RuntimeException("not implemented");//FIXME
     }
+
+    public Step expiryCheckerStep() {
+        throw new RuntimeException("not implemented");//FIXME
+    }
+
 }

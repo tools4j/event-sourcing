@@ -29,4 +29,9 @@ import org.tools4j.eventsourcing.event.Event;
 public interface ApplicationHandler {
     void processInputEvent(Event event, CommandHandler commandHandler);
     void applyOutputEvent(Event event);
+
+    @FunctionalInterface
+    interface Factory {
+        ApplicationHandler create(ServerContext context);
+    }
 }

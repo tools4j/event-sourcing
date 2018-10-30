@@ -28,6 +28,20 @@ import org.tools4j.nobark.loop.Step;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
+/**
+ * The event sourcing main event loop performs 3 parts:
+ * <pre>
+ *     (1) steps that should always be performed, such as
+ *           - polling input events from the messaging transport and storing them in
+ *             the input queue
+ *           - appending replicated output events to the output queue in follower mode
+ *           - processing of shutdown events
+ *     (2) the output poller step which may result in application state updates if
+ *         anything is processed
+ *     (3) steps that should only be performed if (2) has no further events to
+ *         process, e.g. polling and processing of an input event
+ * </pre>
+ */
 public class MainEventLoop implements Step {
 
     private final Step outputPollerStep;

@@ -23,32 +23,8 @@
  */
 package org.tools4j.eventsourcing.application;
 
-public interface ServerConfig {
-    int instanceIndex();
-    int instanceId();
-    int serverCount();
-    int serverId(int index);
+import org.tools4j.nobark.loop.Shutdownable;
 
-    int inputSourceCount();
-    int inputSourceId(int index);
-
-    default int serverIndexOf(final int serverId) {
-        final int count = serverCount();
-        for (int i = 0; i < count; i++) {
-            if (serverId(i) == serverId) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    default int inputSourceIndexOf(final int inputSourceId) {
-        final int count = inputSourceCount();
-        for (int i = 0; i < count; i++) {
-            if (inputSourceId(i) == inputSourceId) {
-                return i;
-            }
-        }
-        return -1;
-    }
+public interface ApplicationController extends Shutdownable  {
+    void forceLeadershipChange(int leaderId);
 }

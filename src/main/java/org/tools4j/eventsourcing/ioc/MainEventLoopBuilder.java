@@ -23,6 +23,7 @@
  */
 package org.tools4j.eventsourcing.ioc;
 
+import org.agrona.concurrent.BackoffIdleStrategy;
 import org.tools4j.eventsourcing.application.ApplicationHandler;
 import org.tools4j.eventsourcing.application.ServerContext;
 import org.tools4j.eventsourcing.core.CommandController;
@@ -31,7 +32,7 @@ import org.tools4j.eventsourcing.event.Event;
 import org.tools4j.eventsourcing.store.InputQueue;
 import org.tools4j.eventsourcing.store.LongObjConsumer;
 import org.tools4j.eventsourcing.store.OutputQueue;
-import org.tools4j.nobark.loop.Step;
+import org.tools4j.nobark.loop.*;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -44,17 +45,61 @@ public class MainEventLoopBuilder {
     private final CommandHandlerBuilder commandHandlerBuilder;
     private final ApplicationBuilder applicationBuilder;
     private final ServerBuilder serverBuilder;
+    private final AdminControllerBuilder adminControllerBuilder;
+    private final TimerControllerBuilder timerControllerBuilder;
 
     private MainEventLoop mainEventLoop;
 
     public MainEventLoopBuilder(final QueueBuilder queueBuilder,
                                 final CommandHandlerBuilder commandHandlerBuilder,
                                 final ApplicationBuilder applicationBuilder,
-                                final ServerBuilder serverBuilder) {
+                                final ServerBuilder serverBuilder,
+                                final AdminControllerBuilder adminControllerBuilder,
+                                final TimerControllerBuilder timerControllerBuilder) {
         this.queueBuilder = Objects.requireNonNull(queueBuilder);
         this.commandHandlerBuilder = Objects.requireNonNull(commandHandlerBuilder);
         this.applicationBuilder = Objects.requireNonNull(applicationBuilder);
         this.serverBuilder = Objects.requireNonNull(serverBuilder);
+        this.adminControllerBuilder = Objects.requireNonNull(adminControllerBuilder);
+        this.timerControllerBuilder = Objects.requireNonNull(timerControllerBuilder);
+    }
+
+    public IdleStrategy idleStrategy() {
+        final BackoffIdleStrategy boStrategy = new BackoffIdleStrategy(
+                100, 10, 128, 1<<14
+        );
+        return new IdleStrategy() {
+            @Override
+            public void idle() {
+                boStrategy.idle();
+            }
+
+            @Override
+            public void reset() {
+                boStrategy.reset();
+            }
+
+            @Override
+            public String toString() {
+                return boStrategy.toString();
+            }
+        };
+    }
+
+    public ExceptionHandler exceptionHandler() {
+        return (loop, step, throwable) -> {
+            System.err.println("Uncaught exception in step '" + step + ": e=" + throwable);
+            throwable.printStackTrace();
+        };
+    }
+
+    public LoopRunner loopRunner() {
+        return LoopRunner.start(
+                idleStrategy(),
+                exceptionHandler(),
+                runnable -> new Thread(null, runnable, "event-loop"),
+                StepProvider.alwaysProvide(mainEventLoop())
+        );
     }
 
     public MainEventLoop mainEventLoop() {
@@ -62,6 +107,7 @@ public class MainEventLoopBuilder {
             mainEventLoop = new MainEventLoop(
                     outputPollerStep(),
                     outputAppliedCondition(),
+                    timerExpiryCheckerStep(),
                     inputPollerStep()
             );
         }
@@ -72,8 +118,12 @@ public class MainEventLoopBuilder {
         final OutputQueue.Poller outputPoller = queueBuilder.outputPoller();
         final ApplicationHandler applicationHandler = applicationBuilder.applicationHandler();
         final LongConsumer lastAppliedOutputIndexConsumer = serverBuilder.lastAppliedOutputIndexConsumer();
+        final Consumer<? super Event> leadershipChangeHandler = adminControllerBuilder.leadershipChangeEventConsumer();
+        final Consumer<? super Event> timerStartStopHandler = timerControllerBuilder.startStopEventConsumer();
         final LongObjConsumer<Event> eventConsumer = (index, event) -> {
             try {
+                leadershipChangeHandler.accept(event);
+                timerStartStopHandler.accept(event);
                 applicationHandler.applyOutputEvent(event);
                 lastAppliedOutputIndexConsumer.accept(index);
             } catch (final Exception e) {
@@ -87,6 +137,10 @@ public class MainEventLoopBuilder {
     private BooleanSupplier outputAppliedCondition() {
         final ServerContext serverContext = serverBuilder.serverContext();
         return () -> serverContext.lastAppendedOutputQueueIndex() == serverContext.lastAppliedOutputQueueIndex();
+    }
+
+    private Step timerExpiryCheckerStep() {
+        return timerControllerBuilder.expiryCheckerStep();
     }
 
     private Step inputPollerStep() {

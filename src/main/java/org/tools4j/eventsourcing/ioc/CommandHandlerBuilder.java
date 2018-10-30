@@ -33,6 +33,7 @@ public class CommandHandlerBuilder {
 
     private final ServerBuilder serverBuilder;
     private final QueueBuilder queueBuilder;
+    private final TimerControllerBuilder timerControllerBuilder;
 
     private CommandController.Provider commandControllerProvider;
     private DefaultCommandController defaultCommandController;
@@ -41,9 +42,11 @@ public class CommandHandlerBuilder {
     private SingleEventAppender singleEventAppender;
 
     public CommandHandlerBuilder(final ServerBuilder serverBuilder,
-                                 final QueueBuilder queueBuilder) {
+                                 final QueueBuilder queueBuilder,
+                                 final TimerControllerBuilder timerControllerBuilder) {
         this.serverBuilder = Objects.requireNonNull(serverBuilder);
         this.queueBuilder = Objects.requireNonNull(queueBuilder);
+        this.timerControllerBuilder = Objects.requireNonNull(timerControllerBuilder);
     }
 
     CommandController.Provider commandControllerProvider() {
@@ -67,7 +70,7 @@ public class CommandHandlerBuilder {
     DefaultSingleCommandHandler defaultSingleCommandHandler() {
         if (defaultCommandHandler == null) {
             final SingleCommitCommands singleCommitCommands = new SingleCommitCommands(singleEventAppender());
-            final TimerCommands timerCommands = new DefaultTimerCommands(serverBuilder.timerIdProvider(), singleCommitCommands);
+            final TimerCommands timerCommands = new DefaultTimerCommands(timerControllerBuilder.timerIdProvider(), singleCommitCommands);
             final AdminCommands adminCommands = new DefaultAdminCommands(serverBuilder.serverConfig(), singleCommitCommands);
             defaultCommandHandler = new DefaultSingleCommandHandler(timerCommands, adminCommands, singleCommitCommands);
         }
@@ -77,7 +80,7 @@ public class CommandHandlerBuilder {
     MultipartCommandHandler multipartCommandHandler() {
         if (multipartCommandHandler == null) {
             final MultipartCommitCommands multipartCommitCommands = new MultipartCommitCommands();
-            final TimerCommands timerCommands = new DefaultTimerCommands(serverBuilder.timerIdProvider(), multipartCommitCommands);
+            final TimerCommands timerCommands = new DefaultTimerCommands(timerControllerBuilder.timerIdProvider(), multipartCommitCommands);
             final AdminCommands adminCommands = new DefaultAdminCommands(serverBuilder.serverConfig(), multipartCommitCommands);
             multipartCommandHandler = new MultipartCommandHandler(singleEventAppender(), timerCommands, adminCommands, multipartCommitCommands);
         }
