@@ -23,6 +23,7 @@
  */
 package org.tools4j.eventsourcing.common;
 
+import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.LongLongConsumer;
 import org.tools4j.eventsourcing.api.ProgressState;
 import org.tools4j.eventsourcing.api.Poller;
@@ -32,25 +33,26 @@ import java.util.Objects;
 
 public class TransactionCommitAndPushNoops implements Poller.IndexConsumer {
     private final Transaction transaction;
-    private final ProgressState completedCommandExecutionState;
-    private final ProgressState completedEventApplyingState;
     private final PushMoreUpToDateNoopSourceSeqs pushMoreUpToDateNoopSourceSeqs = new PushMoreUpToDateNoopSourceSeqs();
+    private final Long2LongHashMap noopSourceSeqMap;
 
-    public TransactionCommitAndPushNoops(final Transaction transaction,
-                                         final ProgressState completedCommandExecutionState,
-                                         final ProgressState completedEventApplyingState) {
+    public TransactionCommitAndPushNoops(final Transaction transaction) {
         this.transaction = Objects.requireNonNull(transaction);
-        this.completedCommandExecutionState = Objects.requireNonNull(completedCommandExecutionState);
-        this.completedEventApplyingState = Objects.requireNonNull(completedEventApplyingState);
+        this.noopSourceSeqMap = new Long2LongHashMap(-1);
     }
 
     @Override
     public void accept(final long index, final int source, final long sourceSeq, final long eventTimeNanos) {
-        pushMoreUpToDateNoopSourceSeqs.excludedSource = source;
         pushMoreUpToDateNoopSourceSeqs.eventTimeNanos = eventTimeNanos;
 
         if (transaction.commit()) {
-            completedCommandExecutionState.forEachSourceEntry(pushMoreUpToDateNoopSourceSeqs);
+            if (!noopSourceSeqMap.isEmpty()) {
+                noopSourceSeqMap.remove(source);
+                noopSourceSeqMap.longForEach(pushMoreUpToDateNoopSourceSeqs);
+                noopSourceSeqMap.clear();
+            }
+        } else {
+            noopSourceSeqMap.put(source, sourceSeq);
         }
     }
 
@@ -58,15 +60,12 @@ public class TransactionCommitAndPushNoops implements Poller.IndexConsumer {
      * Not thread-safe. This is a hacky way to avoid lambda capturing.
      */
     private class PushMoreUpToDateNoopSourceSeqs implements LongLongConsumer {
-        int excludedSource;
         long eventTimeNanos;
 
         @Override
         public void accept(final long source, final long sourceSeq) {
-            if (source != excludedSource && sourceSeq > completedEventApplyingState.sourceSeq((int) source)) {
                 transaction.init((int) source, sourceSeq, eventTimeNanos, true);
                 transaction.commit();
-            }
         }
     }
 }

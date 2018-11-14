@@ -85,8 +85,6 @@ public interface CommandExecutionQueue extends IndexedQueue {
 
             OptionalsStep executorStepFactory(BinaryOperator<Step> executionStepFactory);
 
-            OptionalsStep stateChangingSource(IntPredicate stateChangingSource);
-
             CommandExecutionQueue build() throws IOException;
         }
     }
@@ -103,7 +101,6 @@ public interface CommandExecutionQueue extends IndexedQueue {
         private MessageConsumer.CommandExecutorFactory commandExecutorFactory = MessageConsumer.CommandExecutorFactory.PASS_THROUGH;
         private MessageConsumer.EventApplierFactory eventApplierFactory = MessageConsumer.EventApplierFactory.NO_OP;
         private BinaryOperator<Step> executorStepFactory = ApplyAllThenExecuteOnceStep::new;
-        private IntPredicate stateChangingSource = value -> true;
 
         @Override
         public EventQueueStep commandQueue(final IndexedQueue commandQueue) {
@@ -172,12 +169,6 @@ public interface CommandExecutionQueue extends IndexedQueue {
         }
 
         @Override
-        public OptionalsStep stateChangingSource(final IntPredicate stateChangingSource) {
-            this.stateChangingSource = Objects.requireNonNull(stateChangingSource);
-            return this;
-        }
-
-        @Override
         public CommandExecutionQueue build() throws IOException {
             return new DefaultCommandExecutionQueue(
                     commandQueue,
@@ -190,8 +181,7 @@ public interface CommandExecutionQueue extends IndexedQueue {
                     onEventApplyingCompleted,
                     commandExecutorFactory,
                     eventApplierFactory,
-                    executorStepFactory,
-                    stateChangingSource
+                    executorStepFactory
             );
         }
     }

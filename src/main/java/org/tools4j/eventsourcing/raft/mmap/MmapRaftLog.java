@@ -24,6 +24,7 @@
 package org.tools4j.eventsourcing.raft.mmap;
 
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.sbe.RaftHeaderDecoder;
@@ -56,6 +57,7 @@ public final class MmapRaftLog implements RaftLog {
     private final RaftIndexDecoder raftIndexDecoder = new RaftIndexDecoder();
     private final RaftHeaderEncoder raftHeaderEncoder = new RaftHeaderEncoder();
     private final RaftHeaderDecoder raftHeaderDecoder = new RaftHeaderDecoder();
+    private final Long2LongHashMap lastSourceSeqMap = new Long2LongHashMap(NOT_INITIALISED);
     private final LongConsumer truncateHandler;
 
 
@@ -96,6 +98,8 @@ public final class MmapRaftLog implements RaftLog {
                         .sourceSeq(sourceSeq)
                         .eventTimeNanos(eventTimeNanos);
 
+                lastSourceSeqMap.put(source, sourceSeq);
+
                 advanceIndexToNextAppendPosition(length);
 
                 mappedHeaderBuffer.putLongOrdered(LAST_INDEX_POSITION_OFFSET, currentIndexPosition);
@@ -115,24 +119,35 @@ public final class MmapRaftLog implements RaftLog {
 
     private void init() {
         if (currentIndexPosition == NOT_INITIALISED) {
-            if (regionAccessorSupplier.headerAccessor().wrap(0, mappedHeaderBuffer)) {
-                currentIndexPosition = mappedHeaderBuffer.getLong(LAST_INDEX_POSITION_OFFSET); //does not have to be volatile
-                raftHeaderEncoder.wrap(mappedHeaderBuffer, HEADER_OFFSET);
-                raftHeaderDecoder.wrap(mappedHeaderBuffer, HEADER_OFFSET);
-
-                if (currentIndexPosition > 0) {
-                    if (regionAccessorSupplier.indexAccessor().wrap(currentIndexPosition - INDEX_LENGTH, mappedIndexBuffer)) {
-                        raftIndexDecoder.wrap(mappedIndexBuffer, INDEX_OFFSET);
-                        currentMessagePosition = raftIndexDecoder.position() + raftIndexDecoder.length();
-                    } else {
-                        throw new IllegalStateException("Failed to wrap index buffer to position " + (currentIndexPosition - INDEX_LENGTH));
-                    }
-                } else {
-                    currentMessagePosition = 0;
-                }
-            }
+            reloadIndex();
         }
     }
+
+    private void reloadIndex() {
+        if (regionAccessorSupplier.headerAccessor().wrap(0, mappedHeaderBuffer)) {
+            final long lastIndexPosition = mappedHeaderBuffer.getLong(LAST_INDEX_POSITION_OFFSET); //does not have to be volatile
+            raftHeaderEncoder.wrap(mappedHeaderBuffer, HEADER_OFFSET);
+            raftHeaderDecoder.wrap(mappedHeaderBuffer, HEADER_OFFSET);
+
+            currentIndexPosition = 0;
+            currentMessagePosition = 0;
+            lastSourceSeqMap.clear();
+
+            do {
+                if (regionAccessorSupplier.indexAccessor().wrap(currentIndexPosition, mappedIndexBuffer)) {
+                    raftIndexDecoder.wrap(mappedIndexBuffer, INDEX_OFFSET);
+
+                    if (raftIndexDecoder.length() > 0) {
+                        lastSourceSeqMap.put(raftIndexDecoder.source(), raftIndexDecoder.sourceSeq());
+                        advanceIndexToNextAppendPosition(raftIndexDecoder.length());
+                    }
+                } else {
+                    throw new IllegalStateException("Failed to wrap index buffer to position " + currentIndexPosition);
+                }
+            } while (currentIndexPosition < lastIndexPosition);
+        }
+    }
+
 
     @Override
     public void close() {
@@ -147,6 +162,11 @@ public final class MmapRaftLog implements RaftLog {
     @Override
     public void commitIndex(final long commitIndex) {
         this.commitIndex = commitIndex;
+    }
+
+    @Override
+    public long lastSourceSeq(final int source) {
+        return lastSourceSeqMap.get(source);
     }
 
     @Override
@@ -201,6 +221,7 @@ public final class MmapRaftLog implements RaftLog {
                 currentMessagePosition = raftIndexDecoder.position() + raftIndexDecoder.length();
             }
             mappedHeaderBuffer.putLongOrdered(LAST_INDEX_POSITION_OFFSET, currentIndexPosition);
+            reloadIndex();
             truncateHandler.accept(size);
         } else {
             throw new IllegalArgumentException("Size [" + size + "] must be positive and <= current size " + currentSize);

@@ -78,6 +78,8 @@ public interface RaftLog extends Closeable {
 
     void currentTerm(int term);
 
+    long lastSourceSeq(int source);
+
     default int clearVoteForAndSetCurrentTerm(final int term) {
         votedFor(NOT_VOTED_YET);
         currentTerm(term);

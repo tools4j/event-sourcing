@@ -24,29 +24,28 @@
 package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
+import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
 import org.tools4j.eventsourcing.api.IndexedQueue;
-import org.tools4j.eventsourcing.api.IndexedTransactionalQueue;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.api.Transaction;
-import org.tools4j.eventsourcing.common.MultiPayloadAppender;
+import org.tools4j.eventsourcing.common.SinglePayloadAppender;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class MmapTransactionalQueue implements IndexedTransactionalQueue {
+public class MmapSinglePayloadQueue implements IndexedQueue {
     private final IndexedQueue indexedQueue;
-    private final Transaction appender;
+    private final IndexedMessageConsumer appender;
 
-    public MmapTransactionalQueue(final IndexedQueue indexedQueue, final int encodingBufferSize) {
+    public MmapSinglePayloadQueue(final IndexedQueue indexedQueue, final int encodingBufferSize) {
         this.indexedQueue = Objects.requireNonNull(indexedQueue);
 
-        this.appender = new MultiPayloadAppender(indexedQueue.appender(),
+        this.appender = new SinglePayloadAppender(indexedQueue.appender(),
                 new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize)));
     }
 
     @Override
-    public Transaction appender() {
+    public IndexedMessageConsumer appender() {
         return appender;
     }
 

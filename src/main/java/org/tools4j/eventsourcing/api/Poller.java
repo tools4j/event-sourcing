@@ -154,14 +154,12 @@ public interface Poller extends Closeable {
             return (i, s, sid, etn) -> { accept(i, s, sid, etn); after.accept(i, s, sid, etn); };
         }
 
-        static IndexConsumer transactionInit(final Transaction transaction, final IntPredicate stateChangingSource) {
-            return (index, source, sourceSeq, eventTimeNanos) -> transaction.init(source, sourceSeq, eventTimeNanos, stateChangingSource.test(source));
+        static IndexConsumer transactionInit(final Transaction transaction) {
+            return (index, source, sourceSeq, eventTimeNanos) -> transaction.init(source, sourceSeq, eventTimeNanos, true);
         }
 
-        static IndexConsumer transactionCommitAndPushNoops(final Transaction transaction,
-                                                           final ProgressState completedCommandExecutionState,
-                                                           final ProgressState completedEventApplyingState) {
-            return new TransactionCommitAndPushNoops(transaction, completedCommandExecutionState, completedEventApplyingState);
+        static IndexConsumer transactionCommitAndPushNoops(final Transaction transaction) {
+            return new TransactionCommitAndPushNoops(transaction);
         }
 
         static IndexConsumer noop() {

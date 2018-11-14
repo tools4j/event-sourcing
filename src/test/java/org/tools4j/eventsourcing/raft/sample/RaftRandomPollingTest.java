@@ -36,9 +36,10 @@ import org.tools4j.eventsourcing.api.CommandExecutionQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.api.ProgressState;
+import org.tools4j.eventsourcing.common.ApplyAllExecuteOnceStep;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
-import org.tools4j.eventsourcing.mmap.MmapTransactionalQueue;
+import org.tools4j.eventsourcing.mmap.MmapMultiPayloadQueue;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.mmap.TestUtil;
 import org.tools4j.eventsourcing.raft.api.RaftQueue;
@@ -69,8 +70,8 @@ public class RaftRandomPollingTest {
     private int clusterSize = 3;
     private int producers = 3;
     private int commandsToSend = 50;
-    private int numberOfBlockings = 30;
-    private boolean enableLogging = false;
+    private int numberOfBlockings = 20;
+    private boolean enableLogging = true;
     private Aeron aeron;
     private RegionRingFactory regionRingFactory;
     private String directory;
@@ -102,6 +103,10 @@ public class RaftRandomPollingTest {
         final MutableReference<ProgressState> curEventApplyingStateRef = new MutableReference<>();
         final MutableReference<ProgressState> compEventApplyingStateRef = new MutableReference<>();
 
+        final MutableReference<ProgressState> curCommandExecutionStateRef = new MutableReference<>();
+        final MutableReference<ProgressState> compCommandExecutionStateRef = new MutableReference<>();
+
+
         final MessageConsumer.EventApplierFactory eventApplierFactory =
                 (currentEventApplierState, completedEventApplierState) ->
                         (buf, ofst, len) -> {
@@ -129,12 +134,19 @@ public class RaftRandomPollingTest {
 
                     curEventApplyingStateRef.set(currentEventApplyingState);
                     compEventApplyingStateRef.set(completedEventApplierState);
+                    curCommandExecutionStateRef.set(currentCommandExecutionState);
+                    compCommandExecutionStateRef.set(completedCommandExecutionState);
 
                     final CommandSender updateSender = value -> {
                         final int length = updateEncoder.wrapAndApplyHeader(buffer, 0, headerEncoder)
                                 .value(value)
                                 .encodedLength() + headerEncoder.encodedLength();
-                        eventApplier.accept(buffer, 0, length);
+
+                        if (currentCommandExecutionState.sourceSeq() % 10 != 0) {
+                            eventApplier.accept(buffer, 0, length);
+                        } else {
+                            instanceState.setValue(value);
+                        }
 
                         sb.setLength(0);
                         updateEncoder.appendTo(sb);
@@ -182,13 +194,16 @@ public class RaftRandomPollingTest {
 
         final LongConsumer truncateHandler = size -> {
             LOGGER.info("Truncating to size {}, last applied to state {}", size, compEventApplyingStateRef.get().id());
-            //if (compEventApplyingStateRef.get().id() >= size) {
+            if (compEventApplyingStateRef.get().id() >= size - 1) {
                 LOGGER.info("Rebuilding the state");
                 //1. comment below if pre-commit apply does not work
                 curEventApplyingStateRef.get().reset();
                 compEventApplyingStateRef.get().reset();
+
+                compCommandExecutionStateRef.get().reset();
+                curCommandExecutionStateRef.get().reset();
                 instanceState.setValue(0);
-            //}
+            }
         };
 
         final RaftQueue raftQueue = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
@@ -211,12 +226,12 @@ public class RaftRandomPollingTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapTransactionalQueue(raftQueue, 1024))
+                .eventQueue(new MmapMultiPayloadQueue(raftQueue, 1024))
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(eventApplierFactory)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue::leader)
-                .stateChangingSource(value -> true)
+                .executorStepFactory(ApplyAllExecuteOnceStep::new)
                 .build();
 
         final AtomicInteger resultedEvents = raftInstanceCommitted.get(serverId);
@@ -425,8 +440,8 @@ public class RaftRandomPollingTest {
 
     @Test
     public void addInstancesShouldProduceSameEvents() throws Exception {
-        commandProducers.forEach(service -> service.awaitTermination(15, TimeUnit.SECONDS));
-        raftInstances.forEach(service -> service.awaitTermination(15, TimeUnit.SECONDS));
+        raftInstances.forEach(service -> service.awaitTermination(10, TimeUnit.SECONDS));
+        commandProducers.forEach(Service::shutdown);
         //FIXME assert all states are the same
 
         raftInstanceStates.forEach((serverId, state) -> {

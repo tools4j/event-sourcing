@@ -21,17 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.api;
+package org.tools4j.eventsourcing.common;
 
-import java.io.Closeable;
+import org.tools4j.nobark.loop.Step;
 
-public interface IndexedTransactionalQueue extends IndexedPollerFactory, Closeable {
-    Transaction appender();
+import java.util.Objects;
 
-    default long lastSourceSeq(int source) {
-        return -1;
+public final class ApplyAllExecuteOnceStep implements Step {
+
+    private final Step commandExecutionStep;
+    private final Step eventApplyingStep;
+
+    public ApplyAllExecuteOnceStep(final Step commandExecutionStep, final Step eventApplyingStep) {
+        this.commandExecutionStep = Objects.requireNonNull(commandExecutionStep);
+        this.eventApplyingStep = Objects.requireNonNull(eventApplyingStep);
     }
 
     @Override
-    default void close(){}
+    public boolean perform() {
+        boolean doneEvents = false;
+        while(eventApplyingStep.perform()) {
+            doneEvents = true;
+        }
+        return commandExecutionStep.perform() | doneEvents;
+    }
 }

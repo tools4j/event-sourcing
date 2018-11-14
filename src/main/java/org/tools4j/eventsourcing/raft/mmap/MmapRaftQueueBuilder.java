@@ -450,6 +450,11 @@ public interface MmapRaftQueueBuilder {
                 }
 
                 @Override
+                public long lastSourceSeq(final int source) {
+                    return raftLog.lastSourceSeq(source);
+                }
+
+                @Override
                 public void init() {
                     serverMessageHandler.init();
                 }

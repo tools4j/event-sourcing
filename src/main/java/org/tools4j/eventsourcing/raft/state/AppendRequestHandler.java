@@ -150,10 +150,16 @@ public class AppendRequestHandler implements BiFunction<AppendRequestDecoder, Lo
                     //logger.info("Appended index {}, term {}, offset {}, length {}", nextIndex, nextTermAtIndex, offset, length);
                     break;
                 case IN:
-                    //logger.info("Skipped index {}, term {}", nextIndex, nextTermAtIndex);
+                    break;
+                case CONFLICT:
+                    raftLog.truncate(nextIndex);
+                    raftLog.append(nextTermAtIndex, commandSource, commandSequence, commandTimeNanos,
+                            appendRequestDecoder.buffer(),
+                            offset,
+                            length);
                     break;
                 default:
-                    throw new IllegalStateException("Should not be in conflict");
+                    throw new IllegalStateException("Invalid containment");
             }
             appendRequestDecoder.limit(offset + length);
         }
