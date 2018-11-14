@@ -77,9 +77,9 @@ public interface ProgressState {
     boolean pollerResetRequired(long currentPosition);
     void resetPoller(long resetPosition);
 
-    default boolean isAheadOf(final ProgressState another) {
-        return sourceSeq() > another.sourceSeq(source());
-    }
+    boolean isBehind(final ProgressState another);
+
+    boolean isBehind(final int source, ProgressState another);
 
     default boolean isEqualTo(final ProgressState another) {
         return sourceSeq() == another.sourceSeq() &&

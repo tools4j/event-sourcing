@@ -53,8 +53,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                                         final Poller.IndexConsumer onCompletedEventApplyingHandler,
                                         final MessageConsumer.CommandExecutorFactory commandExecutorFactory,
                                         final MessageConsumer.EventApplierFactory eventApplierFactory,
-                                        final BinaryOperator<Step> executorStepFactory,
-                                        final IntPredicate stateChangingSource) throws IOException {
+                                        final BinaryOperator<Step> executorStepFactory) throws IOException {
         this.commandQueue = Objects.requireNonNull(commandQueue);
         this.eventQueue = Objects.requireNonNull(eventQueue);
 
@@ -63,10 +62,6 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         final DefaultProgressState currentEventApplyingState = new DefaultProgressState(systemNanoClock);
         final DefaultProgressState completedEventApplyingState = new DefaultProgressState(systemNanoClock);
 
-        final Poller.IndexPredicate lastCompletedCommandIsNotYetApplied = Poller.IndexPredicate.isTrue(() ->
-                completedCommandExecutionState.isAheadOf(completedEventApplyingState) &&
-                            stateChangingSource.test(completedCommandExecutionState.source())
-        );
 
         final Transaction eventAppender = eventQueue.appender();
 
@@ -74,24 +69,37 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                 currentCommandExecutionState,
                 completedCommandExecutionState);
 
-        final MessageConsumer appenderAndApplierOfUncommittedEvents = eventAppender.andThen(uncommittedEventApplier);
+        final MessageConsumer appenderAndApplierOfUncommittedEvents =
+                eventAppender.andThen(uncommittedEventApplier);
 
         this.commandExecutionPoller = commandQueue.createPoller(
                 Poller.Options.builder()
                         .skipWhen(
-                            Poller.IndexPredicate.isNotAheadOf(completedEventApplyingState))
+                            Poller.IndexPredicate.isLeader(leadership)
+                            .and(
+                                    (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= eventQueue.lastSourceSeq(source)
+                            )
+                            .or(
+                                    Poller.IndexPredicate.isNotLeader(leadership)
+                                    .and(
+                                            Poller.IndexPredicate.isNotAheadOf(completedEventApplyingState))
+                                    )
+                            )
+                        .resetWhen(currentCommandExecutionState::pollerResetRequired)
                         .pauseWhen(
                             Poller.IndexPredicate.isNotLeader(leadership)
-                                .and(Poller.IndexPredicate.isAheadOf(completedEventApplyingState))
-                                .or(lastCompletedCommandIsNotYetApplied))
+                        )
                         .onProcessingStart(
                                 currentCommandExecutionState
-                                        .andThen(Poller.IndexConsumer.transactionInit(eventAppender, stateChangingSource))
+                                        .andThen(Poller.IndexConsumer.transactionInit(eventAppender))
                                         .andThen(onStartCommandExecutionHandler))
                         .onProcessingComplete(
-                                Poller.IndexConsumer.transactionCommitAndPushNoops(eventAppender, completedCommandExecutionState, completedEventApplyingState)
+                                Poller.IndexConsumer.transactionCommitAndPushNoops(eventAppender)
                                         .andThen(completedCommandExecutionState)
+                                        .andThen(currentEventApplyingState)
+                                        .andThen(completedEventApplyingState)
                                         .andThen(onCompleteCommandExecutionHandler))
+                        .onReset(currentCommandExecutionState::resetPoller)
                         .build()
         );
 
@@ -111,7 +119,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         this.committedEventApplyingPoller = eventQueue.createPoller(
                 Poller.Options.builder()
                         .skipWhen(
-                                Poller.IndexPredicate.isEqualTo(completedCommandExecutionState))
+                                Poller.IndexPredicate.isNotAheadOf(completedEventApplyingState))
                         .resetWhen(currentEventApplyingState::pollerResetRequired)
                         .onProcessingStart(
                                 currentEventApplyingState.andThen(onStartEventApplyingHandler))

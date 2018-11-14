@@ -62,8 +62,17 @@ public class MmapIndexedPoller implements Poller {
     public int poll(final MessageConsumer processingHandler) {
         wrapIndex();
 
+        if (options.resetWhen().test(currentIndex)) {
+            final long indexBeforeReset = currentIndex;
+            currentIndex = 0;
+            currentIndexPosition = 0;
+            options.onReset().accept(indexBeforeReset);
+        }
+
         final int messageLength = currentMessageLength();
-        if (messageLength <= 0) return 0;
+        if (messageLength <= 0) {
+            return 0;
+        }
 
         final long messagePosition = indexDecoder.position();
         final int source = indexDecoder.source();

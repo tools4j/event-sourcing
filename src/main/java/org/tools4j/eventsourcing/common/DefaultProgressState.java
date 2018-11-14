@@ -43,6 +43,9 @@ public final class DefaultProgressState implements ProgressState, Poller.IndexCo
     private long ingestionTimeNanos = NOT_INITIALISED;
     private boolean pollerResetRequired = false;
 
+    private ProgressState another;
+    private boolean result;
+
     public DefaultProgressState(final LongSupplier systemNanoClock) {
         this.systemNanoClock = Objects.requireNonNull(systemNanoClock);
         this.sourceSeqMap = new Long2LongHashMap(MISSING_VALUE);
@@ -113,5 +116,24 @@ public final class DefaultProgressState implements ProgressState, Poller.IndexCo
     @Override
     public void resetPoller(final long resetPosition) {
         pollerResetRequired = false;
+    }
+
+    @Override
+    public boolean isBehind(final ProgressState ps) {
+        this.another = ps;
+        this.result = false;
+        sourceSeqMap.longForEach((source, sourceSeq) -> {
+            if (sourceSeq > NOT_INITIALISED && sourceSeq < another.sourceSeq((int)source)) {
+                result = true;
+            }
+        });
+        return result;
+    }
+
+    @Override
+    public boolean isBehind(final int source, final ProgressState ps) {
+        final long sourceSeq = sourceSeq(source);
+
+        return sourceSeq > NOT_INITIALISED && sourceSeq < ps.sourceSeq(source);
     }
 }

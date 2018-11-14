@@ -34,9 +34,8 @@ import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.CommandExecutionQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
-import org.tools4j.eventsourcing.mmap.MmapTransactionalQueue;
+import org.tools4j.eventsourcing.mmap.MmapMultiPayloadQueue;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.mmap.TestUtil;
 import org.tools4j.eventsourcing.raft.mmap.MmapRaftQueueBuilder;
@@ -124,13 +123,12 @@ public class RaftQueueTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapTransactionalQueue(raftQueue0, 1024 * 8))
+                .eventQueue(new MmapMultiPayloadQueue(raftQueue0, 1024 * 8))
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
                         (currentEventApplierState, completedEventApplierState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue0::leader)
-                .stateChangingSource(value -> value < NON_STATE_CHANGING_SOURCE_LOW)
                 .build();
 
         final CommandExecutionQueue commandExecutionQueue1 = CommandExecutionQueue.builder()
@@ -141,13 +139,12 @@ public class RaftQueueTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapTransactionalQueue(raftQueue1, 1024 * 8))
+                .eventQueue(new MmapMultiPayloadQueue(raftQueue1, 1024 * 8))
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
                         (currentEventApplierState, completedEventApplierState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue1::leader)
-                .stateChangingSource(value -> value < NON_STATE_CHANGING_SOURCE_LOW)
                 .build();
 
         final CommandExecutionQueue commandExecutionQueue2 = CommandExecutionQueue.builder()
@@ -158,13 +155,12 @@ public class RaftQueueTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapTransactionalQueue(raftQueue2, 1024 * 8))
+                .eventQueue(new MmapMultiPayloadQueue(raftQueue2, 1024 * 8))
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
                         (currentEventApplierState, completedEventApplierState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue2::leader)
-                .stateChangingSource(value -> value < NON_STATE_CHANGING_SOURCE_LOW)
                 .build();
 
         regionRingFactory.onComplete();

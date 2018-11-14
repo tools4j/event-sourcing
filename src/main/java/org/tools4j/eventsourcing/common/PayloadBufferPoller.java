@@ -28,6 +28,7 @@ import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.sbe.MessageHeaderDecoder;
 import org.tools4j.eventsourcing.sbe.MultiPayloadDecoder;
+import org.tools4j.eventsourcing.sbe.NoopDecoder;
 import org.tools4j.eventsourcing.sbe.SinglePayloadDecoder;
 
 public final class PayloadBufferPoller implements BufferPoller {
@@ -61,6 +62,9 @@ public final class PayloadBufferPoller implements BufferPoller {
                 done++;
             }
             return Math.max(done, 1); //empty multiPayload is treated at one message done.
+        } else if (messageHeaderDecoder.templateId() == NoopDecoder.TEMPLATE_ID) {
+            //do nothing
+            return 0;
         } else {
             throw new IllegalStateException("Unexpected message type " + messageHeaderDecoder.templateId());
         }

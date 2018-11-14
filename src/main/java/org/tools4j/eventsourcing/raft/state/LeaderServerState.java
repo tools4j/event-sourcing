@@ -48,6 +48,8 @@ public class LeaderServerState implements ServerState {
     private final MutableDirectBuffer commandDecoderBuffer;
     private final RaftIndexDecoder raftIndexDecoder;
 
+    private final NoopEncoder noopEncoder = new NoopEncoder();
+
     private final Publisher publisher;
     private final IntConsumer onLeaderTransitionHandler;
     private final int maxBatchSize;
@@ -101,6 +103,11 @@ public class LeaderServerState implements ServerState {
     public void onTransition() {
         LOGGER.info("Transitioned");
         peers.resetAsFollowers(raftLog.size());
+
+        final int noopLength = noopEncoder.wrapAndApplyHeader(encoderBuffer, 0, messageHeaderEncoder).encodedLength() +
+                messageHeaderEncoder.encodedLength();
+
+        accept(0, 0, 0, encoderBuffer, 0, noopLength);
         sendAppendRequestToAllAndResetHeartbeatTimer();
         onLeaderTransitionHandler.accept(serverId);
     }

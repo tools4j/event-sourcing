@@ -68,23 +68,26 @@
             <data name="value" id="3" type="varDataEncoding"/>
         </group>
     </sbe:message>
+    <sbe:message id="3" name="Noop" description="Noop">
+    </sbe:message>
+
     <!-- This message is not used. It is only to generate some useful composite types-->
-    <sbe:message id="3" name="IndexPayload" description="Index Payload">
+    <sbe:message id="4" name="IndexPayload" description="Index Payload">
         <field name="index" id="4" type="index"/>
         <field name="raftIndex" id="5" type="raftIndex"/>
         <field name="raftHeader" id="6" type="raftHeader"/>
     </sbe:message>
 
     <!-- Raft -->
-    <sbe:message id="4" name="VoteRequest" description="Vote Request">
+    <sbe:message id="5" name="VoteRequest" description="Vote Request">
         <field name="header" id="7" type="Header"/>
         <field name="lastLogKey" id="8" type="LogKey"/>
     </sbe:message>
-    <sbe:message id="5" name="VoteResponse" description="Vote Response">
+    <sbe:message id="6" name="VoteResponse" description="Vote Response">
         <field name="header" id="7" type="Header"/>
         <field name="voteGranted" id="9" type="BooleanType"/>
     </sbe:message>
-    <sbe:message id="6" name="AppendRequest" description="Append Request">
+    <sbe:message id="7" name="AppendRequest" description="Append Request">
         <field name="header" id="7" type="Header"/>
         <field name="prevLogKey" id="10" type="LogKey"/>
         <field name="commitLogIndex" id="11" type="LogIndex"/>
@@ -96,7 +99,7 @@
             <data name="command" id="17" type="varDataEncoding"/>
         </group>
     </sbe:message>
-    <sbe:message id="7" name="AppendResponse" description="Append Response">
+    <sbe:message id="8" name="AppendResponse" description="Append Response">
         <field name="header" id="7" type="Header"/>
         <field name="matchLogIndex" id="18" type="LogIndex"/>
         <field name="prevLogIndex" id="19" type="LogIndex"/>

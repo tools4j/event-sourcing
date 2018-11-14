@@ -85,6 +85,12 @@ public class MmapRaftPoller implements Poller {
         final long sourceSeq = raftIndexDecoder.sourceSeq();
         final long eventTimeNanos = raftIndexDecoder.eventTimeNanos();
 
+        if (source == 0) {
+            //skip Noop
+            advanceIndexToNextAppendPosition();
+            return 1;
+        }
+
         if (options.skipWhen().test(currentIndex, source, sourceSeq, eventTimeNanos)) {
             options.onProcessingSkipped().accept(currentIndex, source, sourceSeq, eventTimeNanos);
             advanceIndexToNextAppendPosition();
