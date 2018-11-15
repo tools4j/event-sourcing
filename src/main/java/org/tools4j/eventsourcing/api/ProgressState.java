@@ -23,8 +23,6 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import org.agrona.collections.LongLongConsumer;
-
 /**
  * Progress State provides event details at current and completed stages of processing of the command/event.
  * There are the following stages when progress state can be observed:
