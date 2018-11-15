@@ -55,7 +55,7 @@ public class CommandExecutionQueueTest {
 
     private ProgressState compProgressState;
 
-    private void initExecutionQueue(final MessageConsumer.CommandExecutorFactory commandExecutorFactory) throws IOException {
+    private void initExecutionQueue(final CommandExecutorFactory commandExecutorFactory) throws IOException {
         final RegionRingFactory regionRingFactory = RegionRingFactoryConfig.get("SYNC");
 
         final String directory = System.getProperty("user.dir") + "/build";

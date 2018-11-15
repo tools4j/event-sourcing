@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.MetricIndexConsumer;
 import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.CommandExecutionQueue;
+import org.tools4j.eventsourcing.api.IndexPredicate;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
@@ -89,7 +90,7 @@ public class EventSourcingPerfTest {
         final Poller senderPoller = queue.createPoller(
                 Poller.Options.builder()
                         .skipWhen(
-                            Poller.IndexPredicate.eventTimeBefore(systemNanoClock.getAsLong()))
+                            IndexPredicate.eventTimeBefore(systemNanoClock.getAsLong()))
                         .onProcessingComplete(
                             new MetricIndexConsumer(messages, warmup, stop))
                         .build()

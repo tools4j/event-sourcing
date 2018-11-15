@@ -24,11 +24,7 @@
 package org.tools4j.eventsourcing.common;
 
 import org.agrona.collections.MutableReference;
-import org.tools4j.eventsourcing.api.IndexedPollerFactory;
-import org.tools4j.eventsourcing.api.IndexedTransactionalQueue;
-import org.tools4j.eventsourcing.api.MessageConsumer;
-import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.api.Transaction;
+import org.tools4j.eventsourcing.api.*;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -36,11 +32,11 @@ import java.util.Objects;
 public final class BranchedIndexedTransactionalQueue implements IndexedTransactionalQueue {
     private final IndexedPollerFactory basePollerFactory;
     private final IndexedTransactionalQueue branchQueue;
-    private final Poller.IndexPredicate branchPredicate;
+    private final IndexPredicate branchPredicate;
 
     public BranchedIndexedTransactionalQueue(final IndexedPollerFactory basePollerFactory,
                                              final IndexedTransactionalQueue branchQueue,
-                                             final Poller.IndexPredicate branchPredicate) {
+                                             final IndexPredicate branchPredicate) {
         this.basePollerFactory = Objects.requireNonNull(basePollerFactory);
         this.branchQueue = Objects.requireNonNull(branchQueue);
         this.branchPredicate = Objects.requireNonNull(branchPredicate);
@@ -56,7 +52,7 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         final Poller branchQueuePoller = branchQueue.createPoller(options);
         final MutableReference<Poller> currentPollerRef = new MutableReference<>();
 
-        final Poller.IndexPredicate needToSwitchToBranch = (index, source, sourceSeq, eventTimeNanos) -> {
+        final IndexPredicate needToSwitchToBranch = (index, source, sourceSeq, eventTimeNanos) -> {
             if (this.branchPredicate.test(index, source, sourceSeq, eventTimeNanos)) {
                 currentPollerRef.set(branchQueuePoller);
                 return true;
@@ -108,7 +104,7 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         }
 
         interface BranchPredicateStep {
-            BuildStep branchPredicate(Poller.IndexPredicate branchPredicate);
+            BuildStep branchPredicate(IndexPredicate branchPredicate);
         }
 
         interface BuildStep {
@@ -119,7 +115,7 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
     private static class BranchedIndexedTransactionalQueueBuilder implements Builder, Builder.BranchQueueStep, Builder.BranchPredicateStep, Builder.BuildStep {
         IndexedPollerFactory basePollerFactory;
         IndexedTransactionalQueue branchQueue;
-        Poller.IndexPredicate branchPredicate;
+        IndexPredicate branchPredicate;
 
         @Override
         public BranchQueueStep basePollerFactory(final IndexedPollerFactory basePollerFactory) {
@@ -134,7 +130,7 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         }
 
         @Override
-        public BuildStep branchPredicate(final Poller.IndexPredicate branchPredicate) {
+        public BuildStep branchPredicate(final IndexPredicate branchPredicate) {
             this.branchPredicate = branchPredicate;
             return this;
         }

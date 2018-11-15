@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.CommandExecutionQueue;
+import org.tools4j.eventsourcing.api.CommandExecutorFactory;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
@@ -70,7 +71,7 @@ public class RaftQueueTest {
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
 
-        final MessageConsumer.CommandExecutorFactory commandExecutorFactory =
+        final CommandExecutorFactory commandExecutorFactory =
                 (eventApplier,
                  currentProgressState,
                  completedProgressState) -> eventApplier;

@@ -32,11 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.api.CommandExecutionQueue;
-import org.tools4j.eventsourcing.api.MessageConsumer;
-import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.api.ProgressState;
-import org.tools4j.eventsourcing.common.ApplyAllExecuteOnceStep;
+import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
 import org.tools4j.eventsourcing.mmap.MmapMultiPayloadQueue;
@@ -103,7 +99,7 @@ public class RaftRandomPollingTest {
         final MutableReference<ProgressState> curProgressStateRef = new MutableReference<>();
         final MutableReference<ProgressState> compProgressStateRef = new MutableReference<>();
 
-        final MessageConsumer.EventApplierFactory eventApplierFactory =
+        final EventApplierFactory eventApplierFactory =
                 (currentProgressState, completedProgressState) ->
                         (buf, ofst, len) -> {
                             eventHeaderDecoder.wrap(buf, ofst);
@@ -115,7 +111,7 @@ public class RaftRandomPollingTest {
                             }
                         };
 
-        final MessageConsumer.CommandExecutorFactory commandExecutorFactory =
+        final CommandExecutorFactory commandExecutorFactory =
                 (eventApplier,
                  currentProgressState,
                  completedProgressState) -> {
@@ -198,7 +194,6 @@ public class RaftRandomPollingTest {
                 .eventApplierFactory(eventApplierFactory)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue::leader)
-                .executorStepFactory(ApplyAllExecuteOnceStep::new)
                 .build();
 
         final AtomicInteger resultedEvents = raftInstanceCommitted.get(serverId);
