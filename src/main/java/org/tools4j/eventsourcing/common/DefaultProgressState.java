@@ -24,9 +24,8 @@
 package org.tools4j.eventsourcing.common;
 
 import org.agrona.collections.Long2LongHashMap;
-import org.agrona.collections.LongLongConsumer;
-import org.tools4j.eventsourcing.api.ProgressState;
 import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.api.ProgressState;
 
 import java.util.Objects;
 import java.util.function.LongSupplier;

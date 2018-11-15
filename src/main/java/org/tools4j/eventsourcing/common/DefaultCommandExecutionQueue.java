@@ -28,9 +28,7 @@ import org.tools4j.nobark.loop.Step;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.BinaryOperator;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntPredicate;
 import java.util.function.LongSupplier;
 
 public final class DefaultCommandExecutionQueue implements CommandExecutionQueue {
@@ -52,8 +50,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                                         final Poller.IndexConsumer onStartEventApplyingHandler,
                                         final Poller.IndexConsumer onCompletedEventApplyingHandler,
                                         final MessageConsumer.CommandExecutorFactory commandExecutorFactory,
-                                        final MessageConsumer.EventApplierFactory eventApplierFactory,
-                                        final BinaryOperator<Step> executorStepFactory) throws IOException {
+                                        final MessageConsumer.EventApplierFactory eventApplierFactory) throws IOException {
         this.commandQueue = Objects.requireNonNull(commandQueue);
         this.eventQueue = Objects.requireNonNull(eventQueue);
 
@@ -129,7 +126,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
 
         final Step committedEventApplyingStep = new PollingProcessStep(this.committedEventApplyingPoller, committedEventApplier);
 
-        this.executorStep = executorStepFactory.apply(commandExecutionStep, committedEventApplyingStep);
+        this.executorStep = new ApplyAllExecuteOnceStep(commandExecutionStep, committedEventApplyingStep);
     }
 
     @Override
