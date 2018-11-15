@@ -25,7 +25,7 @@ package org.tools4j.eventsourcing.common;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.sbe.MessageHeaderEncoder;
 import org.tools4j.eventsourcing.sbe.SinglePayloadEncoder;
 
@@ -35,15 +35,15 @@ import java.util.Objects;
  * Appender that encodes given message with SBE SinglePayloadEncoder and delegates appending of encoded message to
  * delegateAppender.
  */
-public final class SinglePayloadAppender implements IndexedMessageConsumer {
+public final class SinglePayloadAppender implements IndexedAppender {
 
-    private final IndexedMessageConsumer delegateAppender;
+    private final IndexedAppender delegateAppender;
     private final MutableDirectBuffer messageEncodingBuffer;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SinglePayloadEncoder singlePayloadEncoder = new SinglePayloadEncoder();
 
-    public SinglePayloadAppender(final IndexedMessageConsumer delegateAppender,
+    public SinglePayloadAppender(final IndexedAppender delegateAppender,
                                  final MutableDirectBuffer messageEncodingBuffer) {
         this.delegateAppender = Objects.requireNonNull(delegateAppender);
         this.messageEncodingBuffer = Objects.requireNonNull(messageEncodingBuffer);
@@ -71,5 +71,10 @@ public final class SinglePayloadAppender implements IndexedMessageConsumer {
         //messageLength = BitUtil.align(messageLength, 64);
 
         delegateAppender.accept(source, sourceSeq, eventTimeNanos, messageEncodingBuffer, 0, messageLength);
+    }
+
+    @Override
+    public long lastSourceSeq(final int source) {
+        return delegateAppender.lastSourceSeq(source);
     }
 }

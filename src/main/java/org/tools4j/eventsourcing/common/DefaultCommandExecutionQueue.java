@@ -77,7 +77,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                         .skipWhen(
                             Poller.IndexPredicate.isLeader(leadership)
                             .and(
-                                    (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= eventQueue.lastSourceSeq(source)
+                                    (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= eventQueue.appender().lastSourceSeq(source)
                             )
                             .or(
                                     Poller.IndexPredicate.isNotLeader(leadership)
@@ -139,7 +139,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
     }
 
     @Override
-    public IndexedMessageConsumer appender() {
+    public IndexedAppender appender() {
         return commandQueue.appender();
     }
 

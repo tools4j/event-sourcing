@@ -24,7 +24,7 @@
 package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.api.IndexedQueue;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.SinglePayloadAppender;
@@ -35,7 +35,7 @@ import java.util.Objects;
 
 public class MmapSinglePayloadQueue implements IndexedQueue {
     private final IndexedQueue indexedQueue;
-    private final IndexedMessageConsumer appender;
+    private final IndexedAppender appender;
 
     public MmapSinglePayloadQueue(final IndexedQueue indexedQueue, final int encodingBufferSize) {
         this.indexedQueue = Objects.requireNonNull(indexedQueue);
@@ -45,7 +45,7 @@ public class MmapSinglePayloadQueue implements IndexedQueue {
     }
 
     @Override
-    public IndexedMessageConsumer appender() {
+    public IndexedAppender appender() {
         return appender;
     }
 

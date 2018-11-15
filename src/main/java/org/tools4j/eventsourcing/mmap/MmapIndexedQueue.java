@@ -24,10 +24,7 @@
 package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
-import org.tools4j.eventsourcing.api.IndexedPollerFactory;
-import org.tools4j.eventsourcing.api.IndexedQueue;
-import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.common.SinglePayloadAppender;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
@@ -35,7 +32,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public final class MmapIndexedQueue implements IndexedQueue {
-    private final IndexedMessageConsumer appender;
+    private final IndexedAppender appender;
     private final IndexedPollerFactory pollerFactory;
     private final MmapIndexedAppender mmapIndexedAppender;
 
@@ -73,7 +70,7 @@ public final class MmapIndexedQueue implements IndexedQueue {
     }
 
     @Override
-    public IndexedMessageConsumer appender() {
+    public IndexedAppender appender() {
         return this.appender;
     }
 

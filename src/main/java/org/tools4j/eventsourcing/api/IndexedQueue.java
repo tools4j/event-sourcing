@@ -32,11 +32,7 @@ public interface IndexedQueue extends IndexedPollerFactory, Closeable {
     /**
      * @return indexed appender
      */
-    IndexedMessageConsumer appender();
-
-    default long lastSourceSeq(int source) {
-        return -1;
-    }
+    IndexedAppender appender();
 
     @Override
     default void close(){}

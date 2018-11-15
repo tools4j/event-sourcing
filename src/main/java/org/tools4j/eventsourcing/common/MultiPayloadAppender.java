@@ -25,7 +25,7 @@ package org.tools4j.eventsourcing.common;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.api.Transaction;
 import org.tools4j.eventsourcing.sbe.MessageHeaderEncoder;
 import org.tools4j.eventsourcing.sbe.MultiPayloadEncoder;
@@ -39,7 +39,7 @@ import java.util.Objects;
 public final class MultiPayloadAppender implements Transaction {
     private static final int MAX_ENTRIES = 10;
 
-    private final IndexedMessageConsumer delegateAppender;
+    private final IndexedAppender delegateAppender;
     private final MutableDirectBuffer messageEncodingBuffer;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
@@ -54,7 +54,7 @@ public final class MultiPayloadAppender implements Transaction {
     private int limitBeforeEntries;
     private MultiPayloadEncoder.EntriesEncoder entriesEncoder;
 
-    public MultiPayloadAppender(final IndexedMessageConsumer delegateAppender,
+    public MultiPayloadAppender(final IndexedAppender delegateAppender,
                                 final MutableDirectBuffer messageEncodingBuffer) {
         this.delegateAppender = Objects.requireNonNull(delegateAppender);
         this.messageEncodingBuffer = Objects.requireNonNull(messageEncodingBuffer);
@@ -96,6 +96,11 @@ public final class MultiPayloadAppender implements Transaction {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public long lastSourceSeq(final int source) {
+        return delegateAppender.lastSourceSeq(source);
     }
 
     @Override

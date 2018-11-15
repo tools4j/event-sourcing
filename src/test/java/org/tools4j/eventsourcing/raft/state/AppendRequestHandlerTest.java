@@ -208,48 +208,6 @@ public class AppendRequestHandlerTest {
         verify(electionTimeout).restart();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void apply_throws_exception_logEntry_when_terms_are_equal_and_prevLogEntry_is_contained_and_next_log_index_conflicts() throws Exception {
-        //given
-        final int requestTerm = 3;
-        final int currentTerm = 3;
-        final int leaderId = 2;
-        final long prevLogIndex = 10;
-        final int prevLogTerm = 2;
-        final long leaderCommitIndex = 12;
-
-        final int commandSource = 10;
-        final long commandSeq = 43543;
-        final long commandTimeNanos = 54565;
-
-
-        final long nextLogIndex = prevLogIndex + 1;
-        final int nextLogTerm = 2;
-
-        when(headerDecoder.term()).thenReturn(requestTerm);
-        when(headerDecoder.sourceId()).thenReturn(leaderId);
-        when(raftLog.currentTerm()).thenReturn(currentTerm);
-        when(prevLogKeyDecoder.index()).thenReturn(prevLogIndex);
-        when(prevLogKeyDecoder.term()).thenReturn(prevLogTerm);
-        when(appendRequestDecoder.commitLogIndex()).thenReturn(leaderCommitIndex);
-
-        when(raftLog.contains(prevLogIndex, prevLogTerm)).thenReturn(RaftLog.Containment.IN);
-        when(raftLog.contains(nextLogIndex, nextLogTerm)).thenReturn(RaftLog.Containment.CONFLICT);
-
-        when(appendRequestDecoder.logEntries()).thenReturn(logEntriesDecoder);
-        when(logEntriesDecoder.iterator()).thenReturn(logEntriesDecoder);
-        when(logEntriesDecoder.hasNext()).thenReturn(true, false);
-        when(logEntriesDecoder.next()).thenReturn(logEntriesDecoder);
-        when(logEntriesDecoder.term()).thenReturn(nextLogTerm);
-        when(logEntriesDecoder.commandSource()).thenReturn(commandSource);
-        when(logEntriesDecoder.commandSequence()).thenReturn(commandSeq);
-        when(logEntriesDecoder.commandTimeNanos()).thenReturn(commandTimeNanos);
-
-        //when
-        final Transition transition = appendRequestHandler.apply(appendRequestDecoder, logger);
-        assertThat(transition).isEqualTo(transition);
-    }
-
     @Test
     public void apply_unsuccessful_when_terms_are_equal_and_prevLogEntry_is_not_contained() throws Exception {
         //given

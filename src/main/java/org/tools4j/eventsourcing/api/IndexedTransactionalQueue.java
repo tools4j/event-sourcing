@@ -28,10 +28,6 @@ import java.io.Closeable;
 public interface IndexedTransactionalQueue extends IndexedPollerFactory, Closeable {
     Transaction appender();
 
-    default long lastSourceSeq(int source) {
-        return -1;
-    }
-
     @Override
     default void close(){}
 }
