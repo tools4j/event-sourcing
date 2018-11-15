@@ -41,10 +41,8 @@ public final class DefaultProgressState implements ProgressState, Poller.IndexCo
     private long sourceSeq = NOT_INITIALISED;
     private long eventTimeNanos = NOT_INITIALISED;
     private long ingestionTimeNanos = NOT_INITIALISED;
-    private boolean pollerResetRequired = false;
-
-    private ProgressState another;
-    private boolean result;
+    private boolean commandPollerResetRequired = false;
+    private boolean eventPollerResetRequired = false;
 
     public DefaultProgressState(final LongSupplier systemNanoClock) {
         this.systemNanoClock = Objects.requireNonNull(systemNanoClock);
@@ -93,11 +91,6 @@ public final class DefaultProgressState implements ProgressState, Poller.IndexCo
     }
 
     @Override
-    public void forEachSourceEntry(final LongLongConsumer consumer) {
-        sourceSeqMap.longForEach(consumer);
-    }
-
-    @Override
     public void reset() {
         id = NOT_INITIALISED;
         source = NOT_INITIALISED;
@@ -105,35 +98,28 @@ public final class DefaultProgressState implements ProgressState, Poller.IndexCo
         eventTimeNanos = NOT_INITIALISED;
         ingestionTimeNanos = NOT_INITIALISED;
         sourceSeqMap.clear();
-        pollerResetRequired = true;
+        commandPollerResetRequired = true;
+        eventPollerResetRequired = true;
     }
 
     @Override
-    public boolean pollerResetRequired(final long currentPosition) {
-        return pollerResetRequired;
+    public boolean commandPollerResetRequired(final long currentPosition) {
+        return commandPollerResetRequired;
     }
 
     @Override
-    public void resetPoller(final long resetPosition) {
-        pollerResetRequired = false;
+    public boolean eventPollerResetRequired(final long currentPosition) {
+        return eventPollerResetRequired;
     }
 
     @Override
-    public boolean isBehind(final ProgressState ps) {
-        this.another = ps;
-        this.result = false;
-        sourceSeqMap.longForEach((source, sourceSeq) -> {
-            if (sourceSeq > NOT_INITIALISED && sourceSeq < another.sourceSeq((int)source)) {
-                result = true;
-            }
-        });
-        return result;
+    public void resetCommandPoller(final long resetPosition) {
+        commandPollerResetRequired = false;
     }
 
     @Override
-    public boolean isBehind(final int source, final ProgressState ps) {
-        final long sourceSeq = sourceSeq(source);
-
-        return sourceSeq > NOT_INITIALISED && sourceSeq < ps.sourceSeq(source);
+    public void resetEventPoller(final long resetPosition) {
+        eventPollerResetRequired = false;
     }
+
 }

@@ -67,45 +67,38 @@ public interface MessageConsumer {
      */
     interface CommandExecutorFactory {
         CommandExecutorFactory PASS_THROUGH = (eventApplier,
-                                               currentCommandExecutionState,
-                                               completedCommandExecutionState,
-                                               currentEventApplyingState,
-                                               completedEventApplyingState) -> eventApplier;
+                                               currentProgressState,
+                                               completedProgressState) -> eventApplier;
         CommandExecutorFactory NO_OP = (eventApplier,
-                                        currentCommandExecutionState,
-                                        completedCommandExecutionState,
-                                        currentEventApplyingState,
-                                        completedEventApplyingState) -> MessageConsumer.NO_OP;
+                                        currentProgressState,
+                                        completedProgressState) -> MessageConsumer.NO_OP;
         /**
          * Constructs a new command executor.
          * @param eventApplier - resulting event consumer which applies the events to the application.
-         * @param currentCommandExecutionState - current command execution state
-         * @param completedCommandExecutionState - completed command execution state
-         * @param currentEventApplyingState - current event applying state
-         * @param completedEventApplyingState - completed event applying state
+         * @param currentProgressState - current progress state
+         * @param completedProgressState - completed progress state
          * @return command executor.
          */
         MessageConsumer create(MessageConsumer eventApplier,
-                               ProgressState currentCommandExecutionState,
-                               ProgressState completedCommandExecutionState,
-                               ProgressState currentEventApplyingState,
-                               ProgressState completedEventApplyingState);
+                               ProgressState currentProgressState,
+                               ProgressState completedProgressState);
     }
 
     /**
      * Factory for event applier. It should be implemented by the user of the library.
-     * Event Applier applies the state-changing events to the application state.
+     * Event Applier applies the events to the application state.
      * It should be free of side-effects.
      */
     interface EventApplierFactory {
-        EventApplierFactory NO_OP = (currentEventApplyingState, completedEventApplyingState) -> MessageConsumer.NO_OP;
+        EventApplierFactory NO_OP = (currentProgressState,
+                                     completedProgressState) -> MessageConsumer.NO_OP;
         /**
          * Constructs a new event applier.
-         * @param currentEventApplyingState - current event applying state
-         * @param completedEventApplyingState - completed event applying state
+         * @param currentProgressState - current progress state
+         * @param completedProgressState - completed progress state
          * @return event applier
          */
-        MessageConsumer create(ProgressState currentEventApplyingState,
-                               ProgressState completedEventApplyingState);
+        MessageConsumer create(ProgressState currentProgressState,
+                               ProgressState completedProgressState);
     }
 }

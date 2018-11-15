@@ -26,12 +26,10 @@ package org.tools4j.eventsourcing.api;
 import org.agrona.collections.LongLongConsumer;
 
 /**
- * Progress State provides event details at different stages of processing of the command/event.
+ * Progress State provides event details at current and completed stages of processing of the command/event.
  * There are the following stages when progress state can be observed:
- * - current command progress
- * - completed command progress
- * - current event progress
- * - completed event progress
+ * - current progress
+ * - completed progress
  */
 public interface ProgressState {
     int NOT_INITIALISED = -1;
@@ -67,26 +65,14 @@ public interface ProgressState {
      */
     long ingestionTimeNanos();
 
-    /**
-     * For each source entry containing last sourceSeq.
-     * @param consumer to run
-     */
-    void forEachSourceEntry(LongLongConsumer consumer);
-
     void reset();
-    boolean pollerResetRequired(long currentPosition);
-    void resetPoller(long resetPosition);
-
-    boolean isBehind(final ProgressState another);
-
-    boolean isBehind(final int source, ProgressState another);
+    boolean commandPollerResetRequired(long currentPosition);
+    boolean eventPollerResetRequired(long currentPosition);
+    void resetCommandPoller(long resetPosition);
+    void resetEventPoller(long resetPosition);
 
     default boolean isEqualTo(final ProgressState another) {
         return sourceSeq() == another.sourceSeq() &&
                 source() == another.source();
-    }
-
-    default boolean isNotEqualTo(final ProgressState another) {
-        return !isEqualTo(another);
     }
 }

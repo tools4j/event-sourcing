@@ -80,17 +80,15 @@ public class EventSourcingReplayTest {
                                 .build())
                 .commandExecutorFactory(
                         (eventApplier,
-                         currentCommandExecutionState,
-                         completedCommandExecutionState,
-                         currentEventApplyingState,
-                         completedEventApplyingState) ->
+                         currentProgressState,
+                         completedProgressState) ->
                                 (buffer, offset, length) -> {
-                                    LOGGER.info("Replaying sourceSeq {}, already applied sourceSeq {}", currentCommandExecutionState.sourceSeq(), completedEventApplyingState.sourceSeq());
+                                    LOGGER.info("Replaying sourceSeq {}", completedProgressState.sourceSeq());
                                     eventApplier.accept(buffer, offset, length);
                                 })
                 .eventApplierFactory(
-                        (currentEventApplyingState, completedEventApplyingState) -> {
-                            commitStateRef.set(completedEventApplyingState);
+                        (currentProgressState, completedProgressState) -> {
+                            commitStateRef.set(completedProgressState);
                             return stateMessageConsumer;
                         })
                 .systemNanoClock(systemNanoClock)
