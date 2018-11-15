@@ -53,7 +53,7 @@ public class CommandExecutionQueueTest {
 
     private CommandExecutionQueue commandExecutionQueue;
 
-    private ProgressState compEventApplierState;
+    private ProgressState compProgressState;
 
     private void initExecutionQueue(final MessageConsumer.CommandExecutorFactory commandExecutorFactory) throws IOException {
         final RegionRingFactory regionRingFactory = RegionRingFactoryConfig.get("SYNC");
@@ -81,7 +81,7 @@ public class CommandExecutionQueueTest {
                                 .buildTransactionalQueue())
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
-                        (currentEventApplierState, completedEventApplierState) -> stateMessageConsumer)
+                        (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(leadership)
                 .build();
@@ -95,10 +95,8 @@ public class CommandExecutionQueueTest {
     @Test
     public void command_should_be_executed() throws Exception {
         initExecutionQueue((eventApplier,
-                            currentCommandExecutionState,
-                            completedCommandExecutionState,
-                            currentEventApplyingState,
-                            completedEventApplierState) -> commandExecutor); //no events are applied to eventApplier
+                            currentProgressState,
+                            completedProgressState) -> commandExecutor); //no events are applied to eventApplier
 
         final TestMessage message = TestMessage.forDefaultLength();
 
@@ -119,11 +117,9 @@ public class CommandExecutionQueueTest {
     @Test
     public void nonStateChangingCommands_state_should_be_caught_up_when_stateChangingCommand_is_applied() throws Exception {
         initExecutionQueue((eventApplier,
-                            currentCommandExecutionState,
-                            completedCommandExecutionState,
-                            currentEventApplyingState,
-                            completedEventApplierState) -> {
-            compEventApplierState = completedEventApplierState;
+                            currentProgressState,
+                            completedProgressState) -> {
+            compProgressState = completedProgressState;
             return MessageConsumer.NO_OP;
         }); //no events are applied to eventApplier
 
@@ -145,33 +141,33 @@ public class CommandExecutionQueueTest {
         commandExecutionQueue.executorStep().perform(); //execute command 1
 
         //then
-        assertThat(compEventApplierState.sourceSeq(source1)).isEqualTo(1);
+        assertThat(compProgressState.sourceSeq(source1)).isEqualTo(1);
 
         //when
         commandExecutionQueue.executorStep().perform(); //execute command 2
 
         //then
-        assertThat(compEventApplierState.sourceSeq(source1)).isEqualTo(2);
+        assertThat(compProgressState.sourceSeq(source1)).isEqualTo(2);
 
         //when
         commandExecutionQueue.executorStep().perform(); //execute command 3
 
         //then
-        assertThat(compEventApplierState.sourceSeq(source2)).isEqualTo(1);
+        assertThat(compProgressState.sourceSeq(source2)).isEqualTo(1);
 
         //when
         commandExecutionQueue.executorStep().perform(); //execute command 4
 
         //then
-        assertThat(compEventApplierState.sourceSeq(source2)).isEqualTo(2);
+        assertThat(compProgressState.sourceSeq(source2)).isEqualTo(2);
 
         //when
         commandExecutionQueue.executorStep().perform(); //execute command 5
 
         //then
-        assertThat(compEventApplierState.sourceSeq(source0)).isEqualTo(1);
-        assertThat(compEventApplierState.sourceSeq(source1)).isEqualTo(2);
-        assertThat(compEventApplierState.sourceSeq(source2)).isEqualTo(2);
+        assertThat(compProgressState.sourceSeq(source0)).isEqualTo(1);
+        assertThat(compProgressState.sourceSeq(source1)).isEqualTo(2);
+        assertThat(compProgressState.sourceSeq(source2)).isEqualTo(2);
     }
 
 }

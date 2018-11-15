@@ -100,15 +100,11 @@ public class RaftRandomPollingTest {
         final UpdateEventEncoder updateEncoder = new UpdateEventEncoder();
         final UpdateEventDecoder updateDecoder = new UpdateEventDecoder();
         final StringBuilder sb = new StringBuilder();
-        final MutableReference<ProgressState> curEventApplyingStateRef = new MutableReference<>();
-        final MutableReference<ProgressState> compEventApplyingStateRef = new MutableReference<>();
-
-        final MutableReference<ProgressState> curCommandExecutionStateRef = new MutableReference<>();
-        final MutableReference<ProgressState> compCommandExecutionStateRef = new MutableReference<>();
-
+        final MutableReference<ProgressState> curProgressStateRef = new MutableReference<>();
+        final MutableReference<ProgressState> compProgressStateRef = new MutableReference<>();
 
         final MessageConsumer.EventApplierFactory eventApplierFactory =
-                (currentEventApplierState, completedEventApplierState) ->
+                (currentProgressState, completedProgressState) ->
                         (buf, ofst, len) -> {
                             eventHeaderDecoder.wrap(buf, ofst);
                             switch (eventHeaderDecoder.templateId()) {
@@ -116,33 +112,23 @@ public class RaftRandomPollingTest {
                                     updateDecoder.wrap(buf, ofst + eventHeaderDecoder.encodedLength(),
                                             eventHeaderDecoder.blockLength(), eventHeaderDecoder.schemaId());
                                     instanceState.setValue(updateDecoder.value());
-
-//                                    sb.setLength(0);
-//                                    updateDecoder.appendTo(sb);
-//                                    LOGGER.info("Applied event: {}", sb);
-//                                    LOGGER.info("Current applier {}/{}", currentEventApplierState.source(), currentEventApplierState.sourceSeq());
-//                                    LOGGER.info("Completed applier {}/{}", completedEventApplierState.source(), completedEventApplierState.sourceSeq());
                             }
                         };
 
         final MessageConsumer.CommandExecutorFactory commandExecutorFactory =
                 (eventApplier,
-                 currentCommandExecutionState,
-                 completedCommandExecutionState,
-                 currentEventApplyingState,
-                 completedEventApplierState) -> {
+                 currentProgressState,
+                 completedProgressState) -> {
 
-                    curEventApplyingStateRef.set(currentEventApplyingState);
-                    compEventApplyingStateRef.set(completedEventApplierState);
-                    curCommandExecutionStateRef.set(currentCommandExecutionState);
-                    compCommandExecutionStateRef.set(completedCommandExecutionState);
+                    curProgressStateRef.set(currentProgressState);
+                    compProgressStateRef.set(completedProgressState);
 
                     final CommandSender updateSender = value -> {
                         final int length = updateEncoder.wrapAndApplyHeader(buffer, 0, headerEncoder)
                                 .value(value)
                                 .encodedLength() + headerEncoder.encodedLength();
 
-                        if (currentCommandExecutionState.sourceSeq() % 10 != 0) {
+                        if (currentProgressState.sourceSeq() % 10 != 0) {
                             eventApplier.accept(buffer, 0, length);
                         } else {
                             instanceState.setValue(value);
@@ -162,28 +148,11 @@ public class RaftRandomPollingTest {
                                         commandHeaderDecoder.blockLength(), commandHeaderDecoder.schemaId());
                                 updateSender.send(instanceState.getValue() + addCommandDecoder.value());
 
-//                                sb.setLength(0);
-//                                addCommandDecoder.appendTo(sb);
-//                                LOGGER.info("Executed command: {}", sb);
-//                                LOGGER.info("Current executor {}/{}", currentCommandExecutionState.source(), currentCommandExecutionState.sourceSeq());
-//                                LOGGER.info("Completed executor {}/{}", completedCommandExecutionState.source(), completedCommandExecutionState.sourceSeq());
-//                                LOGGER.info("Current applier {}/{}", currentEventApplyingState.source(), currentEventApplyingState.sourceSeq());
-//                                LOGGER.info("Completed applier {}/{}", completedEventApplierState.source(), completedEventApplierState.sourceSeq());
-
-
                                 break;
                             case DivideCommandDecoder.TEMPLATE_ID:
                                 divCommandDecoder.wrap(buf, ofst + commandHeaderDecoder.encodedLength(),
                                         commandHeaderDecoder.blockLength(), commandHeaderDecoder.schemaId());
                                 updateSender.send(instanceState.getValue() / divCommandDecoder.value());
-
-//                                sb.setLength(0);
-//                                divCommandDecoder.appendTo(sb);
-//                                LOGGER.info("Executed command: {}", sb);
-//                                LOGGER.info("Current executor {}/{}", currentCommandExecutionState.source(), currentCommandExecutionState.sourceSeq());
-//                                LOGGER.info("Completed executor {}/{}", completedCommandExecutionState.source(), completedCommandExecutionState.sourceSeq());
-//                                LOGGER.info("Current applier {}/{}", currentEventApplyingState.source(), currentEventApplyingState.sourceSeq());
-//                                LOGGER.info("Completed applier {}/{}", completedEventApplierState.source(), completedEventApplierState.sourceSeq());
                         }
                     };
                 };
@@ -193,15 +162,13 @@ public class RaftRandomPollingTest {
         final IntFunction<String> serverToChannel = servrId -> serverChannel;
 
         final LongConsumer truncateHandler = size -> {
-            LOGGER.info("Truncating to size {}, last applied to state {}", size, compEventApplyingStateRef.get().id());
-            if (compEventApplyingStateRef.get().id() >= size - 1) {
+            LOGGER.info("Truncating to size {}, last applied to state {}", size, compProgressStateRef.get().id());
+            if (compProgressStateRef.get().id() >= size - 1) {
                 LOGGER.info("Rebuilding the state");
                 //1. comment below if pre-commit apply does not work
-                curEventApplyingStateRef.get().reset();
-                compEventApplyingStateRef.get().reset();
+                curProgressStateRef.get().reset();
+                compProgressStateRef.get().reset();
 
-                compCommandExecutionStateRef.get().reset();
-                curCommandExecutionStateRef.get().reset();
                 instanceState.setValue(0);
             }
         };

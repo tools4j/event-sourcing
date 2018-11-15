@@ -72,10 +72,8 @@ public class RaftQueueTest {
 
         final MessageConsumer.CommandExecutorFactory commandExecutorFactory =
                 (eventApplier,
-                 currentCommandExecutionState,
-                 completedCommandExecutionState,
-                 currentEventApplyingState,
-                 completedEventApplierState) -> eventApplier;
+                 currentProgressState,
+                 completedProgressState) -> eventApplier;
 
         final MessageConsumer stateMessageConsumer = (buffer, offset, length) -> {};
 
@@ -126,7 +124,7 @@ public class RaftQueueTest {
                 .eventQueue(new MmapMultiPayloadQueue(raftQueue0, 1024 * 8))
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
-                        (currentEventApplierState, completedEventApplierState) -> stateMessageConsumer)
+                        (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue0::leader)
                 .build();
@@ -142,7 +140,7 @@ public class RaftQueueTest {
                 .eventQueue(new MmapMultiPayloadQueue(raftQueue1, 1024 * 8))
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
-                        (currentEventApplierState, completedEventApplierState) -> stateMessageConsumer)
+                        (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue1::leader)
                 .build();
@@ -158,7 +156,7 @@ public class RaftQueueTest {
                 .eventQueue(new MmapMultiPayloadQueue(raftQueue2, 1024 * 8))
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
-                        (currentEventApplierState, completedEventApplierState) -> stateMessageConsumer)
+                        (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
                 .leadership(raftQueue2::leader)
                 .build();
