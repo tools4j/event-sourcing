@@ -24,8 +24,9 @@
 package org.tools4j.eventsourcing.mmap;
 
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.sbe.IndexDecoder;
 import org.tools4j.eventsourcing.sbe.IndexEncoder;
 
@@ -41,7 +42,7 @@ import java.util.Objects;
  *  Appendable message is represented as a buffer at offset with length.
  *  Length of a message is a first field in the index record which has a volatile semantic for thread synchronisation.
  */
-public final class MmapIndexedAppender implements IndexedMessageConsumer, Closeable {
+public final class MmapIndexedAppender implements IndexedAppender, Closeable {
     private static final long NOT_INITIALISED = -1;
     private static final int LENGTH_OFFSET = 0;
     private static final int LENGTH_LENGTH = 4;
@@ -55,6 +56,9 @@ public final class MmapIndexedAppender implements IndexedMessageConsumer, Closea
 
     private final IndexEncoder indexEncoder = new IndexEncoder();
     private final IndexDecoder indexDecoder = new IndexDecoder();
+
+    private final Long2LongHashMap lastSourceSeqMap = new Long2LongHashMap(NULL_INDEX);
+
 
     private long currentIndexPosition = NOT_INITIALISED;
     private long currentMessagePosition = 0;
@@ -87,6 +91,8 @@ public final class MmapIndexedAppender implements IndexedMessageConsumer, Closea
                         .sourceSeq(sourceSeq)
                         .eventTimeNanos(eventTimeNanos);
 
+                lastSourceSeqMap.put(source, sourceSeq);
+
                 mappedIndexBuffer.putIntOrdered(LENGTH_OFFSET, length);
 
                 advanceIndexToNextAppendPosition(length);
@@ -107,11 +113,13 @@ public final class MmapIndexedAppender implements IndexedMessageConsumer, Closea
         if (currentIndexPosition == NOT_INITIALISED) {
             currentIndexPosition = 0;
             int currentMessageLength;
+            lastSourceSeqMap.clear();
             do {
                 if (regionAccessorSupplier.indexAccessor().wrap(currentIndexPosition, mappedIndexBuffer)) {
                     if ((currentMessageLength = mappedIndexBuffer.getInt(LENGTH_OFFSET)) > 0) {
                         indexDecoder.wrap(mappedIndexBuffer, INDEX_OFFSET);
                         currentMessagePosition = indexDecoder.position();
+                        lastSourceSeqMap.put(indexDecoder.source(), indexDecoder.sourceSeq());
                         advanceIndexToNextAppendPosition(currentMessageLength);
                     }
                 } else {
@@ -119,6 +127,11 @@ public final class MmapIndexedAppender implements IndexedMessageConsumer, Closea
                 }
             } while (currentMessageLength != 0);
         }
+    }
+
+    @Override
+    public long lastSourceSeq(final int source) {
+        return lastSourceSeqMap.get(source);
     }
 
     @Override

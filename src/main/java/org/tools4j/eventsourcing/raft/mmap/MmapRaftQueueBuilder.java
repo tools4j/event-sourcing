@@ -24,10 +24,11 @@
 package org.tools4j.eventsourcing.raft.mmap;
 
 import io.aeron.Aeron;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
+import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.api.RaftQueue;
@@ -435,6 +436,18 @@ public interface MmapRaftQueueBuilder {
 
             processSteps.add(serverMessageHandler);
 
+            final IndexedAppender raftQueueAppender = new IndexedAppender() {
+                @Override
+                public void accept(final int source, final long sourceSeq, final long eventTimeNanos, final DirectBuffer buffer, final int offset, final int length) {
+                    serverMessageHandler.accept(source, sourceSeq, eventTimeNanos, buffer, offset, length);
+                }
+
+                @Override
+                public long lastSourceSeq(final int source) {
+                    return raftLog.lastSourceSeq(source);
+                }
+            };
+
 
             return new RaftQueue() {
                 @Override
@@ -450,18 +463,13 @@ public interface MmapRaftQueueBuilder {
                 }
 
                 @Override
-                public long lastSourceSeq(final int source) {
-                    return raftLog.lastSourceSeq(source);
-                }
-
-                @Override
                 public void init() {
                     serverMessageHandler.init();
                 }
 
                 @Override
-                public IndexedMessageConsumer appender() {
-                    return serverMessageHandler;
+                public IndexedAppender appender() {
+                    return raftQueueAppender;
                 }
 
                 @Override

@@ -30,6 +30,8 @@ import org.agrona.DirectBuffer;
  * The message is accompanied with identifying source and sourceSeq with a time of the message.
  */
 public interface IndexedMessageConsumer {
+    long NULL_INDEX = -1;
+
     /**
      * Consumes a message.
      * @param source - message source

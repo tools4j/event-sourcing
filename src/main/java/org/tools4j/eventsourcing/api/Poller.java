@@ -29,7 +29,6 @@ import org.tools4j.eventsourcing.common.TransactionCommitAndPushNoops;
 import java.io.Closeable;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntPredicate;
 import java.util.function.LongConsumer;
 import java.util.function.LongPredicate;
 
@@ -115,10 +114,6 @@ public interface Poller extends Closeable {
 
         static IndexPredicate isEqualTo(final ProgressState progressState) {
             return (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == progressState.sourceSeq() && source == progressState.source();
-        }
-
-        static IndexPredicate isAheadOf(final ProgressState progressState) {
-            return isNotAheadOf(progressState).negate();
         }
 
         static IndexPredicate eventTimeBefore(final long timeNanos) {

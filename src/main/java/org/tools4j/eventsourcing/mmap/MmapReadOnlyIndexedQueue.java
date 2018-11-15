@@ -23,16 +23,14 @@
  */
 package org.tools4j.eventsourcing.mmap;
 
-import org.tools4j.eventsourcing.api.IndexedMessageConsumer;
-import org.tools4j.eventsourcing.api.IndexedPollerFactory;
-import org.tools4j.eventsourcing.api.IndexedQueue;
-import org.tools4j.eventsourcing.api.Poller;
+import org.agrona.DirectBuffer;
+import org.tools4j.eventsourcing.api.*;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
 
 public final class MmapReadOnlyIndexedQueue implements IndexedQueue {
-    private final IndexedMessageConsumer appender;
+    private final IndexedAppender appender;
     private final IndexedPollerFactory pollerFactory;
 
     public MmapReadOnlyIndexedQueue(final String directory,
@@ -42,8 +40,16 @@ public final class MmapReadOnlyIndexedQueue implements IndexedQueue {
                                     final int regionRingSize,
                                     final int regionsToMapAhead) throws IOException {
 
-        this.appender = (source, sourceSeq, eventTimeNanos, buffer, offset, length) -> {
-            throw new UnsupportedOperationException("append operation is not supported");
+        this.appender = new IndexedAppender() {
+            @Override
+            public long lastSourceSeq(final int source) {
+                return -1;
+            }
+
+            @Override
+            public void accept(final int source, final long sourceSeq, final long eventTimeNanos, final DirectBuffer buffer, final int offset, final int length) {
+                throw new UnsupportedOperationException("append operation is not supported");
+            }
         };
 
         this.pollerFactory = new MmapIndexedPollerFactory(
@@ -56,7 +62,7 @@ public final class MmapReadOnlyIndexedQueue implements IndexedQueue {
     }
 
     @Override
-    public IndexedMessageConsumer appender() {
+    public IndexedAppender appender() {
         return this.appender;
     }
 

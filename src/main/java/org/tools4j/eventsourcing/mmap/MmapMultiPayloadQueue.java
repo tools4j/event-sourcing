@@ -51,11 +51,6 @@ public class MmapMultiPayloadQueue implements IndexedTransactionalQueue {
     }
 
     @Override
-    public long lastSourceSeq(final int source) {
-        return indexedQueue.lastSourceSeq(source);
-    }
-
-    @Override
     public Poller createPoller(final Poller.Options options) throws IOException {
         return indexedQueue.createPoller(options);
     }

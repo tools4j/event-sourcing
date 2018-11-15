@@ -43,4 +43,6 @@ public interface Transaction extends MessageConsumer {
      * Commit the transaction.
      */
     boolean commit();
+
+    long lastSourceSeq(int source);
 }

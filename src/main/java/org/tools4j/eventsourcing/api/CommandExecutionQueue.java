@@ -23,7 +23,7 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import org.tools4j.eventsourcing.common.ApplyAllThenExecuteOnceStep;
+import org.tools4j.eventsourcing.common.ApplyAllExecuteOnceStep;
 import org.tools4j.eventsourcing.common.DefaultCommandExecutionQueue;
 import org.tools4j.nobark.loop.Step;
 
@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntPredicate;
 import java.util.function.LongSupplier;
 
 /**
@@ -100,7 +99,7 @@ public interface CommandExecutionQueue extends IndexedQueue {
         private Poller.IndexConsumer onEventApplyingCompleted = Poller.IndexConsumer.noop();
         private MessageConsumer.CommandExecutorFactory commandExecutorFactory = MessageConsumer.CommandExecutorFactory.PASS_THROUGH;
         private MessageConsumer.EventApplierFactory eventApplierFactory = MessageConsumer.EventApplierFactory.NO_OP;
-        private BinaryOperator<Step> executorStepFactory = ApplyAllThenExecuteOnceStep::new;
+        private BinaryOperator<Step> executorStepFactory = ApplyAllExecuteOnceStep::new;
 
         @Override
         public EventQueueStep commandQueue(final IndexedQueue commandQueue) {
