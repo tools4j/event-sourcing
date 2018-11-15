@@ -25,12 +25,12 @@ package org.tools4j.eventsourcing.common;
 
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.LongLongConsumer;
-import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.api.IndexConsumer;
 import org.tools4j.eventsourcing.api.Transaction;
 
 import java.util.Objects;
 
-public class TransactionCommitAndPushNoops implements Poller.IndexConsumer {
+public class TransactionCommitAndPushNoops implements IndexConsumer {
     private final Transaction transaction;
     private final PushMoreUpToDateNoopSourceSeqs pushMoreUpToDateNoopSourceSeqs = new PushMoreUpToDateNoopSourceSeqs();
     private final Long2LongHashMap noopSourceSeqMap;

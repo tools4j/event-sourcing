@@ -24,13 +24,13 @@
 package org.tools4j.eventsourcing;
 
 import org.HdrHistogram.Histogram;
-import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.api.IndexConsumer;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MetricIndexConsumer implements Poller.IndexConsumer {
+public class MetricIndexConsumer implements IndexConsumer {
     final int expected;
     final int warmup;
     final AtomicBoolean stop;

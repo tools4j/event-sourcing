@@ -45,12 +45,12 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                                         final IndexedTransactionalQueue eventQueue,
                                         final LongSupplier systemNanoClock,
                                         final BooleanSupplier leadership,
-                                        final Poller.IndexConsumer onStartCommandExecutionHandler,
-                                        final Poller.IndexConsumer onCompleteCommandExecutionHandler,
-                                        final Poller.IndexConsumer onStartEventApplyingHandler,
-                                        final Poller.IndexConsumer onCompletedEventApplyingHandler,
-                                        final MessageConsumer.CommandExecutorFactory commandExecutorFactory,
-                                        final MessageConsumer.EventApplierFactory eventApplierFactory) throws IOException {
+                                        final IndexConsumer onStartCommandExecutionHandler,
+                                        final IndexConsumer onCompleteCommandExecutionHandler,
+                                        final IndexConsumer onStartEventApplyingHandler,
+                                        final IndexConsumer onCompletedEventApplyingHandler,
+                                        final CommandExecutorFactory commandExecutorFactory,
+                                        final EventApplierFactory eventApplierFactory) throws IOException {
         this.commandQueue = Objects.requireNonNull(commandQueue);
         this.eventQueue = Objects.requireNonNull(eventQueue);
 
@@ -70,26 +70,26 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         this.commandExecutionPoller = commandQueue.createPoller(
                 Poller.Options.builder()
                         .skipWhen(
-                            Poller.IndexPredicate.isLeader(leadership)
+                            IndexPredicate.isLeader(leadership)
                             .and(
                                     (index, source, sourceSeq, eventTimeNanos) -> sourceSeq <= eventQueue.appender().lastSourceSeq(source)
                             )
                             .or(
-                                    Poller.IndexPredicate.isNotLeader(leadership)
+                                    IndexPredicate.isNotLeader(leadership)
                                     .and(
-                                            Poller.IndexPredicate.isNotAheadOf(completedProgressState))
+                                            IndexPredicate.isNotAheadOf(completedProgressState))
                                     )
                             )
                         .resetWhen(currentProgressState::commandPollerResetRequired)
                         .pauseWhen(
-                            Poller.IndexPredicate.isNotLeader(leadership)
+                            IndexPredicate.isNotLeader(leadership)
                         )
                         .onProcessingStart(
                                 currentProgressState
-                                        .andThen(Poller.IndexConsumer.transactionInit(eventAppender))
+                                        .andThen(IndexConsumer.transactionInit(eventAppender))
                                         .andThen(onStartCommandExecutionHandler))
                         .onProcessingComplete(
-                                Poller.IndexConsumer.transactionCommitAndPushNoops(eventAppender)
+                                IndexConsumer.transactionCommitAndPushNoops(eventAppender)
                                         .andThen(completedProgressState)
                                         .andThen(onCompleteCommandExecutionHandler))
                         .onReset(currentProgressState::resetCommandPoller)
@@ -110,7 +110,7 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
         this.committedEventApplyingPoller = eventQueue.createPoller(
                 Poller.Options.builder()
                         .skipWhen(
-                                Poller.IndexPredicate.isNotAheadOf(completedProgressState))
+                                IndexPredicate.isNotAheadOf(completedProgressState))
                         .resetWhen(currentProgressState::eventPollerResetRequired)
                         .onProcessingStart(
                                 currentProgressState.andThen(onStartEventApplyingHandler))

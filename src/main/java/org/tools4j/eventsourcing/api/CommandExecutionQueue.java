@@ -60,11 +60,11 @@ public interface CommandExecutionQueue extends IndexedQueue {
         }
 
         interface CommandExecutorFactoryStep {
-            EventApplierFactoryStep commandExecutorFactory(MessageConsumer.CommandExecutorFactory commandExecutorFactory);
+            EventApplierFactoryStep commandExecutorFactory(CommandExecutorFactory commandExecutorFactory);
         }
 
         interface EventApplierFactoryStep {
-            OptionalsStep eventApplierFactory(MessageConsumer.EventApplierFactory eventApplierFactory);
+            OptionalsStep eventApplierFactory(EventApplierFactory eventApplierFactory);
         }
 
         interface OptionalsStep {
@@ -72,13 +72,13 @@ public interface CommandExecutionQueue extends IndexedQueue {
 
             OptionalsStep leadership(BooleanSupplier leadership);
 
-            OptionalsStep onCommandExecutionStart(Poller.IndexConsumer onCommandExecutionStart);
+            OptionalsStep onCommandExecutionStart(IndexConsumer onCommandExecutionStart);
 
-            OptionalsStep onCommandExecutionComplete(Poller.IndexConsumer onCommandExecutionComplete);
+            OptionalsStep onCommandExecutionComplete(IndexConsumer onCommandExecutionComplete);
 
-            OptionalsStep onEventApplyingStart(Poller.IndexConsumer onEventApplyingStart);
+            OptionalsStep onEventApplyingStart(IndexConsumer onEventApplyingStart);
 
-            OptionalsStep onEventApplyingCompleted(Poller.IndexConsumer onEventApplyingCompleted);
+            OptionalsStep onEventApplyingCompleted(IndexConsumer onEventApplyingCompleted);
 
             CommandExecutionQueue build() throws IOException;
         }
@@ -89,12 +89,12 @@ public interface CommandExecutionQueue extends IndexedQueue {
         private IndexedTransactionalQueue eventQueue;
         private LongSupplier systemNanoClock = System::nanoTime;
         private BooleanSupplier leadership = () -> true;
-        private Poller.IndexConsumer onCommandExecutionStart = Poller.IndexConsumer.noop();
-        private Poller.IndexConsumer onCommandExecutionComplete = Poller.IndexConsumer.noop();
-        private Poller.IndexConsumer onEventApplyingStart = Poller.IndexConsumer.noop();
-        private Poller.IndexConsumer onEventApplyingCompleted = Poller.IndexConsumer.noop();
-        private MessageConsumer.CommandExecutorFactory commandExecutorFactory = MessageConsumer.CommandExecutorFactory.PASS_THROUGH;
-        private MessageConsumer.EventApplierFactory eventApplierFactory = MessageConsumer.EventApplierFactory.NO_OP;
+        private IndexConsumer onCommandExecutionStart = IndexConsumer.noop();
+        private IndexConsumer onCommandExecutionComplete = IndexConsumer.noop();
+        private IndexConsumer onEventApplyingStart = IndexConsumer.noop();
+        private IndexConsumer onEventApplyingCompleted = IndexConsumer.noop();
+        private CommandExecutorFactory commandExecutorFactory = CommandExecutorFactory.PASS_THROUGH;
+        private EventApplierFactory eventApplierFactory = EventApplierFactory.NO_OP;
 
         @Override
         public EventQueueStep commandQueue(final IndexedQueue commandQueue) {
@@ -109,13 +109,13 @@ public interface CommandExecutionQueue extends IndexedQueue {
         }
 
         @Override
-        public EventApplierFactoryStep commandExecutorFactory(final MessageConsumer.CommandExecutorFactory commandExecutorFactory) {
+        public EventApplierFactoryStep commandExecutorFactory(final CommandExecutorFactory commandExecutorFactory) {
             this.commandExecutorFactory = commandExecutorFactory;
             return this;
         }
 
         @Override
-        public OptionalsStep eventApplierFactory(final MessageConsumer.EventApplierFactory eventApplierFactory) {
+        public OptionalsStep eventApplierFactory(final EventApplierFactory eventApplierFactory) {
             this.eventApplierFactory = eventApplierFactory;
             return this;
         }
@@ -133,25 +133,25 @@ public interface CommandExecutionQueue extends IndexedQueue {
         }
 
         @Override
-        public OptionalsStep onCommandExecutionStart(final Poller.IndexConsumer onCommandExecutionStart) {
+        public OptionalsStep onCommandExecutionStart(final IndexConsumer onCommandExecutionStart) {
             this.onCommandExecutionStart = Objects.requireNonNull(onCommandExecutionStart);
             return this;
         }
 
         @Override
-        public OptionalsStep onCommandExecutionComplete(final Poller.IndexConsumer onCommandExecutionComplete) {
+        public OptionalsStep onCommandExecutionComplete(final IndexConsumer onCommandExecutionComplete) {
             this.onCommandExecutionComplete = Objects.requireNonNull(onCommandExecutionComplete);
             return this;
         }
 
         @Override
-        public OptionalsStep onEventApplyingStart(final Poller.IndexConsumer onEventApplyingStart) {
+        public OptionalsStep onEventApplyingStart(final IndexConsumer onEventApplyingStart) {
             this.onEventApplyingStart = Objects.requireNonNull(onEventApplyingStart);
             return this;
         }
 
         @Override
-        public OptionalsStep onEventApplyingCompleted(final Poller.IndexConsumer onEventApplyingCompleted) {
+        public OptionalsStep onEventApplyingCompleted(final IndexConsumer onEventApplyingCompleted) {
             this.onEventApplyingCompleted = Objects.requireNonNull(onEventApplyingCompleted);
             return this;
         }
