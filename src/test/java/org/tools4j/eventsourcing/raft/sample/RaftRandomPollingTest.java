@@ -48,17 +48,21 @@ import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RaftRandomPollingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(RaftRandomPollingTest.class);
@@ -68,6 +72,8 @@ public class RaftRandomPollingTest {
     private int commandsToSend = 50;
     private int numberOfBlockings = 20;
     private boolean enableLogging = true;
+    private int noopInterval = 10;
+    private int expectedEvents = producers * commandsToSend - producers * commandsToSend / noopInterval;
     private Aeron aeron;
     private RegionRingFactory regionRingFactory;
     private String directory;
@@ -81,10 +87,15 @@ public class RaftRandomPollingTest {
 
     private Map<Integer, AtomicInteger> raftInstanceCommitted = new HashMap<>();
     private Queue<Long> blockingEventIndexes = new ArrayBlockingQueue<>(100);
+    private Map<Integer, AtomicBoolean> raftInstanceComplete = new HashMap<>();
+    private Queue<Closeable> queuesToClose = new ArrayBlockingQueue<>(clusterSize);
+
+    private boolean isNoop(final long sequence) {
+        return sequence % noopInterval == 0;
+    }
 
     private Service createRaftInstance(final int serverId, final int clusterSize) throws IOException {
-        final State instanceState = new State();
-        raftInstanceStates.put(serverId, instanceState);
+        final State instanceState = raftInstanceStates.get(serverId);
 
         final MessageHeaderDecoder commandHeaderDecoder = new MessageHeaderDecoder();
         final MessageHeaderDecoder eventHeaderDecoder = new MessageHeaderDecoder();
@@ -98,6 +109,8 @@ public class RaftRandomPollingTest {
         final StringBuilder sb = new StringBuilder();
         final MutableReference<ProgressState> curProgressStateRef = new MutableReference<>();
         final MutableReference<ProgressState> compProgressStateRef = new MutableReference<>();
+
+        final AtomicBoolean complete = raftInstanceComplete.get(serverId);
 
         final EventApplierFactory eventApplierFactory =
                 (currentProgressState, completedProgressState) ->
@@ -124,10 +137,10 @@ public class RaftRandomPollingTest {
                                 .value(value)
                                 .encodedLength() + headerEncoder.encodedLength();
 
-                        if (currentProgressState.sourceSeq() % 10 != 0) {
-                            eventApplier.accept(buffer, 0, length);
-                        } else {
+                        if (isNoop(currentProgressState.sourceSeq())) {
                             instanceState.setValue(value);
+                        } else {
+                            eventApplier.accept(buffer, 0, length);
                         }
 
                         sb.setLength(0);
@@ -196,6 +209,8 @@ public class RaftRandomPollingTest {
                 .leadership(raftQueue::leader)
                 .build();
 
+        queuesToClose.add(commandExecutionQueue);
+
         final AtomicInteger resultedEvents = raftInstanceCommitted.get(serverId);
         final List<Double> results = new ArrayList<>();
         raftInstanceResults.put(serverId, results);
@@ -211,7 +226,6 @@ public class RaftRandomPollingTest {
                             resultEventHeaderDecoder.blockLength(), resultEventHeaderDecoder.schemaId());
                     results.add(resultUpdateDecoder.value());
                     LOGGER.info("done committed: {}", resultedEvents.incrementAndGet());
-
             }
         };
 
@@ -221,6 +235,12 @@ public class RaftRandomPollingTest {
         final Step step = combine(
                 combine(combine(commandExecutionQueue.executorStep(), raftQueue.executionStep()), resultReadingStep),
                 () -> {
+                    if (!complete.get()) {
+                        if(results.size() == expectedEvents) {
+                            complete.set(true);
+                        }
+                    }
+
                     if (!blockingEventIndexes.isEmpty()) {
                         final long nextBlocking = blockingEventIndexes.peek();
                         if (raftQueue.leader() && resultedEvents.get() > 0 && resultedEvents.get() == nextBlocking) {
@@ -273,8 +293,12 @@ public class RaftRandomPollingTest {
 
         final Step finalStep = combine(randomPoller::poll, step);
 
-        //this::allRaftInstancesHavePublishedEvents
-        return TestUtil.startService("raftInstance" + serverId, finalStep, () -> false);
+        return TestUtil.startService("raftInstance" + serverId, finalStep, this::allMatch);
+    }
+
+    private boolean allMatch() {
+        return raftInstanceComplete.values().stream().allMatch(AtomicBoolean::get) &&
+                raftInstanceStates.values().stream().mapToDouble(State::getValue).distinct().limit(2).count() <= 1;
     }
 
     private static Step combine(final Step step1, final Step step2) {
@@ -379,6 +403,9 @@ public class RaftRandomPollingTest {
 
         IntStream.range(0, clusterSize).forEach(raftInstanceId -> {
             raftInstanceCommitted.put(raftInstanceId, new AtomicInteger(0));
+            raftInstanceComplete.put(raftInstanceId, new AtomicBoolean(false));
+            raftInstanceStates.put(raftInstanceId, new State());
+
         });
 
         IntStream.range(0, clusterSize).forEach(raftInstanceId -> {
@@ -398,17 +425,26 @@ public class RaftRandomPollingTest {
     public void tearDown() throws Exception {
         commandProducers.forEach(Service::shutdown);
         raftInstances.forEach(Service::shutdown);
+        aeron.close();
+        queuesToClose.forEach(closeable -> {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
     public void addInstancesShouldProduceSameEvents() throws Exception {
         raftInstances.forEach(service -> service.awaitTermination(10, TimeUnit.SECONDS));
         commandProducers.forEach(Service::shutdown);
-        //FIXME assert all states are the same
 
         raftInstanceStates.forEach((serverId, state) -> {
             LOGGER.info("Instance {} state is {}", serverId, state.getValue());
         });
+
+        assertThat(allMatch()).isTrue();
 
         logAllResults();
     }
