@@ -23,8 +23,6 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import org.tools4j.eventsourcing.common.PayloadBufferPoller;
-
 import java.io.Closeable;
 import java.util.Objects;
 import java.util.function.LongConsumer;
@@ -75,7 +73,7 @@ public interface Poller extends Closeable {
                 private IndexConsumer onProcessingComplete = IndexConsumer.noop();
                 private IndexConsumer onProcessingSkipped = IndexConsumer.noop();
                 private LongConsumer onReset = resetPosition -> {};
-                private BufferPoller bufferPoller = new PayloadBufferPoller();
+                private BufferPoller bufferPoller = BufferPoller.PASS_THROUGH;
 
 
                 @Override

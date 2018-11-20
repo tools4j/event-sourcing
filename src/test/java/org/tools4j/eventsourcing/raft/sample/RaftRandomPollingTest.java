@@ -33,12 +33,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.*;
+import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
-import org.tools4j.eventsourcing.mmap.MmapMultiPayloadQueue;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.mmap.TestUtil;
-import org.tools4j.eventsourcing.raft.api.RaftQueue;
 import org.tools4j.eventsourcing.raft.api.RaftQueueTest;
 import org.tools4j.eventsourcing.raft.mmap.MmapRaftQueueBuilder;
 import org.tools4j.eventsourcing.raft.transport.PollerFactory;
@@ -58,7 +57,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
-import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.stream.IntStream;
 
@@ -170,31 +168,7 @@ public class RaftRandomPollingTest {
         final String serverChannel = "aeron:ipc";
         final IntFunction<String> serverToChannel = servrId -> serverChannel;
 
-        final LongConsumer truncateHandler = size -> {
-            LOGGER.info("Truncating to size {}, last applied to state {}", size, compProgressStateRef.get().id());
-            if (compProgressStateRef.get().id() >= size - 1) {
-                LOGGER.info("Rebuilding the state");
-                //1. comment below if pre-commit apply does not work
-                curProgressStateRef.get().reset();
-                compProgressStateRef.get().reset();
-
-                instanceState.setValue(0);
-            }
-        };
-
-        final RaftQueue raftQueue = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
-                .clusterSize(clusterSize)
-                .serverId(serverId)
-                .directory(directory)
-                .filePrefix("raft_log")
-                .regionRingFactory(regionRingFactory)
-                .clearFiles(true)
-                .logInMessages(enableLogging)
-                .logOutMessages(enableLogging)
-                .truncateHandler(truncateHandler)
-                .build();
-
-        final CommandExecutionQueue commandExecutionQueue = CommandExecutionQueue.builder()
+        final ExecutionQueue executionQueue = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
@@ -202,14 +176,26 @@ public class RaftRandomPollingTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapMultiPayloadQueue(raftQueue, 1024))
+                .eventQueueFactory(
+                        onStateReset -> MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
+                            .clusterSize(clusterSize)
+                            .serverId(serverId)
+                            .directory(directory)
+                            .filePrefix("raft_log")
+                            .regionRingFactory(regionRingFactory)
+                            .clearFiles(true)
+                            .logInMessages(enableLogging)
+                            .logOutMessages(enableLogging)
+                            .truncateHandler(size -> onStateReset.run())
+                            .build()
+                )
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(eventApplierFactory)
+                .onStateReset(() -> instanceState.setValue(0))
                 .systemNanoClock(systemNanoClock)
-                .leadership(raftQueue::leader)
                 .build();
 
-        queuesToClose.add(commandExecutionQueue);
+        queuesToClose.add(executionQueue);
 
         final AtomicInteger resultedEvents = raftInstanceCommitted.get(serverId);
         final List<Double> results = new ArrayList<>();
@@ -229,11 +215,15 @@ public class RaftRandomPollingTest {
             }
         };
 
-        final Poller resultReadingPoller = commandExecutionQueue.createPoller();
+        final Poller resultReadingPoller = executionQueue.createPoller(
+                Poller.Options.builder()
+                        .bufferPoller(new PayloadBufferPoller())
+                        .build());
+
         final Step resultReadingStep = new PollingProcessStep(resultReadingPoller, resultReader);
 
         final Step step = combine(
-                combine(combine(commandExecutionQueue.executorStep(), raftQueue.executionStep()), resultReadingStep),
+                combine(executionQueue.executorStep(), resultReadingStep),
                 () -> {
                     if (!complete.get()) {
                         if(results.size() == expectedEvents) {
@@ -243,7 +233,7 @@ public class RaftRandomPollingTest {
 
                     if (!blockingEventIndexes.isEmpty()) {
                         final long nextBlocking = blockingEventIndexes.peek();
-                        if (raftQueue.leader() && resultedEvents.get() > 0 && resultedEvents.get() == nextBlocking) {
+                        if (executionQueue.leader() && resultedEvents.get() > 0 && resultedEvents.get() == nextBlocking) {
                             try {
                                 LOGGER.info("Blocking .... {}", resultedEvents.get());
                                 blockingEventIndexes.poll();
@@ -272,7 +262,7 @@ public class RaftRandomPollingTest {
                     case AddCommandDecoder.TEMPLATE_ID:
                         addDecoder.wrap(buffer1, offset + headerDecoder.encodedLength(),
                                 headerDecoder.blockLength(), headerDecoder.schemaId());
-                        commandExecutionQueue.appender().accept(addDecoder.source(), addDecoder.sourceSeq(), System.nanoTime(), buffer1, offset, length);
+                        executionQueue.appender().accept(addDecoder.source(), addDecoder.sourceSeq(), System.nanoTime(), buffer1, offset, length);
                         stringBuilder.setLength(0);
                         addDecoder.appendTo(stringBuilder);
                         LOGGER.info("Received add command: {}", stringBuilder);
@@ -280,7 +270,7 @@ public class RaftRandomPollingTest {
                     case DivideCommandDecoder.TEMPLATE_ID:
                         divDecoder.wrap(buffer1, offset + headerDecoder.encodedLength(),
                                 headerDecoder.blockLength(), headerDecoder.schemaId());
-                        commandExecutionQueue.appender().accept(divDecoder.source(), divDecoder.sourceSeq(), System.nanoTime(), buffer1, offset, length);
+                        executionQueue.appender().accept(divDecoder.source(), divDecoder.sourceSeq(), System.nanoTime(), buffer1, offset, length);
                         stringBuilder.setLength(0);
                         divDecoder.appendTo(stringBuilder);
                         LOGGER.info("Received div command: {}", stringBuilder);

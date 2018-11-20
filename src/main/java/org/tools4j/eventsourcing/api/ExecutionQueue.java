@@ -23,16 +23,16 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import org.tools4j.eventsourcing.common.DefaultCommandExecutionQueue;
+import org.tools4j.eventsourcing.common.ReplicatedExecutionQueue;
+import org.tools4j.eventsourcing.common.StandaloneExecutionQueue;
 import org.tools4j.nobark.loop.Step;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 /**
- * The Command Execution Queue allows to execute commands in "once-only" way. All application state-changes
+ * The Execution Queue allows to execute commands in "once-only" way. All application state-changes
  * are to applied to the application state only once. The resulting state-changing events are persisted
  * in the event queue.
  *
@@ -41,22 +41,31 @@ import java.util.function.LongSupplier;
  * The appender() method returns an command queue appender.
  * The createPoller() method creates a poller for the event queue.
  */
-public interface CommandExecutionQueue extends IndexedQueue {
+public interface ExecutionQueue extends IndexedQueue {
     /**
      * @return a executor step that executes one command from the command queue and appends one or more
      *         resulting events atomically to the event queue
      */
     Step executorStep();
 
+    void init();
+
+    boolean leader();
+
     static Builder builder() {
         return new DefaultBuilder();
     }
 
-    interface Builder {
-        EventQueueStep commandQueue(IndexedQueue commandQueue);
+    interface EventQueueFactory {
+        ExecutionQueue create(Runnable onStateReset) throws IOException;
+    }
 
-        interface EventQueueStep {
-            CommandExecutorFactoryStep eventQueue(IndexedTransactionalQueue eventQueue);
+    interface Builder {
+        EventQueueFactoryStep commandQueue(IndexedQueue commandQueue);
+
+        interface EventQueueFactoryStep {
+            CommandExecutorFactoryStep eventQueue(IndexedQueue eventQueue);
+            CommandExecutorFactoryStep eventQueueFactory(EventQueueFactory eventQueueFactory);
         }
 
         interface CommandExecutorFactoryStep {
@@ -68,9 +77,9 @@ public interface CommandExecutionQueue extends IndexedQueue {
         }
 
         interface OptionalsStep {
-            OptionalsStep systemNanoClock(LongSupplier systemNanoClock);
+            OptionalsStep transactionBufferSize(int transactionBufferSize);
 
-            OptionalsStep leadership(BooleanSupplier leadership);
+            OptionalsStep systemNanoClock(LongSupplier systemNanoClock);
 
             OptionalsStep onCommandExecutionStart(IndexConsumer onCommandExecutionStart);
 
@@ -80,31 +89,41 @@ public interface CommandExecutionQueue extends IndexedQueue {
 
             OptionalsStep onEventApplyingCompleted(IndexConsumer onEventApplyingCompleted);
 
-            CommandExecutionQueue build() throws IOException;
+            OptionalsStep onStateReset(Runnable onStateReset);
+
+            ExecutionQueue build() throws IOException;
         }
     }
 
-    class DefaultBuilder implements Builder, Builder.EventQueueStep, Builder.CommandExecutorFactoryStep, Builder.EventApplierFactoryStep, Builder.OptionalsStep {
+    class DefaultBuilder implements Builder, Builder.EventQueueFactoryStep, Builder.CommandExecutorFactoryStep, Builder.EventApplierFactoryStep, Builder.OptionalsStep {
         private IndexedQueue commandQueue;
-        private IndexedTransactionalQueue eventQueue;
+        private IndexedQueue eventQueue;
+        private EventQueueFactory eventQueueFactory;
         private LongSupplier systemNanoClock = System::nanoTime;
-        private BooleanSupplier leadership = () -> true;
         private IndexConsumer onCommandExecutionStart = IndexConsumer.noop();
         private IndexConsumer onCommandExecutionComplete = IndexConsumer.noop();
         private IndexConsumer onEventApplyingStart = IndexConsumer.noop();
         private IndexConsumer onEventApplyingCompleted = IndexConsumer.noop();
         private CommandExecutorFactory commandExecutorFactory = CommandExecutorFactory.PASS_THROUGH;
         private EventApplierFactory eventApplierFactory = EventApplierFactory.NO_OP;
+        private int transationBufferSize = 16 * 1024;
+        private Runnable onStateReset = () -> {};
 
         @Override
-        public EventQueueStep commandQueue(final IndexedQueue commandQueue) {
+        public EventQueueFactoryStep commandQueue(final IndexedQueue commandQueue) {
             this.commandQueue = commandQueue;
             return this;
         }
 
         @Override
-        public CommandExecutorFactoryStep eventQueue(final IndexedTransactionalQueue eventQueue) {
+        public CommandExecutorFactoryStep eventQueue(final IndexedQueue eventQueue) {
             this.eventQueue = eventQueue;
+            return this;
+        }
+
+        @Override
+        public CommandExecutorFactoryStep eventQueueFactory(final EventQueueFactory eventQueueFactory) {
+            this.eventQueueFactory = eventQueueFactory;
             return this;
         }
 
@@ -121,14 +140,14 @@ public interface CommandExecutionQueue extends IndexedQueue {
         }
 
         @Override
-        public OptionalsStep systemNanoClock(final LongSupplier systemNanoClock) {
-            this.systemNanoClock = Objects.requireNonNull(systemNanoClock);
+        public OptionalsStep transactionBufferSize(final int transactionBufferSize) {
+            this.transationBufferSize = transactionBufferSize;
             return this;
         }
 
         @Override
-        public OptionalsStep leadership(final BooleanSupplier leadership) {
-            this.leadership = Objects.requireNonNull(leadership);
+        public OptionalsStep systemNanoClock(final LongSupplier systemNanoClock) {
+            this.systemNanoClock = Objects.requireNonNull(systemNanoClock);
             return this;
         }
 
@@ -157,19 +176,40 @@ public interface CommandExecutionQueue extends IndexedQueue {
         }
 
         @Override
-        public CommandExecutionQueue build() throws IOException {
-            return new DefaultCommandExecutionQueue(
-                    commandQueue,
-                    eventQueue,
-                    systemNanoClock,
-                    leadership,
-                    onCommandExecutionStart,
-                    onCommandExecutionComplete,
-                    onEventApplyingStart,
-                    onEventApplyingCompleted,
-                    commandExecutorFactory,
-                    eventApplierFactory
-            );
+        public OptionalsStep onStateReset(final Runnable onStateReset) {
+            this.onStateReset = onStateReset;
+            return this;
+        }
+
+        @Override
+        public ExecutionQueue build() throws IOException {
+            if (eventQueue != null) {
+                return new StandaloneExecutionQueue(
+                        commandQueue,
+                        eventQueue,
+                        systemNanoClock,
+                        onCommandExecutionStart,
+                        onCommandExecutionComplete,
+                        onEventApplyingStart,
+                        onEventApplyingCompleted,
+                        commandExecutorFactory,
+                        eventApplierFactory,
+                        transationBufferSize
+                );
+            } else {
+                return new ReplicatedExecutionQueue(
+                        commandQueue,
+                        eventQueueFactory,
+                        systemNanoClock,
+                        onCommandExecutionStart,
+                        onCommandExecutionComplete,
+                        onEventApplyingStart,
+                        onEventApplyingCompleted,
+                        commandExecutorFactory,
+                        eventApplierFactory,
+                        onStateReset,
+                        transationBufferSize);
+            }
         }
     }
 }

@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.MetricIndexConsumer;
 import org.tools4j.eventsourcing.TestMessage;
-import org.tools4j.eventsourcing.api.CommandExecutionQueue;
+import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.IndexPredicate;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
@@ -38,7 +38,6 @@ import org.tools4j.nobark.loop.Step;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 public class EventSourcingPerfTest {
@@ -56,13 +55,12 @@ public class EventSourcingPerfTest {
 
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
-        final BooleanSupplier leadership = () -> true;
 
         final MessageConsumer stateMessageConsumer = (buffer, offset, length) -> {};
 
         final MessageConsumer senderMessageConsumer = (buffer, offset, length) -> {};
 
-        final CommandExecutionQueue queue = CommandExecutionQueue.builder()
+        final ExecutionQueue queue = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
@@ -76,7 +74,7 @@ public class EventSourcingPerfTest {
                                 .filePrefix("event")
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
-                                .buildTransactionalQueue())
+                                .buildQueue())
                 .commandExecutorFactory(
                         (eventApplier,
                          currentProgressState,
@@ -84,7 +82,6 @@ public class EventSourcingPerfTest {
                 .eventApplierFactory(
                         (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
-                .leadership(leadership)
                 .build();
 
         final Poller senderPoller = queue.createPoller(

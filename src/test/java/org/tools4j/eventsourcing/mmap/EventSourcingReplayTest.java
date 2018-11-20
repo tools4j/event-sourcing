@@ -26,10 +26,10 @@ package org.tools4j.eventsourcing.mmap;
 import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tools4j.eventsourcing.api.CommandExecutionQueue;
+import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.ProgressState;
 import org.tools4j.eventsourcing.api.MessageConsumer;
-import org.tools4j.eventsourcing.common.BranchedIndexedTransactionalQueue;
+import org.tools4j.eventsourcing.common.BranchedIndexedQueue;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.util.function.BooleanSupplier;
@@ -53,7 +53,7 @@ public class EventSourcingReplayTest {
 
         final MutableReference<ProgressState> commitStateRef = new MutableReference<>();
 
-        final CommandExecutionQueue queue = CommandExecutionQueue.builder()
+        final ExecutionQueue queue = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
@@ -61,7 +61,7 @@ public class EventSourcingReplayTest {
                                 .regionRingFactory(regionRingFactory)
                                 .buildReadOnlyQueue())
                 .eventQueue(
-                        BranchedIndexedTransactionalQueue.builder()
+                        BranchedIndexedQueue.builder()
                                 .basePollerFactory(
                                         MmapBuilder.create()
                                                 .directory(directory)
@@ -74,7 +74,7 @@ public class EventSourcingReplayTest {
                                                 .filePrefix("event_branch")
                                                 .regionRingFactory(regionRingFactory)
                                                 .clearFiles(true)
-                                                .buildTransactionalQueue())
+                                                .buildQueue())
                                 .branchPredicate(
                                         (index, source, sourceSeq, eventTimeNanos) -> sourceSeq == replayFromSourceSeq)
                                 .build())
@@ -92,7 +92,6 @@ public class EventSourcingReplayTest {
                             return stateMessageConsumer;
                         })
                 .systemNanoClock(systemNanoClock)
-                .leadership(leadership)
                 .build();
 
         regionRingFactory.onComplete();

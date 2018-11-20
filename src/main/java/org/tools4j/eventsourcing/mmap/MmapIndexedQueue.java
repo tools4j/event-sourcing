@@ -23,16 +23,15 @@
  */
 package org.tools4j.eventsourcing.mmap;
 
-import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eventsourcing.api.*;
-import org.tools4j.eventsourcing.common.SinglePayloadAppender;
+import org.tools4j.eventsourcing.api.IndexedAppender;
+import org.tools4j.eventsourcing.api.IndexedPollerFactory;
+import org.tools4j.eventsourcing.api.IndexedQueue;
+import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public final class MmapIndexedQueue implements IndexedQueue {
-    private final IndexedAppender appender;
     private final IndexedPollerFactory pollerFactory;
     private final MmapIndexedAppender mmapIndexedAppender;
 
@@ -43,8 +42,7 @@ public final class MmapIndexedQueue implements IndexedQueue {
                             final int regionSize,
                             final int regionRingSize,
                             final int regionsToMapAhead,
-                            final long maxFileSize,
-                            final int encodingBufferSize) throws IOException {
+                            final long maxFileSize) throws IOException {
 
         this.mmapIndexedAppender = new MmapIndexedAppender(
                 RegionAccessorSupplier.forReadWrite(
@@ -57,9 +55,6 @@ public final class MmapIndexedQueue implements IndexedQueue {
                         regionsToMapAhead,
                         maxFileSize));
 
-        this.appender = new SinglePayloadAppender(this.mmapIndexedAppender,
-                new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize)));
-
         this.pollerFactory = new MmapIndexedPollerFactory(
                 directory,
                 filePrefix,
@@ -71,7 +66,7 @@ public final class MmapIndexedQueue implements IndexedQueue {
 
     @Override
     public IndexedAppender appender() {
-        return this.appender;
+        return this.mmapIndexedAppender;
     }
 
     @Override

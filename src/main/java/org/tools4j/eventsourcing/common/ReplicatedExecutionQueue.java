@@ -23,42 +23,51 @@
  */
 package org.tools4j.eventsourcing.common;
 
+import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eventsourcing.api.*;
 import org.tools4j.nobark.loop.Step;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
-public final class DefaultCommandExecutionQueue implements CommandExecutionQueue {
+public final class ReplicatedExecutionQueue implements ExecutionQueue {
 
     private final IndexedQueue commandQueue;
-    private final IndexedTransactionalQueue eventQueue;
+    private final ExecutionQueue eventQueue;
     private final Step executorStep;
 
     private final Poller commandExecutionPoller;
     private final Poller committedEventApplyingPoller;
 
-
-    public DefaultCommandExecutionQueue(final IndexedQueue commandQueue,
-                                        final IndexedTransactionalQueue eventQueue,
-                                        final LongSupplier systemNanoClock,
-                                        final BooleanSupplier leadership,
-                                        final IndexConsumer onStartCommandExecutionHandler,
-                                        final IndexConsumer onCompleteCommandExecutionHandler,
-                                        final IndexConsumer onStartEventApplyingHandler,
-                                        final IndexConsumer onCompletedEventApplyingHandler,
-                                        final CommandExecutorFactory commandExecutorFactory,
-                                        final EventApplierFactory eventApplierFactory) throws IOException {
+    public ReplicatedExecutionQueue(final IndexedQueue commandQueue,
+                                    final EventQueueFactory eventQueueFactory,
+                                    final LongSupplier systemNanoClock,
+                                    final IndexConsumer onStartCommandExecutionHandler,
+                                    final IndexConsumer onCompleteCommandExecutionHandler,
+                                    final IndexConsumer onStartEventApplyingHandler,
+                                    final IndexConsumer onCompletedEventApplyingHandler,
+                                    final CommandExecutorFactory commandExecutorFactory,
+                                    final EventApplierFactory eventApplierFactory,
+                                    final Runnable onStateReset,
+                                    final int encodingBufferSize) throws IOException {
         this.commandQueue = Objects.requireNonNull(commandQueue);
-        this.eventQueue = Objects.requireNonNull(eventQueue);
 
         final DefaultProgressState currentProgressState = new DefaultProgressState(systemNanoClock);
         final DefaultProgressState completedProgressState = new DefaultProgressState(systemNanoClock);
 
 
-        final Transaction eventAppender = eventQueue.appender();
+        this.eventQueue = eventQueueFactory.create(() -> {
+            currentProgressState.reset();
+            completedProgressState.reset();
+            onStateReset.run();
+        });
+
+        final BooleanSupplier leadership = eventQueue::leader;
+
+        final Transaction eventAppender = new MultiPayloadAppender(eventQueue.appender(), new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize)));
 
         final MessageConsumer uncommittedEventApplier = eventApplierFactory.create(
                 currentProgressState,
@@ -121,12 +130,16 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
                                 // event matches command source/sourceSeq
                                 currentProgressState.andThen(completedProgressState))
                         .onReset(currentProgressState::resetEventPoller)
+                        .bufferPoller(new PayloadBufferPoller())
                         .build()
         );
 
         final Step committedEventApplyingStep = new PollingProcessStep(this.committedEventApplyingPoller, committedEventApplier);
 
-        this.executorStep = new ApplyAllExecuteOnceStep(commandExecutionStep, committedEventApplyingStep);
+        final Step step =  new ApplyAllExecuteOnceStep(commandExecutionStep, committedEventApplyingStep);
+
+
+        this.executorStep = () -> step.perform() | eventQueue.executorStep().perform();
     }
 
     @Override
@@ -142,6 +155,16 @@ public final class DefaultCommandExecutionQueue implements CommandExecutionQueue
     @Override
     public Poller createPoller(final Poller.Options options) throws IOException {
         return eventQueue.createPoller(options);
+    }
+
+    @Override
+    public boolean leader() {
+        return eventQueue.leader();
+    }
+
+    @Override
+    public void init() {
+        eventQueue.init();
     }
 
     @Override

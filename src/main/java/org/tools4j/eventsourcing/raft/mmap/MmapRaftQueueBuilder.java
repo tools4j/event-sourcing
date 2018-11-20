@@ -28,10 +28,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
-import org.tools4j.eventsourcing.raft.api.RaftQueue;
 import org.tools4j.eventsourcing.raft.state.*;
 import org.tools4j.eventsourcing.raft.timer.Clock;
 import org.tools4j.eventsourcing.raft.timer.DefaultTimer;
@@ -92,7 +92,7 @@ public interface MmapRaftQueueBuilder {
         Optionals logOutMessages(boolean logOutMessages);
         Optionals truncateHandler(LongConsumer truncateHandler);
 
-        RaftQueue build() throws IOException;
+        ExecutionQueue build() throws IOException;
     }
 
     static MmapRaftQueueBuilder forAeronTransport(final Aeron aeron, final IntFunction<String> serverToChannel) {
@@ -281,7 +281,7 @@ public interface MmapRaftQueueBuilder {
         }
 
         @Override
-        public RaftQueue build() throws IOException {
+        public ExecutionQueue build() throws IOException {
             Objects.requireNonNull(directory);
 
             if (serverId < 0 || serverId >= clusterSize) {
@@ -343,6 +343,7 @@ public interface MmapRaftQueueBuilder {
                                     .onProcessingComplete(options.onProcessingComplete())
                                     .onProcessingSkipped(options.onProcessingSkipped())
                                     .onReset(options.onReset())
+                                    .bufferPoller(options.bufferPoller())
                                     .build());
 
             final Supplier<Timer> heartbeatTimerFactory = () -> new DefaultTimer(clock, heartbeatTimeoutMillis, heartbeatTimeoutMillis);
@@ -449,9 +450,9 @@ public interface MmapRaftQueueBuilder {
             };
 
 
-            return new RaftQueue() {
+            return new ExecutionQueue() {
                 @Override
-                public Step executionStep() {
+                public Step executorStep() {
                     return () -> {
                         boolean done = false;
                         for (int i = 0; i < processSteps.size(); i++) {
