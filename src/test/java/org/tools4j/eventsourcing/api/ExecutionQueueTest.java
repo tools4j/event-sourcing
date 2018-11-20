@@ -36,7 +36,6 @@ import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
-import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,12 +45,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
-public class CommandExecutionQueueTest {
-    private static final int PAYLOAD_OFFSET = 12;
+public class ExecutionQueueTest {
+    private static final int PAYLOAD_OFFSET = 0;
     @Mock
     private MessageConsumer commandExecutor;
 
-    private CommandExecutionQueue commandExecutionQueue;
+    private ExecutionQueue executionQueue;
 
     private ProgressState compProgressState;
 
@@ -60,11 +59,10 @@ public class CommandExecutionQueueTest {
 
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
-        final BooleanSupplier leadership = () -> true;
 
         final MessageConsumer stateMessageConsumer = (buffer, offset, length) -> {};
 
-        commandExecutionQueue = CommandExecutionQueue.builder()
+        executionQueue = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
@@ -78,18 +76,17 @@ public class CommandExecutionQueueTest {
                                 .filePrefix("event")
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
-                                .buildTransactionalQueue())
+                                .buildQueue())
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
                         (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
-                .leadership(leadership)
                 .build();
     }
 
     @After
     public void tearDown() throws Exception {
-        commandExecutionQueue.close();
+        executionQueue.close();
     }
 
     @Test
@@ -104,11 +101,11 @@ public class CommandExecutionQueueTest {
         final LongSupplier timeSupplier = System::nanoTime;
 
         //when
-        commandExecutionQueue.appender().accept(source, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
-        commandExecutionQueue.appender().accept(source, 2, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
+        executionQueue.appender().accept(source, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
+        executionQueue.appender().accept(source, 2, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
 
-        commandExecutionQueue.executorStep().perform(); //execute command 1
-        commandExecutionQueue.executorStep().perform(); //execute command 2
+        executionQueue.executorStep().perform(); //execute command 1
+        executionQueue.executorStep().perform(); //execute command 2
 
         //then
         verify(commandExecutor, times(2)).accept(any(UnsafeBuffer.class), eq(PAYLOAD_OFFSET), eq(message.length));
@@ -131,38 +128,38 @@ public class CommandExecutionQueueTest {
         final LongSupplier timeSupplier = System::nanoTime;
 
         //when
-        commandExecutionQueue.appender().accept(source1, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
-        commandExecutionQueue.appender().accept(source1, 2, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
-        commandExecutionQueue.appender().accept(source2, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
-        commandExecutionQueue.appender().accept(source2, 2, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
-        commandExecutionQueue.appender().accept(source0, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
+        executionQueue.appender().accept(source1, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
+        executionQueue.appender().accept(source1, 2, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
+        executionQueue.appender().accept(source2, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
+        executionQueue.appender().accept(source2, 2, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
+        executionQueue.appender().accept(source0, 1, timeSupplier.getAsLong(), message.buffer, message.offset, message.length);
 
         //when
-        commandExecutionQueue.executorStep().perform(); //execute command 1
+        executionQueue.executorStep().perform(); //execute command 1
 
         //then
         assertThat(compProgressState.sourceSeq(source1)).isEqualTo(1);
 
         //when
-        commandExecutionQueue.executorStep().perform(); //execute command 2
+        executionQueue.executorStep().perform(); //execute command 2
 
         //then
         assertThat(compProgressState.sourceSeq(source1)).isEqualTo(2);
 
         //when
-        commandExecutionQueue.executorStep().perform(); //execute command 3
+        executionQueue.executorStep().perform(); //execute command 3
 
         //then
         assertThat(compProgressState.sourceSeq(source2)).isEqualTo(1);
 
         //when
-        commandExecutionQueue.executorStep().perform(); //execute command 4
+        executionQueue.executorStep().perform(); //execute command 4
 
         //then
         assertThat(compProgressState.sourceSeq(source2)).isEqualTo(2);
 
         //when
-        commandExecutionQueue.executorStep().perform(); //execute command 5
+        executionQueue.executorStep().perform(); //execute command 5
 
         //then
         assertThat(compProgressState.sourceSeq(source0)).isEqualTo(1);

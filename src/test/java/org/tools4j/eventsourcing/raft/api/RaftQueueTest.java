@@ -31,12 +31,12 @@ import io.aeron.driver.MediaDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.TestMessage;
-import org.tools4j.eventsourcing.api.CommandExecutionQueue;
+import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.CommandExecutorFactory;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
+import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
-import org.tools4j.eventsourcing.mmap.MmapMultiPayloadQueue;
 import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.mmap.TestUtil;
 import org.tools4j.eventsourcing.raft.mmap.MmapRaftQueueBuilder;
@@ -50,7 +50,6 @@ import java.util.function.LongSupplier;
 
 public class RaftQueueTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(RaftQueueTest.class);
-    private static final int NON_STATE_CHANGING_SOURCE_LOW = 10000000;
 
     public static void main(String... args) throws Exception {
 
@@ -81,40 +80,7 @@ public class RaftQueueTest {
         final String serverChannel = "aeron:ipc";
         final IntFunction<String> serverToChannel = serverId -> serverChannel;
 
-        final RaftQueue raftQueue0 = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
-                .clusterSize(3)
-                .serverId(0)
-                .directory(directory)
-                .filePrefix("raft_log")
-                .regionRingFactory(regionRingFactory)
-                .clearFiles(true)
-                .logInMessages(false)
-                .logOutMessages(false)
-                .build();
-
-        final RaftQueue raftQueue1 = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
-                .clusterSize(3)
-                .serverId(1)
-                .directory(directory)
-                .filePrefix("raft_log")
-                .regionRingFactory(regionRingFactory)
-                .clearFiles(true)
-                .logInMessages(false)
-                .logOutMessages(false)
-                .build();
-
-        final RaftQueue raftQueue2 = MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
-                .clusterSize(3)
-                .serverId(2)
-                .directory(directory)
-                .filePrefix("raft_log")
-                .regionRingFactory(regionRingFactory)
-                .clearFiles(true)
-                .logInMessages(false)
-                .logOutMessages(false)
-                .build();
-
-        final CommandExecutionQueue commandExecutionQueue0 = CommandExecutionQueue.builder()
+        final ExecutionQueue executionQueue0 = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
@@ -122,15 +88,24 @@ public class RaftQueueTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapMultiPayloadQueue(raftQueue0, 1024 * 8))
+                .eventQueueFactory(
+                        onStateReset -> MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
+                            .clusterSize(3)
+                            .serverId(0)
+                            .directory(directory)
+                            .filePrefix("raft_log")
+                            .regionRingFactory(regionRingFactory)
+                            .clearFiles(true)
+                            .logInMessages(false)
+                            .logOutMessages(false)
+                            .build())
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
                         (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
-                .leadership(raftQueue0::leader)
                 .build();
 
-        final CommandExecutionQueue commandExecutionQueue1 = CommandExecutionQueue.builder()
+        final ExecutionQueue executionQueue1 = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
@@ -138,15 +113,24 @@ public class RaftQueueTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapMultiPayloadQueue(raftQueue1, 1024 * 8))
+                .eventQueueFactory(
+                        onStateReset -> MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
+                            .clusterSize(3)
+                            .serverId(1)
+                            .directory(directory)
+                            .filePrefix("raft_log")
+                            .regionRingFactory(regionRingFactory)
+                            .clearFiles(true)
+                            .logInMessages(false)
+                            .logOutMessages(false)
+                            .build())
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
                         (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
-                .leadership(raftQueue1::leader)
                 .build();
 
-        final CommandExecutionQueue commandExecutionQueue2 = CommandExecutionQueue.builder()
+        final ExecutionQueue executionQueue2 = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
                                 .directory(directory)
@@ -154,28 +138,37 @@ public class RaftQueueTest {
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
                                 .buildQueue())
-                .eventQueue(new MmapMultiPayloadQueue(raftQueue2, 1024 * 8))
+                .eventQueueFactory(
+                        onStateReset -> MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
+                            .clusterSize(3)
+                            .serverId(2)
+                            .directory(directory)
+                            .filePrefix("raft_log")
+                            .regionRingFactory(regionRingFactory)
+                            .clearFiles(true)
+                            .logInMessages(false)
+                            .logOutMessages(false)
+                            .build())
                 .commandExecutorFactory(commandExecutorFactory)
                 .eventApplierFactory(
                         (currentProgressState, completedProgressState) -> stateMessageConsumer)
                 .systemNanoClock(systemNanoClock)
-                .leadership(raftQueue2::leader)
                 .build();
 
         regionRingFactory.onComplete();
 
-        raftQueue0.init();
-        raftQueue1.init();
-        raftQueue2.init();
+        executionQueue0.init();
+        executionQueue1.init();
+        executionQueue2.init();
 
 
-        final Step step0 = combine(commandExecutionQueue0.executorStep(), raftQueue0.executionStep());
-        final Step step1 = combine(commandExecutionQueue1.executorStep(), raftQueue1.executionStep());
-        final Step step2 = combine(commandExecutionQueue2.executorStep(), raftQueue2.executionStep());
+        final Step step0 = executionQueue0.executorStep();
+        final Step step1 = executionQueue1.executorStep();
+        final Step step2 = executionQueue2.executorStep();
 
-        final Poller poller0 = commandExecutionQueue0.createPoller(Poller.Options.builder().build());
-        final Poller poller1 = commandExecutionQueue1.createPoller(Poller.Options.builder().build());
-        final Poller poller2 = commandExecutionQueue2.createPoller(Poller.Options.builder().build());
+        final Poller poller0 = executionQueue0.createPoller(Poller.Options.builder().bufferPoller(new PayloadBufferPoller()).build());
+        final Poller poller1 = executionQueue1.createPoller(Poller.Options.builder().bufferPoller(new PayloadBufferPoller()).build());
+        final Poller poller2 = executionQueue2.createPoller(Poller.Options.builder().bufferPoller(new PayloadBufferPoller()).build());
 
         final MessageConsumer logger = (buffer, offset, length) -> {
             LOGGER.info("POLLED EVENT: " + buffer.getStringWithoutLengthAscii(offset, length));
@@ -200,32 +193,25 @@ public class RaftQueueTest {
 
         Thread.sleep(20000);
 
-        commandExecutionQueue0.appender().accept(source1, 1, timeSupplier.getAsLong(), message1.buffer, message1.offset, message1.length);
-        commandExecutionQueue1.appender().accept(source1, 2, timeSupplier.getAsLong(), message2.buffer, message2.offset, message2.length);
-        commandExecutionQueue2.appender().accept(source1, 3, timeSupplier.getAsLong(), message3.buffer, message3.offset, message3.length);
+        executionQueue0.appender().accept(source1, 1, timeSupplier.getAsLong(), message1.buffer, message1.offset, message1.length);
+        executionQueue1.appender().accept(source1, 2, timeSupplier.getAsLong(), message2.buffer, message2.offset, message2.length);
+        executionQueue2.appender().accept(source1, 3, timeSupplier.getAsLong(), message3.buffer, message3.offset, message3.length);
 
-        commandExecutionQueue0.appender().accept(source1, 2, timeSupplier.getAsLong(), message2.buffer, message2.offset, message2.length);
-        commandExecutionQueue1.appender().accept(source1, 1, timeSupplier.getAsLong(), message1.buffer, message1.offset, message1.length);
-        commandExecutionQueue2.appender().accept(source1, 3, timeSupplier.getAsLong(), message3.buffer, message3.offset, message3.length);
+        executionQueue0.appender().accept(source1, 2, timeSupplier.getAsLong(), message2.buffer, message2.offset, message2.length);
+        executionQueue1.appender().accept(source1, 1, timeSupplier.getAsLong(), message1.buffer, message1.offset, message1.length);
+        executionQueue2.appender().accept(source1, 3, timeSupplier.getAsLong(), message3.buffer, message3.offset, message3.length);
 
-        commandExecutionQueue0.appender().accept(source1, 3, timeSupplier.getAsLong(), message3.buffer, message3.offset, message3.length);
-        commandExecutionQueue1.appender().accept(source1, 2, timeSupplier.getAsLong(), message2.buffer, message2.offset, message2.length);
-        commandExecutionQueue2.appender().accept(source1, 1, timeSupplier.getAsLong(), message1.buffer, message1.offset, message1.length);
+        executionQueue0.appender().accept(source1, 3, timeSupplier.getAsLong(), message3.buffer, message3.offset, message3.length);
+        executionQueue1.appender().accept(source1, 2, timeSupplier.getAsLong(), message2.buffer, message2.offset, message2.length);
+        executionQueue2.appender().accept(source1, 1, timeSupplier.getAsLong(), message1.buffer, message1.offset, message1.length);
 
         Thread.sleep(20000000);
         stop.set(true);
 
-        commandExecutionQueue0.close();
-        commandExecutionQueue1.close();
-        commandExecutionQueue2.close();
-        raftQueue0.close();
-        raftQueue1.close();
-        raftQueue2.close();
+        executionQueue0.close();
+        executionQueue1.close();
+        executionQueue2.close();
         aeron.close();
-    }
-
-    private static Step combine(final Step step1, final Step step2) {
-        return () -> step1.perform() | step2.perform();
     }
 
     public static void printAvailableImage(final Image image) {

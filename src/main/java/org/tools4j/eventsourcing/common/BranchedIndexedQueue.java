@@ -29,21 +29,21 @@ import org.tools4j.eventsourcing.api.*;
 import java.io.IOException;
 import java.util.Objects;
 
-public final class BranchedIndexedTransactionalQueue implements IndexedTransactionalQueue {
+public final class BranchedIndexedQueue implements IndexedQueue {
     private final IndexedPollerFactory basePollerFactory;
-    private final IndexedTransactionalQueue branchQueue;
+    private final IndexedQueue branchQueue;
     private final IndexPredicate branchPredicate;
 
-    public BranchedIndexedTransactionalQueue(final IndexedPollerFactory basePollerFactory,
-                                             final IndexedTransactionalQueue branchQueue,
-                                             final IndexPredicate branchPredicate) {
+    public BranchedIndexedQueue(final IndexedPollerFactory basePollerFactory,
+                                final IndexedQueue branchQueue,
+                                final IndexPredicate branchPredicate) {
         this.basePollerFactory = Objects.requireNonNull(basePollerFactory);
         this.branchQueue = Objects.requireNonNull(branchQueue);
         this.branchPredicate = Objects.requireNonNull(branchPredicate);
     }
 
     @Override
-    public Transaction appender() {
+    public IndexedAppender appender() {
         return branchQueue.appender();
     }
 
@@ -93,14 +93,14 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
     }
 
     public static Builder builder() {
-        return new BranchedIndexedTransactionalQueueBuilder();
+        return new BranchedIndexedQueueBuilder();
     }
 
     public interface Builder {
         BranchQueueStep basePollerFactory(IndexedPollerFactory basePollerFactory);
 
         interface BranchQueueStep {
-            BranchPredicateStep branchQueue(IndexedTransactionalQueue branchQueue);
+            BranchPredicateStep branchQueue(IndexedQueue branchQueue);
         }
 
         interface BranchPredicateStep {
@@ -108,13 +108,13 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         }
 
         interface BuildStep {
-            IndexedTransactionalQueue build();
+            IndexedQueue build();
         }
     }
 
-    private static class BranchedIndexedTransactionalQueueBuilder implements Builder, Builder.BranchQueueStep, Builder.BranchPredicateStep, Builder.BuildStep {
+    private static class BranchedIndexedQueueBuilder implements Builder, Builder.BranchQueueStep, Builder.BranchPredicateStep, Builder.BuildStep {
         IndexedPollerFactory basePollerFactory;
-        IndexedTransactionalQueue branchQueue;
+        IndexedQueue branchQueue;
         IndexPredicate branchPredicate;
 
         @Override
@@ -124,7 +124,7 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         }
 
         @Override
-        public BranchPredicateStep branchQueue(final IndexedTransactionalQueue branchQueue) {
+        public BranchPredicateStep branchQueue(final IndexedQueue branchQueue) {
             this.branchQueue = branchQueue;
             return this;
         }
@@ -136,8 +136,8 @@ public final class BranchedIndexedTransactionalQueue implements IndexedTransacti
         }
 
         @Override
-        public IndexedTransactionalQueue build() {
-            return new BranchedIndexedTransactionalQueue(basePollerFactory, branchQueue, branchPredicate);
+        public IndexedQueue build() {
+            return new BranchedIndexedQueue(basePollerFactory, branchQueue, branchPredicate);
         }
     }
 }

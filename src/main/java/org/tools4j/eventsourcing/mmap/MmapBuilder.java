@@ -25,7 +25,6 @@ package org.tools4j.eventsourcing.mmap;
 
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
 import org.tools4j.eventsourcing.api.IndexedQueue;
-import org.tools4j.eventsourcing.api.IndexedTransactionalQueue;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
 
@@ -48,11 +47,9 @@ public interface MmapBuilder {
         Optionals regionRingSize(int regionRingSize);
         Optionals regionsToMapAhead(int regionsToMapAhead);
         Optionals maxFileSize(long maxFileSize);
-        Optionals encodingBufferSize(int encodingBufferSize);
         IndexedQueue buildQueue() throws IOException;
         IndexedQueue buildReadOnlyQueue() throws IOException;
         IndexedPollerFactory buildPollerFactory() throws IOException;
-        IndexedTransactionalQueue buildTransactionalQueue() throws IOException;
     }
 
     static MmapBuilder create() {
@@ -68,7 +65,6 @@ public interface MmapBuilder {
         private int regionRingSize = 4;
         private int regionsToMapAhead = 1;
         private long maxFileSize = 1024 * 1024 * 1024 * 2L;
-        private int encodingBufferSize = 8 * 1024;
 
         @Override
         public FilePrefixBuilder directory(final String directory) {
@@ -119,12 +115,6 @@ public interface MmapBuilder {
         }
 
         @Override
-        public Optionals encodingBufferSize(final int encodingBufferSize) {
-            this.encodingBufferSize = encodingBufferSize;
-            return this;
-        }
-
-        @Override
         public IndexedQueue buildQueue() throws IOException {
             return new MmapIndexedQueue(
                     directory,
@@ -134,8 +124,7 @@ public interface MmapBuilder {
                     regionSize,
                     regionRingSize,
                     regionsToMapAhead,
-                    maxFileSize,
-                    encodingBufferSize);
+                    maxFileSize);
         }
 
         @Override
@@ -158,20 +147,6 @@ public interface MmapBuilder {
                     regionSize,
                     regionRingSize,
                     regionsToMapAhead);
-        }
-
-        @Override
-        public IndexedTransactionalQueue buildTransactionalQueue() throws IOException {
-            return new MmapIndexedTransactionalQueue(
-                    directory,
-                    filePrefix,
-                    clearFiles,
-                    regionRingFactory,
-                    regionSize,
-                    regionRingSize,
-                    regionsToMapAhead,
-                    maxFileSize,
-                    encodingBufferSize);
         }
     }
 
