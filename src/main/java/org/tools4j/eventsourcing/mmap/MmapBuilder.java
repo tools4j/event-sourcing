@@ -61,7 +61,7 @@ public interface MmapBuilder {
         private String filePrefix;
         private RegionRingFactory regionRingFactory;
         private boolean clearFiles = false;
-        private int regionSize = (int) MappedFile.REGION_SIZE_GRANULARITY * 1024 * 4;
+        private int regionSize = (int) MappedFile.REGION_SIZE_GRANULARITY * 1024;
         private int regionRingSize = 4;
         private int regionsToMapAhead = 1;
         private long maxFileSize = 1024 * 1024 * 1024 * 2L;

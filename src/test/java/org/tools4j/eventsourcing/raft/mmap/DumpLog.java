@@ -21,26 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.raft.sample;
+package org.tools4j.eventsourcing.raft.mmap;
 
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
-import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.mmap.TestUtil;
-import org.tools4j.eventsourcing.raft.mmap.MmapRaftPoller;
-import org.tools4j.eventsourcing.raft.mmap.RaftRegionAccessorSupplier;
 import org.tools4j.eventsourcing.sbe.test.MessageHeaderDecoder;
 import org.tools4j.eventsourcing.sbe.test.UpdateEventDecoder;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.mmap.region.impl.MappedFile;
-import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
-
-import java.util.concurrent.TimeUnit;
+import org.tools4j.nobark.loop.StoppableThread;
 
 public class DumpLog {
     private static final Logger LOGGER = LoggerFactory.getLogger(DumpLog.class);
@@ -50,7 +44,7 @@ public class DumpLog {
         final String directory = System.getProperty("user.dir") + "/build";
         final String filePrefix = "raft_log";
         final int serverId = 2;
-        final RegionRingFactory regionRingFactory = RegionRingFactoryConfig.get("SYNC");
+        final RegionRingFactory regionRingFactory = RegionRingFactory.sync();
         final int regionSize = (int) MappedFile.REGION_SIZE_GRANULARITY * 1024 * 4;
         final int regionRingSize = 4;
         final int regionsToMapAhead = 1;
@@ -86,8 +80,8 @@ public class DumpLog {
 
         final Step step = new PollingProcessStep(poller, resultReader);
 
-        final Service dumpLogService =  TestUtil.startService("dumpLog" + serverId, step, () -> false);
+        final StoppableThread dumpLogService =  TestUtil.startService("dumpLog" + serverId, step, () -> false);
 
-        dumpLogService.awaitTermination(10, TimeUnit.SECONDS);
+        dumpLogService.join(10000);
     }
 }

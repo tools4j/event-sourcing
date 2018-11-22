@@ -32,7 +32,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
-import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.mmap.region.api.RegionRingFactory;
 
 import java.io.IOException;
@@ -55,7 +54,7 @@ public class ExecutionQueueTest {
     private ProgressState compProgressState;
 
     private void initExecutionQueue(final CommandExecutorFactory commandExecutorFactory) throws IOException {
-        final RegionRingFactory regionRingFactory = RegionRingFactoryConfig.get("SYNC");
+        final RegionRingFactory regionRingFactory = RegionRingFactory.sync();
 
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;

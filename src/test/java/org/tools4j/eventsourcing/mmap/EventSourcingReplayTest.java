@@ -44,7 +44,6 @@ public class EventSourcingReplayTest {
 
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
-        final BooleanSupplier leadership = () -> true;
 
         final MessageConsumer stateMessageConsumer = (buffer, offset, length) -> {};
 
@@ -93,8 +92,6 @@ public class EventSourcingReplayTest {
                         })
                 .systemNanoClock(systemNanoClock)
                 .build();
-
-        regionRingFactory.onComplete();
 
         TestUtil.startService("replay-processor",
                 queue.executorStep(),

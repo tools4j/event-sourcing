@@ -55,7 +55,7 @@ public class SinglePayloadAppendingAndPollingPerfTest {
         final int regionsToMapAhead = 1;
         final long maxFileSize = 64L * 16 * 1024 * 1024 * 4;
 
-        final RegionRingFactory regionRingFactory = getRegionRingFactory(args);
+        final RegionRingFactory regionRingFactory = TestUtil.getRegionRingFactory(args);
 
         final IndexedMessageConsumer appender = new SinglePayloadAppender(
                 new MmapIndexedAppender(
@@ -86,9 +86,6 @@ public class SinglePayloadAppendingAndPollingPerfTest {
                         .build()
         );
 
-        regionRingFactory.onComplete();
-
-
         final TestMessage message = TestMessage.forDefaultLength();
 
         final MessageConsumer messageConsumer = (buffer, offset, length) -> {};
@@ -114,17 +111,5 @@ public class SinglePayloadAppendingAndPollingPerfTest {
         }
 
         pollerThread.join();
-    }
-
-    private static RegionRingFactory getRegionRingFactory(final String[] args) {
-        final String errorMessage = "Please specify a type of mapping (ASYNC/SYNC) as first program argument";
-        if (args.length < 1) {
-            throw new IllegalArgumentException(errorMessage);
-        }
-        try {
-            return RegionRingFactoryConfig.get(args[0]);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(errorMessage);
-        }
     }
 }

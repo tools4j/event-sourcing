@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.raft.sample;
+package org.tools4j.eventsourcing.raft.mmap;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
@@ -36,23 +36,21 @@ import org.tools4j.eventsourcing.api.*;
 import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
-import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.mmap.TestUtil;
 import org.tools4j.eventsourcing.raft.api.RaftQueueTest;
-import org.tools4j.eventsourcing.raft.mmap.MmapRaftQueueBuilder;
 import org.tools4j.eventsourcing.raft.transport.PollerFactory;
 import org.tools4j.eventsourcing.raft.transport.Publisher;
 import org.tools4j.eventsourcing.sbe.test.*;
 import org.tools4j.mmap.region.api.RegionRingFactory;
-import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
+import org.tools4j.nobark.loop.Stoppable;
+import org.tools4j.nobark.loop.StoppableThread;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -78,8 +76,8 @@ public class RaftRandomPollingTest {
 
     private LongSupplier systemNanoClock;
 
-    private List<Service> raftInstances = new ArrayList<>();
-    private List<Service> commandProducers = new ArrayList<>();
+    private List<StoppableThread> raftInstances = new ArrayList<>();
+    private List<StoppableThread> commandProducers = new ArrayList<>();
     private Map<Integer, State> raftInstanceStates = new HashMap<>();
     private Map<Integer, List<Double>> raftInstanceResults = new HashMap<>();
 
@@ -92,7 +90,7 @@ public class RaftRandomPollingTest {
         return sequence % noopInterval == 0;
     }
 
-    private Service createRaftInstance(final int serverId, final int clusterSize) throws IOException {
+    private StoppableThread createRaftInstance(final int serverId, final int clusterSize) throws IOException {
         final State instanceState = raftInstanceStates.get(serverId);
 
         final MessageHeaderDecoder commandHeaderDecoder = new MessageHeaderDecoder();
@@ -302,7 +300,7 @@ public class RaftRandomPollingTest {
         }
     }
 
-    private Service createCommandProducer(final int producerId) {
+    private StoppableThread createCommandProducer(final int producerId) {
         final AtomicLong sequence = new AtomicLong(0);
         final Publisher publisher = Publisher.aeronPublisher(aeron, "aeron:ipc", producerId);
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
@@ -380,7 +378,7 @@ public class RaftRandomPollingTest {
 
         aeron = Aeron.connect(ctx);
 
-        regionRingFactory = RegionRingFactoryConfig.get("SYNC");
+        regionRingFactory = RegionRingFactory.async();
 
         systemNanoClock = System::nanoTime;
 
@@ -413,8 +411,8 @@ public class RaftRandomPollingTest {
 
     @After
     public void tearDown() throws Exception {
-        commandProducers.forEach(Service::shutdown);
-        raftInstances.forEach(Service::shutdown);
+        commandProducers.forEach(Stoppable::stop);
+        raftInstances.forEach(Stoppable::stop);
         aeron.close();
         queuesToClose.forEach(closeable -> {
             try {
@@ -427,8 +425,8 @@ public class RaftRandomPollingTest {
 
     @Test
     public void addInstancesShouldProduceSameEvents() throws Exception {
-        raftInstances.forEach(service -> service.awaitTermination(10, TimeUnit.SECONDS));
-        commandProducers.forEach(Service::shutdown);
+        raftInstances.forEach(service -> service.join(10000));
+        commandProducers.forEach(StoppableThread::stop);
 
         raftInstanceStates.forEach((serverId, state) -> {
             LOGGER.info("Instance {} state is {}", serverId, state.getValue());

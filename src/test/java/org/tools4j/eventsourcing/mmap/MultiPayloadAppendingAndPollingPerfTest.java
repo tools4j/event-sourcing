@@ -51,7 +51,7 @@ public class MultiPayloadAppendingAndPollingPerfTest {
         final int regionSize = (int) Math.max(MappedFile.REGION_SIZE_GRANULARITY, 1L << 16) * 1024 * 4;
         LOGGER.info("regionSize: {}", regionSize);
 
-        final RegionRingFactory regionRingFactory = getRegionRingFactory(args);
+        final RegionRingFactory regionRingFactory = TestUtil.getRegionRingFactory(args);
 
         final int ringSize = 4;
         final int regionsToMapAhead = 1;
@@ -83,8 +83,6 @@ public class MultiPayloadAppendingAndPollingPerfTest {
                         .build()
         );
 
-        regionRingFactory.onComplete();
-
         final TestMessage message = TestMessage.forDefaultLength();
 
         final MessageConsumer messageConsumer = (buffer, offset, length) -> {};
@@ -114,17 +112,5 @@ public class MultiPayloadAppendingAndPollingPerfTest {
         }
 
         pollerThread.join();
-    }
-
-    private static RegionRingFactory getRegionRingFactory(final String[] args) {
-        final String errorMessage = "Please specify a type of mapping (ASYNC/SYNC) as first program argument";
-        if (args.length < 1) {
-            throw new IllegalArgumentException(errorMessage);
-        }
-        try {
-            return RegionRingFactoryConfig.get(args[0]);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(errorMessage);
-        }
     }
 }

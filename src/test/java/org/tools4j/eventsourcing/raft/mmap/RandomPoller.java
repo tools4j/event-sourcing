@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eventsourcing.raft.sample;
+package org.tools4j.eventsourcing.raft.mmap;
 
 import org.tools4j.eventsourcing.raft.transport.Poller;
 
