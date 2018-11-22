@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.TestMessage;
 import org.tools4j.eventsourcing.api.BufferPoller;
 import org.tools4j.eventsourcing.api.Poller;
-import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.sbe.RaftIndexDecoder;
 import org.tools4j.mmap.region.api.RegionRingFactory;
@@ -58,7 +57,7 @@ public class MmapRaftLogTest {
         final int regionSize = (int) Math.max(MappedFile.REGION_SIZE_GRANULARITY, 1L << 16) * 1024 * 4;
         LOGGER.info("regionSize: {}", regionSize);
 
-        final RegionRingFactory regionRingFactory = RegionRingFactoryConfig.get("SYNC");
+        final RegionRingFactory regionRingFactory = RegionRingFactory.sync();
 
         final int ringSize = 4;
         final int regionsToMapAhead = 1;

@@ -33,10 +33,9 @@ import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.PollingProcessStep;
 import org.tools4j.mmap.region.api.RegionRingFactory;
-import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
+import org.tools4j.nobark.loop.StoppableThread;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
 
@@ -45,10 +44,10 @@ public class EventSourcingPerfTest {
 
     public static void main(String... args) throws Exception {
 
-        final long messagesPerSecond = 40000;
+        final long messagesPerSecond = 70000;
         final long maxNanosPerMessage = 1000000000 / messagesPerSecond;
         final int messages = 1000000;
-        final int warmup = 200000;
+        final int warmup = 500000;
         final AtomicBoolean stop = new AtomicBoolean(false);
 
         final RegionRingFactory regionRingFactory = TestUtil.getRegionRingFactory(args);
@@ -95,10 +94,8 @@ public class EventSourcingPerfTest {
 
         final Step senderStep = new PollingProcessStep(senderPoller, senderMessageConsumer);
 
-        regionRingFactory.onComplete();
-
-        final Service eventProcessor = TestUtil.startService("event-processor", queue.executorStep(), stop::get);
-        final Service sender = TestUtil.startService("event-sender", senderStep, stop::get);
+        final StoppableThread eventProcessor = TestUtil.startService("event-processor", queue.executorStep(), stop::get);
+        final StoppableThread sender = TestUtil.startService("event-sender", senderStep, stop::get);
 
         final TestMessage message = TestMessage.forDefaultLength();
 
@@ -118,8 +115,8 @@ public class EventSourcingPerfTest {
 
         LOGGER.info("End sourceSeq {}", seed + messages - 1);
 
-        eventProcessor.awaitTermination(1, TimeUnit.MINUTES);
-        sender.awaitTermination(1, TimeUnit.MINUTES);
+        eventProcessor.join(60000);
+        sender.join(60000);
 
         queue.close();
         senderPoller.close();

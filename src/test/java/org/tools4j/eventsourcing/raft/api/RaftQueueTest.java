@@ -31,18 +31,17 @@ import io.aeron.driver.MediaDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.TestMessage;
-import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.CommandExecutorFactory;
+import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.MessageConsumer;
 import org.tools4j.eventsourcing.api.Poller;
 import org.tools4j.eventsourcing.common.PayloadBufferPoller;
 import org.tools4j.eventsourcing.mmap.MmapBuilder;
-import org.tools4j.eventsourcing.mmap.RegionRingFactoryConfig;
 import org.tools4j.eventsourcing.mmap.TestUtil;
 import org.tools4j.eventsourcing.raft.mmap.MmapRaftQueueBuilder;
 import org.tools4j.mmap.region.api.RegionRingFactory;
-import org.tools4j.nobark.loop.Service;
 import org.tools4j.nobark.loop.Step;
+import org.tools4j.nobark.loop.StoppableThread;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
@@ -65,7 +64,7 @@ public class RaftQueueTest {
 
         final Aeron aeron = Aeron.connect(ctx);
 
-        final RegionRingFactory regionRingFactory = RegionRingFactoryConfig.get("SYNC");
+        final RegionRingFactory regionRingFactory = RegionRingFactory.sync();
 
         final String directory = System.getProperty("user.dir") + "/build";
         final LongSupplier systemNanoClock = System::nanoTime;
@@ -155,8 +154,6 @@ public class RaftQueueTest {
                 .systemNanoClock(systemNanoClock)
                 .build();
 
-        regionRingFactory.onComplete();
-
         executionQueue0.init();
         executionQueue1.init();
         executionQueue2.init();
@@ -174,13 +171,13 @@ public class RaftQueueTest {
             LOGGER.info("POLLED EVENT: " + buffer.getStringWithoutLengthAscii(offset, length));
         };
 
-        final Service service0 = TestUtil.startService("service0", step0, stop::get);
-        final Service service1 = TestUtil.startService("service1", step1, stop::get);
-        final Service service2 = TestUtil.startService("service2", step2, stop::get);
+        final StoppableThread service0 = TestUtil.startService("service0", step0, stop::get);
+        final StoppableThread service1 = TestUtil.startService("service1", step1, stop::get);
+        final StoppableThread service2 = TestUtil.startService("service2", step2, stop::get);
 
-        final Service pollingService0 = TestUtil.startService("pollingService0", () -> poller0.poll(logger) > 0, stop::get);
-        final Service pollingService1 = TestUtil.startService("pollingService1", () -> poller1.poll(logger) > 0, stop::get);
-        final Service pollingService2 = TestUtil.startService("pollingService2", () -> poller2.poll(logger) > 0, stop::get);
+        final StoppableThread pollingService0 = TestUtil.startService("pollingService0", () -> poller0.poll(logger) > 0, stop::get);
+        final StoppableThread pollingService1 = TestUtil.startService("pollingService1", () -> poller1.poll(logger) > 0, stop::get);
+        final StoppableThread pollingService2 = TestUtil.startService("pollingService2", () -> poller2.poll(logger) > 0, stop::get);
 
 
         final TestMessage message1 = TestMessage.forString("Test Message 1");
