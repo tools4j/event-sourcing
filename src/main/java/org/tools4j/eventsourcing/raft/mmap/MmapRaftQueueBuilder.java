@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
+import org.tools4j.eventsourcing.raft.api.NoopAppendingOnLeaderTransitionHandler;
+import org.tools4j.eventsourcing.raft.api.OnTransitionHandler;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.state.*;
 import org.tools4j.eventsourcing.raft.timer.Clock;
@@ -80,8 +82,8 @@ public interface MmapRaftQueueBuilder {
         Optionals maxFileSize(long maxFileSize);
         Optionals encodingBufferSize(int encodingBufferSize);
 
-        Optionals onLeaderTransitionHandler(final IntConsumer onLeaderTransitionHandler);
-        Optionals onFollowerTransitionHandler(final IntConsumer onFollowerTransitionHandler);
+        Optionals onLeaderTransitionHandler(final OnTransitionHandler onLeaderTransitionHandler);
+        Optionals onFollowerTransitionHandler(final OnTransitionHandler onFollowerTransitionHandler);
         Optionals minElectionTimeoutMillis(final int minElectionTimeoutMillis);
         Optionals maxElectionTimeoutMillis(final int maxElectionTimeoutMillis);
         Optionals heartbeatTimeoutMillis(final int heartbeatTimeoutMillis);
@@ -119,8 +121,8 @@ public interface MmapRaftQueueBuilder {
         private int encodingBufferSize = 8 * 1024;
 
 
-        private IntConsumer onLeaderTransitionHandler = serverId -> {};
-        private IntConsumer onFollowerTransitionHandler = serverId -> {};
+        private OnTransitionHandler onLeaderTransitionHandler = (serverId, consumer) -> {};
+        private OnTransitionHandler onFollowerTransitionHandler = (serverId, consumer) -> {};
         private int clusterSize;
         private int serverId;
         private int minElectionTimeoutMillis = 1100;
@@ -213,13 +215,13 @@ public interface MmapRaftQueueBuilder {
         }
 
         @Override
-        public Optionals onLeaderTransitionHandler(final IntConsumer onLeaderTransitionHandler) {
+        public Optionals onLeaderTransitionHandler(final OnTransitionHandler onLeaderTransitionHandler) {
             this.onLeaderTransitionHandler = Objects.requireNonNull(onLeaderTransitionHandler);
             return this;
         }
 
         @Override
-        public Optionals onFollowerTransitionHandler(final IntConsumer onFollowerTransitionHandler) {
+        public Optionals onFollowerTransitionHandler(final OnTransitionHandler onFollowerTransitionHandler) {
             this.onFollowerTransitionHandler = Objects.requireNonNull(onFollowerTransitionHandler);
             return this;
         }
@@ -303,6 +305,9 @@ public interface MmapRaftQueueBuilder {
 
             final UnsafeBuffer encodingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize));
             final UnsafeBuffer decodingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize));
+
+            final OnTransitionHandler noopCommandOnLeaderTransition =
+                    new NoopAppendingOnLeaderTransitionHandler(encodingBuffer, messageHeaderEncoder);
 
             final Publisher publisher = applyLoggingIfRequired(
                     serverToPublisherFactory.apply(serverId),
@@ -409,7 +414,8 @@ public interface MmapRaftQueueBuilder {
                                             encodingBuffer,
                                             decodingBuffer,
                                             publisher,
-                                            onLeaderTransitionHandler,
+                                            noopCommandOnLeaderTransition
+                                                    .andThen(onLeaderTransitionHandler),
                                             maxAppendBatchSize),
                                     raftLog, inLogger),
                             inLogger

@@ -33,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.tools4j.eventsourcing.raft.api.OnTransitionHandler;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.timer.Timer;
 import org.tools4j.eventsourcing.raft.transport.Publisher;
@@ -55,7 +56,7 @@ public class LeaderServerStateTest {
     @Mock
     private Publisher publisher;
     @Mock
-    private IntConsumer onLeaderTransitionHandler;
+    private OnTransitionHandler onLeaderTransitionHandler;
     @Mock
     private Peer peer;
     @Mock
@@ -116,7 +117,7 @@ public class LeaderServerStateTest {
         leaderServerState.onTransition();
 
         verify(peers).resetAsFollowers(logSize);
-        verify(onLeaderTransitionHandler).accept(serverId);
+        verify(onLeaderTransitionHandler).handle(same(serverId), any());
         verify(peers).forEach(peerConsumerCaptor.capture());
 
 

@@ -25,13 +25,13 @@ package org.tools4j.eventsourcing.raft.state;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.raft.api.OnTransitionHandler;
 import org.tools4j.eventsourcing.raft.timer.Timer;
 import org.tools4j.eventsourcing.sbe.AppendRequestDecoder;
 import org.tools4j.eventsourcing.sbe.VoteRequestDecoder;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.IntConsumer;
 
 public class FollowerServerState implements ServerState {
     private static final Logger LOGGER = LoggerFactory.getLogger(Role.FOLLOWER.name());
@@ -40,12 +40,12 @@ public class FollowerServerState implements ServerState {
     private final BiFunction<? super AppendRequestDecoder, ? super Logger, ? extends Transition> appendRequestHandler;
     private final BiFunction<? super VoteRequestDecoder, ? super Logger, ? extends Transition> voteRequestHandler;
     private final Timer electionTimer;
-    private final IntConsumer onFollowerTransitionHandler;
+    private final OnTransitionHandler onFollowerTransitionHandler;
 
     public FollowerServerState(final int serverId,
                                final BiFunction<? super AppendRequestDecoder, ? super Logger, ? extends Transition> appendRequestHandler,
                                final BiFunction<? super VoteRequestDecoder, ? super Logger, ? extends Transition> voteRequestHandler,
-                               final Timer electionTimer, final IntConsumer onFollowerTransitionHandler) {
+                               final Timer electionTimer, final OnTransitionHandler onFollowerTransitionHandler) {
         this.serverId = serverId;
         this.appendRequestHandler = Objects.requireNonNull(appendRequestHandler);
         this.voteRequestHandler = Objects.requireNonNull(voteRequestHandler);
@@ -62,7 +62,7 @@ public class FollowerServerState implements ServerState {
     public void onTransition() {
         LOGGER.info("Transitioned");
         electionTimer.restart();
-        onFollowerTransitionHandler.accept(serverId);
+        onFollowerTransitionHandler.handle(serverId, this);
     }
 
     @Override
