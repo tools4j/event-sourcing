@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.Logger;
+import org.tools4j.eventsourcing.raft.api.OnTransitionHandler;
 import org.tools4j.eventsourcing.raft.timer.Timer;
 import org.tools4j.eventsourcing.sbe.AppendRequestDecoder;
 import org.tools4j.eventsourcing.sbe.VoteRequestDecoder;
@@ -57,7 +58,7 @@ public class FollowerServerStateTest {
     private Timer electionTimer;
 
     @Mock
-    private IntConsumer onFollowerTransitionHandler;
+    private OnTransitionHandler onFollowerTransitionHandler;
 
     @Mock
     private AppendRequestDecoder appendRequestDecoder;
@@ -78,7 +79,7 @@ public class FollowerServerStateTest {
 
         //then
         verify(electionTimer).restart();
-        verify(onFollowerTransitionHandler).accept(serverId);
+        verify(onFollowerTransitionHandler).handle(same(serverId), any());
     }
 
     @Test

@@ -27,13 +27,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tools4j.eventsourcing.raft.api.OnTransitionHandler;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.transport.Publisher;
 import org.tools4j.eventsourcing.sbe.*;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 import java.util.function.LongToIntFunction;
 
 public class LeaderServerState implements ServerState {
@@ -48,10 +48,8 @@ public class LeaderServerState implements ServerState {
     private final MutableDirectBuffer commandDecoderBuffer;
     private final RaftIndexDecoder raftIndexDecoder;
 
-    private final NoopEncoder noopEncoder = new NoopEncoder();
-
     private final Publisher publisher;
-    private final IntConsumer onLeaderTransitionHandler;
+    private final OnTransitionHandler onLeaderTransitionHandler;
     private final int maxBatchSize;
 
     private final LongToIntFunction indexToTermLookup;
@@ -68,7 +66,7 @@ public class LeaderServerState implements ServerState {
                              final MutableDirectBuffer encoderBuffer,
                              final MutableDirectBuffer commandDecoderBuffer,
                              final Publisher publisher,
-                             final IntConsumer onLeaderTransitionHandler,
+                             final OnTransitionHandler onLeaderTransitionHandler,
                              final int maxBatchSize) {
         this.raftLog = Objects.requireNonNull(raftLog);
         this.peers = Objects.requireNonNull(peers);
@@ -103,13 +101,9 @@ public class LeaderServerState implements ServerState {
     public void onTransition() {
         LOGGER.info("Transitioned");
         peers.resetAsFollowers(raftLog.size());
+        onLeaderTransitionHandler.handle(serverId, this);
 
-        final int noopLength = noopEncoder.wrapAndApplyHeader(encoderBuffer, 0, messageHeaderEncoder).encodedLength() +
-                messageHeaderEncoder.encodedLength();
-
-        accept(0, 0, 0, encoderBuffer, 0, noopLength);
         sendAppendRequestToAllAndResetHeartbeatTimer();
-        onLeaderTransitionHandler.accept(serverId);
     }
 
     @Override

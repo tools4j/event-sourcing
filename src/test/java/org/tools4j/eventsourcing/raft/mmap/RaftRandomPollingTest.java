@@ -25,11 +25,13 @@ package org.tools4j.eventsourcing.raft.mmap;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
+import org.agrona.IoUtil;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.*;
@@ -45,8 +47,10 @@ import org.tools4j.mmap.region.api.RegionRingFactory;
 import org.tools4j.nobark.loop.Step;
 import org.tools4j.nobark.loop.Stoppable;
 import org.tools4j.nobark.loop.StoppableThread;
+import org.tools4j.spockito.Spockito;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -60,17 +64,30 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@RunWith(Spockito.class)
+@Spockito.Unroll({
+        "| clusterSize  |  producers | commandsToSend  | numberOfBlockings  |",
+        "|--------------|------------|-----------------|--------------------|",
+        "|       3      |      3     |     50          | 20                 |",
+        "|       5      |      3     |     20          | 10                 |",
+        "|       3      |     10     |     20          | 30                 |",
+})
+@Spockito.Name("[{row}]: cluster:{clusterSize}, producers:{producers}, commands:{commandsToSend}, blockings:{numberOfBlockings}")
 public class RaftRandomPollingTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(RaftRandomPollingTest.class);
 
-    private int clusterSize = 3;
-    private int producers = 3;
-    private int commandsToSend = 50;
-    private int numberOfBlockings = 20;
-    private boolean enableLogging = true;
-    private int noopInterval = 10;
-    private int expectedEvents = producers * commandsToSend - producers * commandsToSend / noopInterval;
+    private final int clusterSize;
+    private final int producers;
+    private final int commandsToSend;
+    private final int numberOfBlockings;
+    private final boolean enableLogging = true;
+    private final int expectedEvents;
+    private final int noopInterval = 10;
+
     private Aeron aeron;
+    private MediaDriver driver;
+    private String aeronDirectory;
+    private String queuesDirectory;
     private RegionRingFactory regionRingFactory;
     private String directory;
 
@@ -84,7 +101,20 @@ public class RaftRandomPollingTest {
     private Map<Integer, AtomicInteger> raftInstanceCommitted = new HashMap<>();
     private Queue<Long> blockingEventIndexes = new ArrayBlockingQueue<>(100);
     private Map<Integer, AtomicBoolean> raftInstanceComplete = new HashMap<>();
-    private Queue<Closeable> queuesToClose = new ArrayBlockingQueue<>(clusterSize);
+    private Queue<Closeable> queuesToClose;
+
+
+    public RaftRandomPollingTest(final int clusterSize,
+                                 final int producers,
+                                 final int commandsToSend,
+                                 final int numberOfBlockings) {
+        this.clusterSize = clusterSize;
+        this.producers = producers;
+        this.commandsToSend = commandsToSend;
+        this.numberOfBlockings = numberOfBlockings;
+
+        this.expectedEvents = producers * commandsToSend - producers * commandsToSend / noopInterval;
+    }
 
     private boolean isNoop(final long sequence) {
         return sequence % noopInterval == 0;
@@ -169,7 +199,7 @@ public class RaftRandomPollingTest {
         final ExecutionQueue executionQueue = ExecutionQueue.builder()
                 .commandQueue(
                         MmapBuilder.create()
-                                .directory(directory)
+                                .directory(queuesDirectory)
                                 .filePrefix("command_"+ serverId)
                                 .regionRingFactory(regionRingFactory)
                                 .clearFiles(true)
@@ -178,7 +208,7 @@ public class RaftRandomPollingTest {
                         onStateReset -> MmapRaftQueueBuilder.forAeronTransport(aeron, serverToChannel)
                             .clusterSize(clusterSize)
                             .serverId(serverId)
-                            .directory(directory)
+                            .directory(queuesDirectory)
                             .filePrefix("raft_log")
                             .regionRingFactory(regionRingFactory)
                             .clearFiles(true)
@@ -364,11 +394,15 @@ public class RaftRandomPollingTest {
     @Before
     public void setUp() throws Exception {
         directory = System.getProperty("user.dir") + "/build";
-        final String aeronDirectory = directory + "/aeron";
+        aeronDirectory = directory + "/aeron";
+        queuesDirectory = directory + "/queues";
+
+        IoUtil.ensureDirectoryIsRecreated(new File(aeronDirectory), "aeron", (s, s2) -> {});
+        IoUtil.ensureDirectoryIsRecreated(new File(queuesDirectory), "queues", (s, s2) -> {});
 
         final MediaDriver.Context mediaDriverContex = new MediaDriver.Context();
         mediaDriverContex.aeronDirectoryName(aeronDirectory);
-        final MediaDriver driver = MediaDriver.launchEmbedded(mediaDriverContex);
+        driver = MediaDriver.launchEmbedded(mediaDriverContex);
 
         final Aeron.Context ctx = new Aeron.Context()
                 .driverTimeoutMs(1000000)
@@ -381,6 +415,8 @@ public class RaftRandomPollingTest {
         regionRingFactory = RegionRingFactory.async();
 
         systemNanoClock = System::nanoTime;
+
+        queuesToClose = new ArrayBlockingQueue<>(clusterSize);
 
         final Random random = new Random();
         random.longs(numberOfBlockings,0, commandsToSend * clusterSize)
@@ -413,7 +449,6 @@ public class RaftRandomPollingTest {
     public void tearDown() throws Exception {
         commandProducers.forEach(Stoppable::stop);
         raftInstances.forEach(Stoppable::stop);
-        aeron.close();
         queuesToClose.forEach(closeable -> {
             try {
                 closeable.close();
@@ -421,10 +456,12 @@ public class RaftRandomPollingTest {
                 throw new RuntimeException(e);
             }
         });
+        aeron.close();
+        driver.close();
     }
 
     @Test
-    public void addInstancesShouldProduceSameEvents() throws Exception {
+    public void allInstancesShouldProduceSameEvents() throws Exception {
         raftInstances.forEach(service -> service.join(10000));
         commandProducers.forEach(StoppableThread::stop);
 
