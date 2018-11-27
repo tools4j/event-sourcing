@@ -26,9 +26,7 @@ package org.tools4j.eventsourcing.raft.api;
 import org.agrona.DirectBuffer;
 import org.tools4j.eventsourcing.sbe.RaftIndexDecoder;
 
-import java.io.Closeable;
-
-public interface RaftLog extends Closeable {
+public interface RaftLog extends AutoCloseable {
     long NULL_INDEX = -1;
     int NULL_TERM = 0;
     int NOT_VOTED_YET = -1;

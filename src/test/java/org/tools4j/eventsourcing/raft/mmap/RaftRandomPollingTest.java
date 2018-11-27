@@ -49,7 +49,6 @@ import org.tools4j.nobark.loop.Stoppable;
 import org.tools4j.nobark.loop.StoppableThread;
 import org.tools4j.spockito.Spockito;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -102,7 +101,7 @@ public class RaftRandomPollingTest {
     private Map<Integer, AtomicInteger> raftInstanceCommitted = new HashMap<>();
     private Queue<Long> blockingEventIndexes = new ArrayBlockingQueue<>(100);
     private Map<Integer, AtomicBoolean> raftInstanceComplete = new HashMap<>();
-    private Queue<Closeable> queuesToClose;
+    private Queue<AutoCloseable> queuesToClose;
 
 
     public RaftRandomPollingTest(final int clusterSize,
@@ -267,8 +266,7 @@ public class RaftRandomPollingTest {
                                 LOGGER.info("Blocking .... {}", resultedEvents.get());
                                 blockingEventIndexes.poll();
                                 Thread.sleep(2505);
-                            } catch (InterruptedException e) {
-                            }
+                            } catch (InterruptedException e) {}
                             return true;
                         }
                     }
@@ -441,9 +439,7 @@ public class RaftRandomPollingTest {
             }
         });
 
-        IntStream.range(100, 100 + producers).forEach(producerId -> {
-            commandProducers.add(createCommandProducer(producerId));
-        });
+        IntStream.range(100, 100 + producers).forEach(producerId -> commandProducers.add(createCommandProducer(producerId)));
     }
 
     @After
@@ -453,7 +449,7 @@ public class RaftRandomPollingTest {
         queuesToClose.forEach(closeable -> {
             try {
                 closeable.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
@@ -467,23 +463,21 @@ public class RaftRandomPollingTest {
         raftInstances.forEach(service -> service.join(10000));
         commandProducers.forEach(StoppableThread::stop);
 
-        raftInstanceStates.forEach((serverId, state) -> {
-            LOGGER.info("Instance {} state is {}", serverId, state.getValue());
-        });
+        raftInstanceStates.forEach((serverId, state) -> LOGGER.info("Instance {} state is {}", serverId, state.getValue()));
 
         logAllResults();
 
         assertThat(allMatch()).isTrue();
     }
 
-    class State {
+    private class State {
         double value;
 
-        public double getValue() {
+        double getValue() {
             return value;
         }
 
-        public void setValue(final double value) {
+        void setValue(final double value) {
             this.value = value;
         }
     }

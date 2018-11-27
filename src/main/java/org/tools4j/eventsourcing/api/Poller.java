@@ -23,7 +23,6 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import java.io.Closeable;
 import java.util.Objects;
 import java.util.function.LongConsumer;
 import java.util.function.LongPredicate;
@@ -31,7 +30,7 @@ import java.util.function.LongPredicate;
 /**
  * Queue poller
  */
-public interface Poller extends Closeable {
+public interface Poller extends AutoCloseable {
     /**
      * polls the queue and invokes the consumer if a message is available for consumption.
      * @param consumer of a polled message if available

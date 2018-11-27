@@ -23,12 +23,10 @@
  */
 package org.tools4j.eventsourcing.api;
 
-import java.io.Closeable;
-
 /**
  * A queue of messages with index details.
  */
-public interface IndexedQueue extends IndexedPollerFactory, Closeable {
+public interface IndexedQueue extends IndexedPollerFactory, AutoCloseable {
     /**
      * @return indexed appender
      */
