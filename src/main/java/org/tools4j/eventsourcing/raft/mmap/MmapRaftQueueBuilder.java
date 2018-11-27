@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.tools4j.eventsourcing.api.ExecutionQueue;
 import org.tools4j.eventsourcing.api.IndexedAppender;
 import org.tools4j.eventsourcing.api.IndexedPollerFactory;
-import org.tools4j.eventsourcing.raft.api.NoopAppendingOnLeaderTransitionHandler;
 import org.tools4j.eventsourcing.raft.api.OnTransitionHandler;
 import org.tools4j.eventsourcing.raft.api.RaftLog;
 import org.tools4j.eventsourcing.raft.state.*;
@@ -306,8 +305,8 @@ public interface MmapRaftQueueBuilder {
             final UnsafeBuffer encodingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize));
             final UnsafeBuffer decodingBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(encodingBufferSize));
 
-            final OnTransitionHandler noopCommandOnLeaderTransition =
-                    new NoopAppendingOnLeaderTransitionHandler(encodingBuffer, messageHeaderEncoder);
+            final OnTransitionHandler appendNoopCommandOnLeaderTransition =
+                    new AppendNoopOnLeaderTransition(encodingBuffer, messageHeaderEncoder);
 
             final Publisher publisher = applyLoggingIfRequired(
                     serverToPublisherFactory.apply(serverId),
@@ -414,7 +413,7 @@ public interface MmapRaftQueueBuilder {
                                             encodingBuffer,
                                             decodingBuffer,
                                             publisher,
-                                            noopCommandOnLeaderTransition
+                                            appendNoopCommandOnLeaderTransition
                                                     .andThen(onLeaderTransitionHandler),
                                             maxAppendBatchSize),
                                     raftLog, inLogger),

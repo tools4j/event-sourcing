@@ -32,7 +32,8 @@ import java.util.Objects;
 
 public class MmapRaftPoller implements Poller {
     private static final int INDEX_OFFSET = 0;
-    private static final int INDEX_LENGTH = RaftIndexDecoder.ENCODED_LENGTH;
+    //private static final int INDEX_LENGTH = RaftIndexDecoder.ENCODED_LENGTH;
+    private static final int INDEX_LENGTH = 64;
 
     private final RaftRegionAccessorSupplier regionAccessorSupplier;
 

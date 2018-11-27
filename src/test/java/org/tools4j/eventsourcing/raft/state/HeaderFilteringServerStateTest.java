@@ -23,7 +23,6 @@
  */
 package org.tools4j.eventsourcing.raft.state;
 
-import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
