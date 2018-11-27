@@ -44,7 +44,7 @@ public class EventSourcingPerfTest {
 
     public static void main(String... args) throws Exception {
 
-        final long messagesPerSecond = 70000;
+        final long messagesPerSecond = 100000;
         final long maxNanosPerMessage = 1000000000 / messagesPerSecond;
         final int messages = 1000000;
         final int warmup = 500000;
@@ -97,7 +97,7 @@ public class EventSourcingPerfTest {
         final StoppableThread eventProcessor = TestUtil.startService("event-processor", queue.executorStep(), stop::get);
         final StoppableThread sender = TestUtil.startService("event-sender", senderStep, stop::get);
 
-        final TestMessage message = TestMessage.forDefaultLength();
+        final TestMessage message = TestMessage.forLength(300);
 
         final long seed = System.currentTimeMillis();
 

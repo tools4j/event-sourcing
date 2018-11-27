@@ -47,7 +47,9 @@ public final class MmapIndexedAppender implements IndexedAppender, Closeable {
     private static final int LENGTH_OFFSET = 0;
     private static final int LENGTH_LENGTH = 4;
     private static final int INDEX_OFFSET = LENGTH_OFFSET + LENGTH_LENGTH;
-    private static final int INDEX_LENGTH = LENGTH_LENGTH + IndexEncoder.ENCODED_LENGTH;
+    //private static final int INDEX_LENGTH = LENGTH_LENGTH + IndexEncoder.ENCODED_LENGTH;
+    private static final int INDEX_LENGTH = 64; //LENGTH_LENGTH + IndexEncoder.ENCODED_LENGTH;
+
 
     private final RegionAccessorSupplier regionAccessorSupplier;
 

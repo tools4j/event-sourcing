@@ -45,7 +45,8 @@ public final class MmapRaftLog implements RaftLog {
     private static final int LAST_INDEX_POSITION_LENGTH = 8;
     private static final int HEADER_OFFSET = LAST_INDEX_POSITION_OFFSET + LAST_INDEX_POSITION_LENGTH;
 
-    private static final int INDEX_LENGTH = RaftIndexEncoder.ENCODED_LENGTH;
+    //private static final int INDEX_LENGTH = RaftIndexEncoder.ENCODED_LENGTH;
+    private static final int INDEX_LENGTH = 64;
 
     private final RaftRegionAccessorSupplier regionAccessorSupplier;
 

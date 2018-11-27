@@ -70,7 +70,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "|--------------|------------|-----------------|--------------------|",
         "|       3      |      3     |     50          | 20                 |",
         "|       5      |      3     |     20          | 10                 |",
-        "|       3      |     10     |     20          | 30                 |",
+        "|       3      |     10     |     35          | 20                 |",
+        "|       3      |     10     |     1000        | 0                  |",
 })
 @Spockito.Name("[{row}]: cluster:{clusterSize}, producers:{producers}, commands:{commandsToSend}, blockings:{numberOfBlockings}")
 public class RaftRandomPollingTest {
@@ -80,7 +81,7 @@ public class RaftRandomPollingTest {
     private final int producers;
     private final int commandsToSend;
     private final int numberOfBlockings;
-    private final boolean enableLogging = true;
+    private final boolean enableLogging = false;
     private final int expectedEvents;
     private final int noopInterval = 10;
 
@@ -316,7 +317,7 @@ public class RaftRandomPollingTest {
 
     private boolean allMatch() {
         return raftInstanceComplete.values().stream().allMatch(AtomicBoolean::get) &&
-                raftInstanceStates.values().stream().mapToDouble(State::getValue).distinct().limit(2).count() <= 1;
+                raftInstanceStates.values().stream().mapToDouble(State::getValue).distinct().limit(2).count() == 1;
     }
 
     private static Step combine(final Step step1, final Step step2) {
@@ -458,6 +459,7 @@ public class RaftRandomPollingTest {
         });
         aeron.close();
         driver.close();
+        Thread.sleep(1000);
     }
 
     @Test
@@ -469,9 +471,9 @@ public class RaftRandomPollingTest {
             LOGGER.info("Instance {} state is {}", serverId, state.getValue());
         });
 
-        assertThat(allMatch()).isTrue();
-
         logAllResults();
+
+        assertThat(allMatch()).isTrue();
     }
 
     class State {

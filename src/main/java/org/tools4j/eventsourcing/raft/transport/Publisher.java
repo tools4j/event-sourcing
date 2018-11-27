@@ -36,6 +36,11 @@ public interface Publisher {
         Objects.requireNonNull(aeron);
         Objects.requireNonNull(channel);
         final Publication publication = aeron.addPublication(channel, streamId);
-        return (buffer, offset, length) -> publication.offer(buffer, offset, length) >= 0;
+        return (buffer, offset, length) -> {
+            if (publication.offer(buffer, offset, length) < 0) {
+                return publication.offer(buffer, offset, length) >= 0;
+            }
+            return true;
+        };
     }
 }
