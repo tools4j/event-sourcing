@@ -26,11 +26,12 @@ package org.tools4j.eso.src;
 import org.agrona.DirectBuffer;
 
 public interface Source {
+    int ADMIN_ID = 0;
     int id();
     int poll(Handler handler);
 
     @FunctionalInterface
     interface Handler {
-        void onMessage(long sequence, DirectBuffer buffer, int offset, int length);
+        void onMessage(long sequence, int type, DirectBuffer buffer, int offset, int length);
     }
 }

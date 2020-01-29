@@ -26,6 +26,11 @@ package org.tools4j.eso.state;
 public interface Timers {
     int count();
     int type(int index);
-    int id(int index);
+    long id(int index);
     long timeout(int index);
+
+    interface Mutable extends Timers {
+        boolean add(int type, long id, long timeout);
+        boolean remove(long id);
+    }
 }

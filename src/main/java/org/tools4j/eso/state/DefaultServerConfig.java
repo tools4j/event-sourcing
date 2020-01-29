@@ -23,8 +23,48 @@
  */
 package org.tools4j.eso.state;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import java.util.Arrays;
+
+public class DefaultServerConfig implements ServerConfig {
+
+    private final int serverId;
+    private final int[] serverIds;
+
+    public DefaultServerConfig(final int serverId, final int... serverIds) {
+        validateServerId(serverId, serverIds);
+        this.serverId = serverId;
+        this.serverIds = serverIds;
+    }
+
+    private static void validateServerId(final int serverId, final int... serverIds) {
+        for (final int id : serverIds) {
+            if (id == serverId) {
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Server ID " + serverId + " is not in " + Arrays.toString(serverIds));
+    }
+
+    @Override
+    public int serverId() {
+        return serverId;
+    }
+
+    @Override
+    public int serverCount() {
+        return serverIds.length;
+    }
+
+    @Override
+    public int serverId(final int index) {
+        return serverIds[index];
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultServerConfig{" +
+                "serverId=" + serverId +
+                ", serverIds=" + Arrays.toString(serverIds) +
+                '}';
+    }
 }

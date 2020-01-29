@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.src;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import org.agrona.DirectBuffer;
+
+@FunctionalInterface
+public interface SourceSequenceGenerator {
+    long nextSequence(int source, DirectBuffer buffer, int offset, int length);
 }

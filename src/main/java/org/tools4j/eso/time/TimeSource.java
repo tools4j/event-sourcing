@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.time;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+@FunctionalInterface
+public interface TimeSource {
+    long BIG_BANG = Long.MIN_VALUE;
+    long END_OF_TIME = Long.MAX_VALUE;
+    long currentTime();
 }

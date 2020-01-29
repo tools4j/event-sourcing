@@ -21,10 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.time;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import org.tools4j.eso.app.CommandProcessor;
+import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.evt.EventRouter;
+
+public class ReplayTimeSource implements TimeSource, CommandProcessor {
+
+    private long time = BIG_BANG;
+
+    @Override
+    public long currentTime() {
+        return time;
+    }
+
+    @Override
+    public void onCommand(final Command command, final EventRouter router, final Timer timer) {
+        time = command.time();
+    }
 }

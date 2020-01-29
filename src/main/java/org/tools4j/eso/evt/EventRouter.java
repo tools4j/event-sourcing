@@ -27,5 +27,9 @@ import org.agrona.DirectBuffer;
 
 @FunctionalInterface
 public interface EventRouter {
-    void route(DirectBuffer event, int offset, int length);
+    default void routeEvent(final DirectBuffer event, final int offset, final int length) {
+        routeEvent(EventType.APPLICATION.value(), event, offset, length);
+    }
+
+    void routeEvent(int type, DirectBuffer event, int offset, int length);
 }

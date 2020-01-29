@@ -24,6 +24,6 @@
 package org.tools4j.eso.time;
 
 public interface Timer {
-    int time();
     long startTimer(int type, long timeout);
+    boolean stopTimer(long id);
 }

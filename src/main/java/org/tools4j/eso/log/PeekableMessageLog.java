@@ -21,10 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.log;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import static java.util.Objects.requireNonNull;
+
+public interface PeekableMessageLog<M> extends MessageLog<M> {
+
+    @Override
+    PeekablePoller<M> poller();
+
+    @FunctionalInterface
+    interface PeekablePoller<M> extends Poller<M> {
+        int peekOrPoll(final PeekPollHandler<? super M> handler);
+
+        //not garbage free, better to override
+        @Override
+        default int poll(final Handler<? super M> handler) {
+            requireNonNull(handler);
+            return peekOrPoll(msg -> {
+                handler.onMessage(msg);
+                return PeekPollHandler.Result.POLL;
+            });
+        }
+    }
+
+    @FunctionalInterface
+    interface PeekPollHandler<M> {
+        enum Result {
+            PEEK, POLL
+        }
+        Result onMessage(M message);
+    }
 }

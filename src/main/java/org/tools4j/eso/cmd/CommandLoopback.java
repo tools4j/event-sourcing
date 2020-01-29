@@ -26,11 +26,11 @@ package org.tools4j.eso.cmd;
 import org.agrona.DirectBuffer;
 
 public interface CommandLoopback {
-    default void enqueueCommand(DirectBuffer event, int offset, int length) {
-        enqueueCommand(CommandType.APPLICATION.value(), event, offset, length);
+    default void enqueueCommand(DirectBuffer command, int offset, int length) {
+        enqueueCommand(CommandType.APPLICATION.value(), command, offset, length);
     }
 
-    void enqueueCommand(int type, DirectBuffer event, int offset, int length);
+    void enqueueCommand(int type, DirectBuffer command, int offset, int length);
 
     CommandLoopback NOOP = (type, event, offset, length) -> {};
 

@@ -21,10 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.cmd;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import org.tools4j.eso.app.CommandProcessor;
+import org.tools4j.eso.evt.AdminEvents;
+import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.time.Timer;
+
+public class AdminCommandProcessor implements CommandProcessor {
+
+    @Override
+    public void onCommand(final Command command, final EventRouter router, final Timer timer) {
+        if (command.isAdmin()) {
+            onAdminCommand(command, router, timer);
+        }
+    }
+
+    protected void onAdminCommand(final Command command, final EventRouter router, final Timer timer) {
+        final int type = command.type();
+        if (type == CommandType.TRIGGER_TIMER.value()) {
+            AdminEvents.timerExpired(command, router);
+        }
+    }
 }

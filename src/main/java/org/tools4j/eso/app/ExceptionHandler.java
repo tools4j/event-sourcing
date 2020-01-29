@@ -21,10 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.app;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.evt.Event;
+import org.tools4j.nobark.loop.Loop;
+import org.tools4j.nobark.loop.Step;
+
+@FunctionalInterface
+public interface ExceptionHandler extends org.tools4j.nobark.loop.ExceptionHandler {
+
+    void handleException(Command command, Throwable t);
+
+    default void handleException(final Event event, final Throwable t) {
+        System.err.println("Unhandled exception when applying event [" + event + "], e=" + t);
+        t.printStackTrace();
+    }
+
+    @Override
+    default void handleException(final Loop loop, final Step step, final Throwable t) {
+        System.err.println("Unhandled exception when performing step [" + step + "], e=" + t);
+        t.printStackTrace();
+    }
+
 }

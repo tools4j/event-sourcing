@@ -21,10 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.cmd;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import org.tools4j.eso.app.CommandProcessor;
+import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.time.Timer;
+
+import static java.util.Objects.requireNonNull;
+
+public class CompositeCommandProcessor implements CommandProcessor {
+
+    private final CommandProcessor[] processors;
+
+    public CompositeCommandProcessor(final CommandProcessor... processors) {
+        this.processors = requireNonNull(processors);
+    }
+
+    @Override
+    public void onCommand(Command command, EventRouter router, Timer timer) {
+        for (final CommandProcessor processor : processors) {
+            processor.onCommand(command, router, timer);
+        }
+    }
 }

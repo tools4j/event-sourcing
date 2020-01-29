@@ -27,91 +27,78 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static org.tools4j.eso.evt.FlyweightEvent.PAYLOAD_OFFSET;
+import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.cmd.CommandType;
 
 public enum AdminEvents {
     ;
 
     private static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
 
-    private static final int TIMER_TYPE_OFFSET = 0;
-    private static final int TIMER_TYPE_LENGTH = Integer.BYTES;
-    private static final int TIMER_ID_OFFSET = TIMER_TYPE_OFFSET + TIMER_TYPE_LENGTH;
-    private static final int TIMER_ID_LENGTH = Long.BYTES;
-    private static final int TIMER_TIMEOUT_OFFSET = TIMER_ID_OFFSET + TIMER_ID_LENGTH;
-    private static final int TIMER_TIMEOUT_LENGTH = Long.BYTES;
-    private static final int TIMER_PAYLOAD_SIZE = TIMER_TYPE_LENGTH + TIMER_ID_LENGTH +
+    public static final int TIMER_TYPE_OFFSET = 0;
+    public static final int TIMER_TYPE_LENGTH = Integer.BYTES;
+    public static final int TIMER_ID_OFFSET = TIMER_TYPE_OFFSET + TIMER_TYPE_LENGTH;
+    public static final int TIMER_ID_LENGTH = Long.BYTES;
+    public static final int TIMER_TIMEOUT_OFFSET = TIMER_ID_OFFSET + TIMER_ID_LENGTH;
+    public static final int TIMER_TIMEOUT_LENGTH = Long.BYTES;
+    public static final int TIMER_PAYLOAD_SIZE = TIMER_TYPE_LENGTH + TIMER_ID_LENGTH +
             TIMER_TIMEOUT_LENGTH;
 
-
-    public static FlyweightEvent noop(final FlyweightEvent event,
-                                      final MutableDirectBuffer buffer,
+    public static FlyweightEvent noop(final FlyweightEvent flyweightEvent,
+                                      final MutableDirectBuffer headerBuffer,
                                       final int offset,
-                                      final int source,
-                                      final long sequence,
-                                      final int index,
-                                      final long time) {
-        return event.init(buffer, offset, source, sequence, index, EventType.NOOP.value(), time,
-                EMPTY_BUFFER, 0, 0);
+                                      final Command command,
+                                      final int index) {
+        return flyweightEvent.init(headerBuffer, offset, command.id().source(), command.id().sequence(), index,
+                EventType.NOOP.value(), command.time(), EMPTY_BUFFER, 0, 0);
     }
 
-    public static FlyweightEvent timerStarted(final FlyweightEvent event,
-                                              final MutableDirectBuffer buffer,
-                                              final int offset,
-                                              final int source,
-                                              final long sequence,
-                                              final int index,
-                                              final long time,
-                                              final int timerType,
-                                              final long timerId,
-                                              final long timeout) {
-        return timerEvent(event, buffer, offset, source, sequence, index,
-                EventType.TIMER_STARTED, time, timerType, timerId, timeout);
+    public static void timerStarted(final MutableDirectBuffer payloadBuffer,
+                                    final int offset,
+                                    final int timerType,
+                                    final long timerId,
+                                    final long timeout,
+                                    final EventRouter eventRouter) {
+        timerEvent(payloadBuffer, offset, EventType.TIMER_STARTED, timerType, timerId, timeout, eventRouter);
     }
 
-    public static FlyweightEvent timerStopped(final FlyweightEvent event,
-                                              final MutableDirectBuffer buffer,
-                                              final int offset,
-                                              final int source,
-                                              final long sequence,
-                                              final int index,
-                                              final long time,
-                                              final int timerType,
-                                              final long timerId,
-                                              final long timeout) {
-        return timerEvent(event, buffer, offset, source, sequence, index,
-                EventType.TIMER_STOPPED, time, timerType, timerId, timeout);
+    public static void timerStopped(final MutableDirectBuffer payloadBuffer,
+                                    final int offset,
+                                    final int timerType,
+                                    final long timerId,
+                                    final long timeout,
+                                    final EventRouter eventRouter) {
+        timerEvent(payloadBuffer, offset, EventType.TIMER_STOPPED, timerType, timerId, timeout, eventRouter);
     }
 
-    public static FlyweightEvent timerExpired(final FlyweightEvent event,
-                                              final MutableDirectBuffer buffer,
-                                              final int offset,
-                                              final int source,
-                                              final long sequence,
-                                              final int index,
-                                              final long time,
-                                              final int timerType,
-                                              final long timerId,
-                                              final long timeout) {
-        return timerEvent(event, buffer, offset, source, sequence, index,
-                EventType.TIMER_EXPIRED, time, timerType, timerId, timeout);
+    public static void timerExpired(final Command command, final EventRouter eventRouter) {
+        if (command.type() != CommandType.TRIGGER_TIMER.value()) {
+            throw new IllegalArgumentException("Expected " + CommandType.TRIGGER_TIMER + " command but found " + command.type());
+        }
+        final DirectBuffer payload = command.payload();
+        eventRouter.routeEvent(EventType.TIMER_EXPIRED.value(), payload, 0, payload.capacity());
     }
 
-    private static FlyweightEvent timerEvent(final FlyweightEvent event,
-                                             final MutableDirectBuffer buffer,
-                                             final int offset,
-                                             final int source,
-                                             final long sequence,
-                                             final int index,
-                                             final EventType type,
-                                             final long time,
-                                             final int timerType,
-                                             final long timerId,
-                                             final long timeout) {
-        FlyweightEvent.writeHeaderTo(buffer, offset, source, sequence, index, type.value(), time, TIMER_PAYLOAD_SIZE);
-        buffer.putInt(offset + PAYLOAD_OFFSET + TIMER_TYPE_OFFSET, timerType);
-        buffer.putLong(offset + PAYLOAD_OFFSET + TIMER_ID_OFFSET, timerId);
-        buffer.putLong(offset + PAYLOAD_OFFSET + TIMER_TIMEOUT_OFFSET, timeout);
-        return event.init(buffer, offset);
+    private static void timerEvent(final MutableDirectBuffer payloadBuffer,
+                                   final int offset,
+                                   final EventType eventType,
+                                   final int timerType,
+                                   final long timerId,
+                                   final long timeout,
+                                   final EventRouter eventRouter) {
+        payloadBuffer.putInt(offset + TIMER_TYPE_OFFSET, timerType);
+        payloadBuffer.putLong(offset + TIMER_ID_OFFSET, timerId);
+        payloadBuffer.putLong(offset + TIMER_TIMEOUT_OFFSET, timeout);
+        eventRouter.routeEvent(eventType.value(), payloadBuffer, offset, TIMER_PAYLOAD_SIZE);
+    }
+
+    public static int timerType(final Event event) {
+        return event.payload().getInt(TIMER_TYPE_OFFSET);
+    }
+    public static long timerId(final Event event) {
+        return event.payload().getLong(TIMER_ID_OFFSET);
+    }
+    public static long timerTimeout(final Event event) {
+        return event.payload().getLong(TIMER_TIMEOUT_OFFSET);
     }
 }

@@ -21,9 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.evt;
 
-public interface EventState {
-    long lastAppliedCommandSequence(int source);
-    long lastAppliedEventIndex(int source);
+import org.tools4j.eso.app.EventApplier;
+import org.tools4j.eso.cmd.CommandLoopback;
+
+import static java.util.Objects.requireNonNull;
+
+public class CompositeEventApplier implements EventApplier {
+
+    private final EventApplier[] appliers;
+
+    public CompositeEventApplier(final EventApplier... appliers) {
+        this.appliers = requireNonNull(appliers);
+    }
+
+    @Override
+    public void onEvent(final Event event, final CommandLoopback loopback) {
+        for (final EventApplier applier : appliers) {
+            applier.onEvent(event, loopback);
+        }
+    }
 }

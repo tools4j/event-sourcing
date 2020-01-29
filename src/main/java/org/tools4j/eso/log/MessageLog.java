@@ -34,6 +34,11 @@ public interface MessageLog<M> {
     }
 
     interface Poller<M> {
-        int poll(M message);
+        int poll(Handler<? super M> handler);
+    }
+
+    @FunctionalInterface
+    interface Handler<M> {
+        void onMessage(M message);
     }
 }

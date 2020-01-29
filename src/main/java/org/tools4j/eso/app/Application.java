@@ -26,4 +26,10 @@ package org.tools4j.eso.app;
 public interface Application {
     CommandProcessor commandHandler();
     EventApplier eventApplier();
+    default ExceptionHandler exceptionHandler() {
+        return (command, t) -> {
+            System.err.println("Unhandled exception when processing command [" + command + "], e=" + t);
+            t.printStackTrace();
+        };
+    }
 }

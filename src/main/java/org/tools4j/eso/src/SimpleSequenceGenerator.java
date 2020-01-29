@@ -21,10 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.src;
 
-public interface ServerState {
-    int leaderId();
-    int term();
-    boolean processCommands();
+import org.agrona.DirectBuffer;
+
+public class SimpleSequenceGenerator implements AdjustableSequenceGenerator, SourceSequenceGenerator {
+
+    private long sequence = 0;
+
+    @Override
+    public long nextSequence() {
+        return ++sequence;
+    }
+
+    @Override
+    public long nextSequence(final int source, final DirectBuffer buffer, final int offset, final int length) {
+        return nextSequence();
+    }
+
+    @Override
+    public void adjust(final long nextAfterThis) {
+        sequence = Math.max(sequence, nextAfterThis);
+    }
 }

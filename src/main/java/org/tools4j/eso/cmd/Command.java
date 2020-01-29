@@ -26,9 +26,10 @@ package org.tools4j.eso.cmd;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
+import org.tools4j.eso.evt.EventType;
+
 public interface Command {
     interface Id {
-        int SOURCE_SELF = 0;
         int source();
         long sequence();
     }
@@ -38,6 +39,14 @@ public interface Command {
     int type();
 
     long time();
+
+    default boolean isAdmin() {
+        return CommandType.isAdmin(type());
+    }
+
+    default boolean isApplication() {
+        return CommandType.isApplication(type());
+    }
 
     DirectBuffer payload();
 

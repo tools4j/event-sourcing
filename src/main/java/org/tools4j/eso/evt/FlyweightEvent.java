@@ -75,11 +75,11 @@ public class FlyweightEvent implements Event, Event.Id, Command.Id {
         return this;
     }
 
-    public FlyweightEvent init(final DirectBuffer command, final int offset) {
+    public FlyweightEvent init(final DirectBuffer event, final int offset) {
         return this.init(
-                command, offset + HEADER_OFFSET,
-                command, offset + PAYLOAD_OFFSET,
-                command.getInt(offset + SIZE_OFFSET)
+                event, offset + HEADER_OFFSET,
+                event, offset + PAYLOAD_OFFSET,
+                event.getInt(offset + SIZE_OFFSET)
         );
     }
 
