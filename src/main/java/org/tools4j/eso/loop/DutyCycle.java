@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
 
 public class DutyCycle {
 
-    private static final String DEFAULT_THREAD_NAME = "duty-cycle";
+    public static final String DEFAULT_THREAD_NAME = "duty-cycle";
 
     private final ServerState serverState;
     private final Step[] steps;
@@ -98,5 +98,6 @@ public class DutyCycle {
     private boolean processCommands() {
         return serverState.processCommands();
     }
+
 
 }

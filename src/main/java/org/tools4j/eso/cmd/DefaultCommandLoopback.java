@@ -35,7 +35,7 @@ import org.tools4j.eso.time.TimeSource;
 import static java.util.Objects.requireNonNull;
 import static org.tools4j.eso.cmd.AdminCommands.TIMER_PAYLOAD_SIZE;
 
-final class DefaultCommandLoopback implements CommandLoopback {
+public class DefaultCommandLoopback implements CommandLoopback {
 
     private final MessageLog.Appender<? super Command> commandLogAppender;
     private final TimeSource timeSource;

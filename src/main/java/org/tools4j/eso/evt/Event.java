@@ -26,8 +26,9 @@ package org.tools4j.eso.evt;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.log.Writable;
 
-public interface Event {
+public interface Event extends Writable {
     interface Id {
         Command.Id commandId();
         int index();
@@ -49,5 +50,6 @@ public interface Event {
 
     DirectBuffer payload();
 
+    @Override
     int writeTo(MutableDirectBuffer dst, int offset);
 }

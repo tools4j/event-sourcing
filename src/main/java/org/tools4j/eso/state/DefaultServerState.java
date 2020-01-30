@@ -23,6 +23,10 @@
  */
 package org.tools4j.eso.state;
 
-public interface ServerState {
-    boolean processCommands();
+public class DefaultServerState implements ServerState {
+
+    @Override
+    public boolean processCommands() {
+        return true;
+    }
 }

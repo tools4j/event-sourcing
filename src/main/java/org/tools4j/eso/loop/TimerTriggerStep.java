@@ -25,13 +25,12 @@ package org.tools4j.eso.loop;
 
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-
 import org.tools4j.eso.cmd.AdminCommands;
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.cmd.FlyweightCommand;
 import org.tools4j.eso.log.MessageLog;
 import org.tools4j.eso.src.SequenceGenerator;
-import org.tools4j.eso.state.Timers;
+import org.tools4j.eso.state.TimerState;
 import org.tools4j.eso.time.TimeSource;
 import org.tools4j.nobark.loop.Step;
 
@@ -39,12 +38,11 @@ import static java.util.Objects.requireNonNull;
 import static org.tools4j.eso.cmd.AdminCommands.TIMER_PAYLOAD_SIZE;
 import static org.tools4j.eso.cmd.FlyweightCommand.HEADER_OFFSET;
 
-final class TimerTriggerStep implements Step {
+public final class TimerTriggerStep implements Step {
 
     private final MessageLog.Appender<? super Command> commandLogAppender;
     private final TimeSource timeSource;
-    private final Timers timers;
-    private final long timeoutTickSize;
+    private final TimerState timerState;
     private final SequenceGenerator adminSequenceGenerator;
 
     private final MutableDirectBuffer buffer = new ExpandableDirectByteBuffer(
@@ -55,30 +53,28 @@ final class TimerTriggerStep implements Step {
 
     public TimerTriggerStep(final MessageLog.Appender<? super Command> commandLogAppender,
                             final TimeSource timeSource,
-                            final Timers timers,
-                            final long timeoutTickSize,
+                            final TimerState timerState,
                             final SequenceGenerator adminSequenceGenerator) {
         this.commandLogAppender = requireNonNull(commandLogAppender);
         this.timeSource = requireNonNull(timeSource);
-        this.timers = requireNonNull(timers);
-        this.timeoutTickSize = timeoutTickSize;
+        this.timerState = requireNonNull(timerState);
         this.adminSequenceGenerator = requireNonNull(adminSequenceGenerator);
     }
 
     @Override
     public boolean perform() {
-        final int count = timers.count();
+        final int count = timerState.count();
         if (count == 0) {
             return false;
         }
         final long time = timeSource.currentTime();
-        if (time < lastTime + timeoutTickSize) {
+        if (time < lastTime + timerState.tickTime()) {
             return false;
         }
         for (int i = 0; i < count; i++) {
-            final long timeout = timers.timeout(i);
+            final long timeout = timerState.timeout(i);
             if (timeout <= time) {
-                trigger(time, timers.type(i), timers.id(i), timeout);
+                trigger(time, timerState.type(i), timerState.id(i), timeout);
             }
         }
         lastTime = time;

@@ -23,38 +23,30 @@
  */
 package org.tools4j.eso.app;
 
-import java.util.function.Function;
-
 import static java.util.Objects.requireNonNull;
 
-public class DefaultApplication implements Application {
+public class SimpleApplication implements Application {
 
     private final String name;
     private final CommandProcessor commandProcessor;
     private final EventApplier eventApplier;
 
-    public DefaultApplication(final String name,
-                              final CommandProcessor commandProcessor,
-                              final EventApplier eventApplier) {
+    public SimpleApplication(final String name,
+                             final CommandProcessor commandProcessor,
+                             final EventApplier eventApplier) {
         this.name = requireNonNull(name);
         this.commandProcessor = requireNonNull(commandProcessor);
         this.eventApplier = requireNonNull(eventApplier);
     }
 
     public static <R,W> Application create(final String name,
-                                           final R readOnlyState,
-                                           final W readWriteState,
-                                           final Function<? super R, ? extends CommandProcessor> commandHandlerFactory,
-                                           final Function<? super W, ? extends EventApplier> eventApplierFactory) {
-        return new DefaultApplication(
-                name,
-                commandHandlerFactory.apply(readOnlyState),
-                eventApplierFactory.apply(readWriteState)
-        );
+                                           final CommandProcessor commandProcessor,
+                                           final EventApplier eventApplier) {
+        return new SimpleApplication(name, commandProcessor, eventApplier);
     }
 
     @Override
-    public CommandProcessor commandHandler() {
+    public CommandProcessor commandProcessor() {
         return commandProcessor;
     }
 

@@ -21,12 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.src;
 
-import org.tools4j.eso.app.Application;
+import static java.util.Objects.requireNonNull;
 
-public interface EsoState {
-    long lastCommandAllEventsApplied(int source);
-    Timers timers();
-    Application application();
+public class DefaultSource implements Source {
+
+    private final int id;
+    private final Source.Poller poller;
+
+    public DefaultSource(final int id, final Source.Poller poller) {
+        this.id = id;
+        this.poller = requireNonNull(poller);
+    }
+
+    @Override
+    public int id() {
+        return id;
+    }
+
+    @Override
+    public Poller poller() {
+        return poller;
+    }
 }

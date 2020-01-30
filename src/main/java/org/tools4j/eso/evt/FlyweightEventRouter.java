@@ -26,7 +26,6 @@ package org.tools4j.eso.evt;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.log.MessageLog;
 
@@ -45,7 +44,7 @@ public class FlyweightEventRouter implements EventRouter {
         this.eventLogAppender = requireNonNull(eventLogAppender);
     }
 
-    FlyweightEventRouter start(final Command command) {
+    public FlyweightEventRouter start(final Command command) {
         this.command = requireNonNull(command);
         this.index = 0;
         return this;
@@ -62,7 +61,7 @@ public class FlyweightEventRouter implements EventRouter {
         index++;
     }
 
-    FlyweightEventRouter commit() {
+    public FlyweightEventRouter commit() {
         eventLogAppender.append(AdminEvents.noop(flyweightEvent, headerBuffer, 0, command, index));
         this.flyweightEvent.reset();
         this.command = null;

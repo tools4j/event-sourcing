@@ -31,16 +31,24 @@ import org.tools4j.eso.src.AdjustableSequenceGenerator;
 
 import static java.util.Objects.requireNonNull;
 
-public class DefaultTimers implements Timers.Mutable {
+public class SimpleTimerState implements TimerState.Mutable {
 
+    private final long tickTime;
     private final AdjustableSequenceGenerator timerIdGenerator;
     private final Long2LongHashMap idToIndex = new Long2LongHashMap(-1);
     private final IntArrayList types = new IntArrayList();
     private final LongArrayList ids = new LongArrayList();
     private final LongArrayList timeouts = new LongArrayList();
 
-    public DefaultTimers(final AdjustableSequenceGenerator timerIdGenerator) {
+    public SimpleTimerState(final long tickTime,
+                            final AdjustableSequenceGenerator timerIdGenerator) {
+        this.tickTime = tickTime;
         this.timerIdGenerator = requireNonNull(timerIdGenerator);
+    }
+
+    @Override
+    public long tickTime() {
+        return tickTime;
     }
 
     @Override

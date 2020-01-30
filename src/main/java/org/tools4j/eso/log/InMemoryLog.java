@@ -21,33 +21,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.cmd;
+package org.tools4j.eso.log;
 
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.tools4j.eso.log.Writable;
 
-public interface Command extends Writable {
-    interface Id {
-        int source();
-        long sequence();
+import java.util.ArrayDeque;
+import java.util.Queue;
+
+import static java.util.Objects.requireNonNull;
+
+public class InMemoryLog<M extends Writable> implements PeekableMessageLog<M> {
+
+    private final Flyweight<? extends M> flyweight;
+    private final Queue<DirectBuffer> queue = new ArrayDeque<>();
+
+    public InMemoryLog(final Flyweight<? extends M> flyweight) {
+        this.flyweight = requireNonNull(flyweight);
     }
 
-    Id id();
-
-    int type();
-
-    long time();
-
-    default boolean isAdmin() {
-        return CommandType.isAdmin(type());
+    @Override
+    public Appender<M> appender() {
+        return message -> {
+            final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
+            message.writeTo(buffer, 0);
+            queue.add(buffer);
+        };
     }
 
-    default boolean isApplication() {
-        return CommandType.isApplication(type());
+    @Override
+    public PeekablePoller<M> poller() {
+        return handler -> {
+            final DirectBuffer message = queue.poll();
+            if (message != null) {
+                final M flyMessage = flyweight.init(message, 0);
+                handler.onMessage(flyMessage);
+                return 1;
+            }
+            return 0;
+        };
     }
 
-    DirectBuffer payload();
-
-    int writeTo(MutableDirectBuffer buffer, int offset);
+    @Override
+    public long size() {
+        return queue.size();
+    }
 }

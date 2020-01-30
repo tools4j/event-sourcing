@@ -37,7 +37,7 @@ public class ReplayTimeSource implements TimeSource, CommandProcessor {
     }
 
     @Override
-    public void onCommand(final Command command, final EventRouter router, final Timer timer) {
+    public void onCommand(final Command command, final EventRouter router, final TimerControl timers) {
         time = command.time();
     }
 }

@@ -24,14 +24,28 @@
 package org.tools4j.eso.src;
 
 import org.agrona.DirectBuffer;
+import org.tools4j.eso.evt.EventType;
 
 public interface Source {
     int ADMIN_ID = 0;
     int id();
-    int poll(Handler handler);
+
+    Poller poller();
+
+    @FunctionalInterface
+    interface Poller {
+        int poll(Handler handler);
+    }
 
     @FunctionalInterface
     interface Handler {
+        default void onMessage(final long sequence, final DirectBuffer buffer, final int offset, final int length) {
+            onMessage(sequence, EventType.APPLICATION.value(), buffer, offset, length);
+        }
         void onMessage(long sequence, int type, DirectBuffer buffer, int offset, int length);
+    }
+
+    static Source create(final int id, final Poller poller) {
+        return new DefaultSource(id, poller);
     }
 }

@@ -29,23 +29,23 @@ import org.agrona.MutableDirectBuffer;
 import org.tools4j.eso.evt.AdminEvents;
 import org.tools4j.eso.evt.EventRouter;
 import org.tools4j.eso.src.SequenceGenerator;
-import org.tools4j.eso.state.Timers;
+import org.tools4j.eso.state.TimerState;
 
 import static java.util.Objects.requireNonNull;
 
-public class DefaultTimer implements Timer {
+public class DefaultTimerControl implements TimerControl {
 
     private final SequenceGenerator timerIdGenerator;
-    private final Timers timers;
+    private final TimerState timerState;
     private final EventRouter eventRouter;
 
     private final MutableDirectBuffer payload = new ExpandableDirectByteBuffer(AdminEvents.TIMER_PAYLOAD_SIZE);
 
-    public DefaultTimer(final SequenceGenerator timerIdGenerator,
-                        final Timers timers,
-                        final EventRouter eventRouter) {
+    public DefaultTimerControl(final SequenceGenerator timerIdGenerator,
+                               final TimerState timerState,
+                               final EventRouter eventRouter) {
         this.timerIdGenerator = requireNonNull(timerIdGenerator);
-        this.timers = requireNonNull(timers);
+        this.timerState = requireNonNull(timerState);
         this.eventRouter = requireNonNull(eventRouter);
     }
 
@@ -58,10 +58,10 @@ public class DefaultTimer implements Timer {
 
     @Override
     public boolean stopTimer(final long id) {
-        final int count = timers.count();
+        final int count = timerState.count();
         for (int i = 0; i < count; i++) {
-            if (id == timers.id(i)) {
-                AdminEvents.timerStopped(payload, 0, timers.type(i), id, timers.timeout(i), eventRouter);
+            if (id == timerState.id(i)) {
+                AdminEvents.timerStopped(payload, 0, timerState.type(i), id, timerState.timeout(i), eventRouter);
                 return true;
             }
         }

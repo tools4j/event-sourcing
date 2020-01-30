@@ -21,25 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.init;
 
-import org.tools4j.eso.app.EventApplier;
-import org.tools4j.eso.cmd.CommandLoopback;
+import org.tools4j.nobark.run.ThreadLike;
 
-import static java.util.Objects.requireNonNull;
+public class Launcher implements ThreadLike {
 
-public class CompositeEventApplier implements EventApplier {
+    private final ThreadLike threadLike;
 
-    private final EventApplier[] appliers;
+    private Launcher(final ThreadLike threadLike) {
+        this.threadLike = threadLike;
+    }
 
-    public CompositeEventApplier(final EventApplier... appliers) {
-        this.appliers = requireNonNull(appliers);
+    public static Launcher launch(final Context context) {
+        return new Launcher(DefaultContext.start(context));
     }
 
     @Override
-    public void onEvent(final Event event, final CommandLoopback loopback) {
-        for (final EventApplier applier : appliers) {
-            applier.onEvent(event, loopback);
-        }
+    public Thread.State threadState() {
+        return threadLike.threadState();
+    }
+
+    @Override
+    public void join(final long millis) {
+        threadLike.join(millis);
+    }
+
+    @Override
+    public void stop() {
+        threadLike.stop();
+    }
+
+    @Override
+    public String toString() {
+        return threadLike.toString();
     }
 }

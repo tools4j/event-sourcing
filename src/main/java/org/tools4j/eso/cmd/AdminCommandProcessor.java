@@ -26,18 +26,18 @@ package org.tools4j.eso.cmd;
 import org.tools4j.eso.app.CommandProcessor;
 import org.tools4j.eso.evt.AdminEvents;
 import org.tools4j.eso.evt.EventRouter;
-import org.tools4j.eso.time.Timer;
+import org.tools4j.eso.time.TimerControl;
 
 public class AdminCommandProcessor implements CommandProcessor {
 
     @Override
-    public void onCommand(final Command command, final EventRouter router, final Timer timer) {
+    public void onCommand(final Command command, final EventRouter router, final TimerControl timers) {
         if (command.isAdmin()) {
-            onAdminCommand(command, router, timer);
+            onAdminCommand(command, router, timers);
         }
     }
 
-    protected void onAdminCommand(final Command command, final EventRouter router, final Timer timer) {
+    protected void onAdminCommand(final Command command, final EventRouter router, final TimerControl timers) {
         final int type = command.type();
         if (type == CommandType.TRIGGER_TIMER.value()) {
             AdminEvents.timerExpired(command, router);

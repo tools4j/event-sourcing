@@ -44,4 +44,9 @@ public interface ExceptionHandler extends org.tools4j.nobark.loop.ExceptionHandl
         t.printStackTrace();
     }
 
+    ExceptionHandler DEFAULT = (command, t) -> {
+        System.err.println("Unhandled exception when processing command [" + command + "], e=" + t);
+        t.printStackTrace();
+    };
+
 }

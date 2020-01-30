@@ -24,10 +24,11 @@
 package org.tools4j.eso.loop;
 
 import org.tools4j.eso.app.Application;
+import org.tools4j.eso.cmd.AdminCommandProcessor;
 import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.evt.FlyweightEventRouter;
 import org.tools4j.eso.log.PeekableMessageLog;
-import org.tools4j.eso.time.Timer;
+import org.tools4j.eso.time.TimerControl;
 import org.tools4j.nobark.loop.Step;
 
 import static java.util.Objects.requireNonNull;
@@ -36,18 +37,21 @@ import static org.tools4j.eso.log.PeekableMessageLog.PeekPollHandler.Result.POLL
 public class CommandProcessorStep implements Step {
 
     private final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller;
-    private final EventRouter eventRouter;
-    private final Timer timer;
+    private final FlyweightEventRouter eventRouter;
+    private final TimerControl timerControl;
+    private final AdminCommandProcessor adminCommandProcessor;
     private final Application application;
     private final PeekableMessageLog.PeekPollHandler<Command> handler = this::onCommand;
 
     public CommandProcessorStep(final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller,
-                                final EventRouter eventRouter,
-                                final Timer timer,
+                                final FlyweightEventRouter eventRouter,
+                                final TimerControl timerControl,
+                                final AdminCommandProcessor adminCommandProcessor,
                                 final Application application) {
         this.commandPoller = requireNonNull(commandPoller);
         this.eventRouter = requireNonNull(eventRouter);
-        this.timer = requireNonNull(timer);
+        this.timerControl = requireNonNull(timerControl);
+        this.adminCommandProcessor = requireNonNull(adminCommandProcessor);
         this.application = requireNonNull(application);
     }
 
@@ -58,7 +62,10 @@ public class CommandProcessorStep implements Step {
 
     private PeekableMessageLog.PeekPollHandler.Result onCommand(final Command command) {
         try {
-            application.commandHandler().onCommand(command, eventRouter, timer);
+            eventRouter.start(command);
+            adminCommandProcessor.onCommand(command, eventRouter, timerControl);
+            application.commandProcessor().onCommand(command, eventRouter, timerControl);
+            eventRouter.commit();//TODO add abort if there is an exception
         } catch (final Throwable t) {
             application.exceptionHandler().handleException(command, t);
         }

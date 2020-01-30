@@ -21,16 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.state;
+package org.tools4j.eso.log;
 
-public interface Timers {
-    int count();
-    int type(int index);
-    long id(int index);
-    long timeout(int index);
+import org.agrona.MutableDirectBuffer;
 
-    interface Mutable extends Timers {
-        boolean add(int type, long id, long timeout);
-        boolean remove(long id);
-    }
+@FunctionalInterface
+public interface Writable {
+    int writeTo(MutableDirectBuffer dst, int offset);
 }

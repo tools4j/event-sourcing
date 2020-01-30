@@ -25,7 +25,7 @@ package org.tools4j.eso.loop;
 
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.log.PeekableMessageLog;
-import org.tools4j.eso.state.EsoState;
+import org.tools4j.eso.state.EventApplicationState;
 import org.tools4j.nobark.loop.Step;
 
 import static java.util.Objects.requireNonNull;
@@ -35,13 +35,13 @@ import static org.tools4j.eso.log.PeekableMessageLog.PeekPollHandler.Result.POLL
 public class CommandSkipperStep implements Step {
 
     private final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller;
-    private final EsoState esoState;
+    private final EventApplicationState eventApplicationState;
     private final PeekableMessageLog.PeekPollHandler<Command> handler = this::onCommand;
 
     public CommandSkipperStep(final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller,
-                              final EsoState esoState) {
+                              final EventApplicationState eventApplicationState) {
         this.commandPoller = requireNonNull(commandPoller);
-        this.esoState = requireNonNull(esoState);
+        this.eventApplicationState = requireNonNull(eventApplicationState);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class CommandSkipperStep implements Step {
     }
 
     private PeekableMessageLog.PeekPollHandler.Result onCommand(final Command command) {
-        final long lastAppliedForSource = esoState.lastCommandAllEventsApplied(command.id().source());
+        final long lastAppliedForSource = eventApplicationState.lastCommandAllEventsApplied(command.id().source());
         return lastAppliedForSource >= command.id().sequence() ? POLL : PEEK;
     }
 }

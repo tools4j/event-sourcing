@@ -25,7 +25,6 @@ package org.tools4j.eso.loop;
 
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.cmd.FlyweightCommand;
 import org.tools4j.eso.log.MessageLog;
@@ -35,11 +34,11 @@ import org.tools4j.nobark.loop.Step;
 
 import static java.util.Objects.requireNonNull;
 
-final class SourcePollerStep implements Step {
+public final class SourcePollerStep implements Step {
 
     private final MessageLog.Appender<? super Command> commandLogAppender;
     private final TimeSource timeSource;
-    private final Source[] sources;
+    private final Source.Poller[] sourcePollers;
     private final Source.Handler[] handlers;
     private final MutableDirectBuffer headerBuffer = new ExpandableDirectByteBuffer(FlyweightCommand.HEADER_LENGTH);
     private final FlyweightCommand flyweightCommand = new FlyweightCommand();
@@ -51,15 +50,15 @@ final class SourcePollerStep implements Step {
                             final Source... sources) {
         this.commandLogAppender = requireNonNull(commandLogAppender);
         this.timeSource = requireNonNull(timeSource);
-        this.sources = requireNonNull(sources);
+        this.sourcePollers = initPollersFor(sources);
         this.handlers = initHandlersFor(sources);
     }
 
     @Override
     public boolean perform() {
-        final int count = sources.length;
+        final int count = sourcePollers.length;
         for (int i = 0; i < count; i++) {
-            if (sources[sourceIndex].poll(handlers[sourceIndex]) > 0) {
+            if (sourcePollers[sourceIndex].poll(handlers[sourceIndex]) > 0) {
                 return true;
             }
             sourceIndex++;
@@ -68,6 +67,14 @@ final class SourcePollerStep implements Step {
             }
         }
         return false;
+    }
+
+    private Source.Poller[] initPollersFor(final Source... sources) {
+        final Source.Poller[] pollers = new Source.Poller[sources.length];
+        for (int i = 0; i < sources.length; i++) {
+            pollers[i] = sources[i].poller();
+        }
+        return pollers;
     }
 
     private Source.Handler[] initHandlersFor(final Source... sources) {

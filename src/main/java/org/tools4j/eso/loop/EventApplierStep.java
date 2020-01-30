@@ -25,6 +25,7 @@ package org.tools4j.eso.loop;
 
 import org.tools4j.eso.app.Application;
 import org.tools4j.eso.cmd.CommandLoopback;
+import org.tools4j.eso.evt.AdminEventApplier;
 import org.tools4j.eso.evt.Event;
 import org.tools4j.eso.log.MessageLog;
 import org.tools4j.nobark.loop.Step;
@@ -35,14 +36,17 @@ public class EventApplierStep implements Step {
 
     private final MessageLog.Poller<? extends Event> eventPoller;
     private final CommandLoopback commandLoopback;
+    private final AdminEventApplier adminEventApplier;
     private final Application application;
     private final MessageLog.Handler<Event> handler = this::onEvent;
 
     public EventApplierStep(final MessageLog.Poller<? extends Event> eventPoller,
                             final CommandLoopback commandLoopback,
+                            final AdminEventApplier adminEventApplier,
                             final Application application) {
         this.eventPoller = requireNonNull(eventPoller);
         this.commandLoopback = requireNonNull(commandLoopback);
+        this.adminEventApplier = requireNonNull(adminEventApplier);
         this.application = requireNonNull(application);
     }
 
@@ -53,6 +57,7 @@ public class EventApplierStep implements Step {
 
     private void onEvent(final Event event) {
         try {
+            adminEventApplier.onEvent(event, commandLoopback);
             application.eventApplier().onEvent(event, commandLoopback);
         } catch (final Throwable t) {
             application.exceptionHandler().handleException(event, t);

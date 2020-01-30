@@ -25,19 +25,21 @@ package org.tools4j.eso.evt;
 
 import org.tools4j.eso.app.EventApplier;
 import org.tools4j.eso.cmd.CommandLoopback;
-import org.tools4j.eso.state.Timers;
+import org.tools4j.eso.state.EventApplicationState;
+import org.tools4j.eso.state.TimerState;
 
 import static java.util.Objects.requireNonNull;
-import static org.tools4j.eso.evt.AdminEvents.timerId;
-import static org.tools4j.eso.evt.AdminEvents.timerTimeout;
-import static org.tools4j.eso.evt.AdminEvents.timerType;
+import static org.tools4j.eso.evt.AdminEvents.*;
 
 public class AdminEventApplier implements EventApplier {
 
-    private final Timers.Mutable mutableTimers;
+    private final TimerState.Mutable mutableTimers;
+    private final EventApplicationState.Mutable eventApplicationState;
 
-    public AdminEventApplier(final Timers.Mutable mutableTimers) {
+    public AdminEventApplier(final TimerState.Mutable mutableTimers,
+                             final EventApplicationState.Mutable eventApplicationState) {
         this.mutableTimers = requireNonNull(mutableTimers);
+        this.eventApplicationState = requireNonNull(eventApplicationState);
     }
 
     @Override
@@ -49,7 +51,9 @@ public class AdminEventApplier implements EventApplier {
 
     protected void onAdminEvent(final Event event, final CommandLoopback loopback) {
         final int type = event.type();
-        if (type == EventType.TIMER_STARTED.value()) {
+        if (type == EventType.NOOP.value()) {
+            eventApplicationState.allEventsAppliedFor(event.id().commandId());
+        } else if (type == EventType.TIMER_STARTED.value()) {
             mutableTimers.add(timerType(event), timerId(event), timerTimeout(event));
         } else if (type == EventType.TIMER_STOPPED.value()) {
             mutableTimers.remove(timerId(event));

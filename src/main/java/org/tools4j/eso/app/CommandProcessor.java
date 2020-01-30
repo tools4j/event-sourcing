@@ -25,9 +25,9 @@ package org.tools4j.eso.app;
 
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.evt.EventRouter;
-import org.tools4j.eso.time.Timer;
+import org.tools4j.eso.time.TimerControl;
 
 @FunctionalInterface
 public interface CommandProcessor {
-    void onCommand(Command command, EventRouter router, Timer timer);
+    void onCommand(Command command, EventRouter router, TimerControl timers);
 }

@@ -23,6 +23,15 @@
  */
 package org.tools4j.eso.state;
 
-public interface ServerState {
-    boolean processCommands();
+public interface TimerState {
+    long tickTime();
+    int count();
+    int type(int index);
+    long id(int index);
+    long timeout(int index);
+
+    interface Mutable extends TimerState {
+        boolean add(int type, long id, long timeout);
+        boolean remove(long id);
+    }
 }

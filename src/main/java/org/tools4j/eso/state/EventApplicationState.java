@@ -23,6 +23,14 @@
  */
 package org.tools4j.eso.state;
 
-public interface ServerState {
-    boolean processCommands();
+import org.tools4j.eso.cmd.Command;
+
+public interface EventApplicationState {
+    long NO_COMMANDS = -1;
+
+    long lastCommandAllEventsApplied(int source);
+
+    interface Mutable extends EventApplicationState {
+        void allEventsAppliedFor(Command.Id id);
+    }
 }

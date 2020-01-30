@@ -27,8 +27,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.log.Flyweight;
 
-public class FlyweightEvent implements Event, Event.Id, Command.Id {
+public class FlyweightEvent implements Flyweight<FlyweightEvent>, Event, Event.Id, Command.Id {
 
     public static final int SOURCE_OFFSET = 0;
     public static final int SOURCE_LENGTH = Integer.BYTES;
@@ -75,6 +76,7 @@ public class FlyweightEvent implements Event, Event.Id, Command.Id {
         return this;
     }
 
+    @Override
     public FlyweightEvent init(final DirectBuffer event, final int offset) {
         return this.init(
                 event, offset + HEADER_OFFSET,
@@ -148,8 +150,23 @@ public class FlyweightEvent implements Event, Event.Id, Command.Id {
 
     @Override
     public int writeTo(final MutableDirectBuffer buffer, final int offset) {
-        buffer.putBytes(offset + HEADER_OFFSET, header, HEADER_OFFSET, HEADER_LENGTH);
-        buffer.putBytes(offset + PAYLOAD_OFFSET, payload, PAYLOAD_OFFSET, payload.capacity());
+        buffer.putBytes(offset + HEADER_OFFSET, header, 0, HEADER_LENGTH);
+        buffer.putBytes(offset + PAYLOAD_OFFSET, payload, 0, payload.capacity());
         return HEADER_LENGTH + payload.capacity();
+    }
+
+    @Override
+    public String toString() {
+        if (header.capacity() < HEADER_LENGTH) {
+            return "FlyweightEvent";
+        }
+        return "FlyweightEvent{" +
+                "source=" + header.getInt(SOURCE_OFFSET) +
+                ", sequence=" + header.getLong(SEQUENCE_OFFSET) +
+                ", index=" + header.getInt(INDEX_OFFSET) +
+                ", type=" + header.getInt(TYPE_OFFSET) +
+                ", time=" + header.getLong(TIME_OFFSET) +
+                ", payload-size=" + header.getInt(SIZE_OFFSET) +
+                '}';
     }
 }
