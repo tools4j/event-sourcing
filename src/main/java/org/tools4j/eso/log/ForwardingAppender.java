@@ -21,23 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.time;
+package org.tools4j.eso.log;
 
-import org.tools4j.eso.app.CommandProcessor;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+import static java.util.Objects.requireNonNull;
 
-public class ReplayTimeSource implements TimeSource, CommandProcessor {
+public class ForwardingAppender<M> implements MessageLog.Appender<M> {
 
-    private long time = BIG_BANG;
+    private final MessageLog.Appender<? super M> appender;
+    private final MessageLog.Handler<? super M> forwarder;
 
-    @Override
-    public long currentTime() {
-        return time;
+    public ForwardingAppender(final MessageLog.Appender<? super M> appender,
+                              final MessageLog.Handler<? super M> forwarder) {
+        this.appender = requireNonNull(appender);
+        this.forwarder = requireNonNull(forwarder);
     }
 
     @Override
-    public void onCommand(final Command command, final EventRouter router) {
-        time = command.time();
+    public void append(final M message) {
+        appender.append(message);
+        forwarder.onMessage(message);
     }
 }

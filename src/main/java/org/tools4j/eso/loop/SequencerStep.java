@@ -23,35 +23,22 @@
  */
 package org.tools4j.eso.loop;
 
-import org.agrona.ExpandableDirectByteBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.cmd.FlyweightCommand;
-import org.tools4j.eso.log.MessageLog;
 import org.tools4j.eso.src.Source;
-import org.tools4j.eso.time.TimeSource;
 import org.tools4j.nobark.loop.Step;
 
-import static java.util.Objects.requireNonNull;
+import java.util.function.Function;
 
-public final class SourcePollerStep implements Step {
+public final class SequencerStep implements Step {
 
-    private final MessageLog.Appender<? super Command> commandLogAppender;
-    private final TimeSource timeSource;
     private final Source.Poller[] sourcePollers;
     private final Source.Handler[] handlers;
-    private final MutableDirectBuffer headerBuffer = new ExpandableDirectByteBuffer(FlyweightCommand.HEADER_LENGTH);
-    private final FlyweightCommand flyweightCommand = new FlyweightCommand();
 
     private int sourceIndex = 0;
 
-    public SourcePollerStep(final MessageLog.Appender<? super Command> commandLogAppender,
-                            final TimeSource timeSource,
-                            final Source... sources) {
-        this.commandLogAppender = requireNonNull(commandLogAppender);
-        this.timeSource = requireNonNull(timeSource);
+    public SequencerStep(final Function<? super Source, ? extends Source.Handler> handlerFactory,
+                         final Source... sources) {
         this.sourcePollers = initPollersFor(sources);
-        this.handlers = initHandlersFor(sources);
+        this.handlers = initHandlersFor(handlerFactory, sources);
     }
 
     @Override
@@ -77,25 +64,12 @@ public final class SourcePollerStep implements Step {
         return pollers;
     }
 
-    private Source.Handler[] initHandlersFor(final Source... sources) {
+    private Source.Handler[] initHandlersFor(final Function<? super Source, ? extends Source.Handler> handlerFactory,
+                                             final Source... sources) {
         final Source.Handler[] handlers = new Source.Handler[sources.length];
         for (int i = 0; i < sources.length; i++) {
-            handlers[i] = sourceHandlerFor(sources[i]);
+            handlers[i] = handlerFactory.apply(sources[i]);
         }
         return handlers;
-    }
-
-    private Source.Handler sourceHandlerFor(final Source source) {
-        final int sourceId = source.id();
-        return (sequence, type, buffer, offset, length) -> {
-            commandLogAppender.append(flyweightCommand.init(
-                    headerBuffer, 0, sourceId, sequence, type, time(),
-                    buffer, offset, length));
-            flyweightCommand.reset();
-        };
-    }
-
-    private long time() {
-        return timeSource.currentTime();
     }
 }

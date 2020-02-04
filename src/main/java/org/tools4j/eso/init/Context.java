@@ -29,13 +29,7 @@ import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.evt.Event;
 import org.tools4j.eso.log.MessageLog;
 import org.tools4j.eso.log.PeekableMessageLog;
-import org.tools4j.eso.src.AdjustableSequenceGenerator;
-import org.tools4j.eso.src.SequenceGenerator;
 import org.tools4j.eso.src.Source;
-import org.tools4j.eso.state.EventApplicationState;
-import org.tools4j.eso.state.ServerConfig;
-import org.tools4j.eso.state.ServerState;
-import org.tools4j.eso.state.TimerState;
 import org.tools4j.eso.time.TimeSource;
 
 import java.util.concurrent.ThreadFactory;
@@ -56,11 +50,8 @@ interface Context {
     Context eventLog(String file);
     Context eventLog(MessageLog<Event> eventLog);
 
-    SequenceGenerator adminSequenceGenerator();
-    Context adminSequenceGenerator(SequenceGenerator adminSequenceGenerator);
-
-    AdjustableSequenceGenerator timerIdGenerator();
-    Context timerIdGenerator(AdjustableSequenceGenerator timerIdGenerator);
+    TimeSource timeSource();
+    Context timeSource(TimeSource timeSource);
 
     IdleStrategy idleStrategy();
     Context idleStrategy(IdleStrategy idleStrategy);
@@ -68,13 +59,6 @@ interface Context {
     ThreadFactory threadFactory();
     Context threadFactory(String threadName);
     Context threadFactory(ThreadFactory threadFactory);
-
-    ServerConfig serverConfig();
-    ServerState serverState();
-    EventApplicationState.Mutable eventApplicationState();
-    TimerState.Mutable timerState();
-
-    TimeSource timeSource();
 
     Context validateAndPopulateDefaults();
 

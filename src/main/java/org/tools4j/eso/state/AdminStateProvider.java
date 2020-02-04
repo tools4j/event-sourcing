@@ -21,23 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.time;
+package org.tools4j.eso.state;
 
-import org.tools4j.eso.app.CommandProcessor;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+public interface AdminStateProvider {
+    TimerState timerState();
+    EventApplicationState eventApplicationState();
 
-public class ReplayTimeSource implements TimeSource, CommandProcessor {
-
-    private long time = BIG_BANG;
-
-    @Override
-    public long currentTime() {
-        return time;
-    }
-
-    @Override
-    public void onCommand(final Command command, final EventRouter router) {
-        time = command.time();
+    interface Mutable extends AdminStateProvider {
+        @Override
+        TimerState.Mutable timerState();
+        @Override
+        EventApplicationState.Mutable eventApplicationState();
     }
 }

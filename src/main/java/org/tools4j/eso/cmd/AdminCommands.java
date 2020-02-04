@@ -23,20 +23,10 @@
  */
 package org.tools4j.eso.cmd;
 
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-
-import org.tools4j.eso.evt.EventType;
-import org.tools4j.eso.evt.FlyweightEvent;
-import org.tools4j.eso.src.Source;
-
-import static org.tools4j.eso.evt.FlyweightEvent.PAYLOAD_OFFSET;
 
 public enum AdminCommands {
     ;
-
-    private static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
 
     public static final int TIMER_TYPE_OFFSET = 0;
     public static final int TIMER_TYPE_LENGTH = Integer.BYTES;
@@ -49,30 +39,14 @@ public enum AdminCommands {
             TIMER_TIMEOUT_LENGTH;
 
 
-    public static FlyweightEvent noop(final FlyweightEvent event,
-                                      final MutableDirectBuffer buffer,
-                                      final int offset,
-                                      final int source,
-                                      final long sequence,
-                                      final int index,
-                                      final long time) {
-        return event.init(buffer, offset, source, sequence, index, EventType.NOOP.value(), time,
-                EMPTY_BUFFER, 0, 0);
-    }
-
-    public static FlyweightCommand triggerTimer(final FlyweightCommand command,
-                                                final MutableDirectBuffer buffer,
-                                                final int offset,
-                                                final long sequence,
-                                                final long time,
-                                                final int timerType,
-                                                final long timerId,
-                                                final long timeout) {
-        FlyweightCommand.writeHeaderTo(buffer, offset, Source.ADMIN_ID, sequence, CommandType.TRIGGER_TIMER.value(),
-                time, TIMER_PAYLOAD_SIZE);
-        buffer.putInt(offset + PAYLOAD_OFFSET + TIMER_TYPE_OFFSET, timerType);
-        buffer.putLong(offset + PAYLOAD_OFFSET + TIMER_ID_OFFSET, timerId);
-        buffer.putLong(offset + PAYLOAD_OFFSET + TIMER_TIMEOUT_OFFSET, timeout);
-        return command.init(buffer, offset);
+    public static int triggerTimer(final MutableDirectBuffer buffer,
+                                   final int offset,
+                                   final int timerType,
+                                   final long timerId,
+                                   final long timeout) {
+        buffer.putInt(offset + TIMER_TYPE_OFFSET, timerType);
+        buffer.putLong(offset + TIMER_ID_OFFSET, timerId);
+        buffer.putLong(offset + TIMER_TIMEOUT_OFFSET, timeout);
+        return TIMER_PAYLOAD_SIZE;
     }
 }

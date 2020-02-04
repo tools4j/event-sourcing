@@ -25,21 +25,17 @@ package org.tools4j.eso.evt;
 
 import org.tools4j.eso.app.EventApplier;
 import org.tools4j.eso.cmd.CommandLoopback;
-import org.tools4j.eso.state.EventApplicationState;
-import org.tools4j.eso.state.TimerState;
+import org.tools4j.eso.state.AdminStateProvider;
 
 import static java.util.Objects.requireNonNull;
 import static org.tools4j.eso.evt.AdminEvents.*;
 
 public class AdminEventApplier implements EventApplier {
 
-    private final TimerState.Mutable mutableTimers;
-    private final EventApplicationState.Mutable eventApplicationState;
+    private final AdminStateProvider.Mutable adminStateProvider;
 
-    public AdminEventApplier(final TimerState.Mutable mutableTimers,
-                             final EventApplicationState.Mutable eventApplicationState) {
-        this.mutableTimers = requireNonNull(mutableTimers);
-        this.eventApplicationState = requireNonNull(eventApplicationState);
+    public AdminEventApplier(final AdminStateProvider.Mutable adminStateProvider) {
+        this.adminStateProvider = requireNonNull(adminStateProvider);
     }
 
     @Override
@@ -52,13 +48,13 @@ public class AdminEventApplier implements EventApplier {
     protected void onAdminEvent(final Event event, final CommandLoopback loopback) {
         final int type = event.type();
         if (type == EventType.NOOP.value()) {
-            eventApplicationState.allEventsAppliedFor(event.id().commandId());
+            adminStateProvider.eventApplicationState().allEventsAppliedFor(event.id().commandId());
         } else if (type == EventType.TIMER_STARTED.value()) {
-            mutableTimers.add(timerType(event), timerId(event), timerTimeout(event));
+            adminStateProvider.timerState().add(timerType(event), timerId(event), timerTimeout(event));
         } else if (type == EventType.TIMER_STOPPED.value()) {
-            mutableTimers.remove(timerId(event));
+            adminStateProvider.timerState().remove(timerId(event));
         } else if (type == EventType.TIMER_EXPIRED.value()) {
-            mutableTimers.remove(timerId(event));
+            adminStateProvider.timerState().remove(timerId(event));
         }
     }
 }

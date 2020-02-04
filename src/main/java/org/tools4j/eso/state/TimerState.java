@@ -33,5 +33,14 @@ public interface TimerState {
     interface Mutable extends TimerState {
         boolean add(int type, long id, long timeout);
         boolean remove(long id);
+
+        interface Provider extends TimerState.Provider {
+            @Override
+            Mutable timerState();
+        }
+    }
+
+    interface Provider {
+        TimerState timerState();
     }
 }

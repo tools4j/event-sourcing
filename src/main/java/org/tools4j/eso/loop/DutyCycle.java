@@ -23,62 +23,33 @@
  */
 package org.tools4j.eso.loop;
 
-import java.util.concurrent.ThreadFactory;
-
-import org.tools4j.eso.state.ServerState;
 import org.tools4j.nobark.loop.ExceptionHandler;
 import org.tools4j.nobark.loop.IdleStrategy;
 import org.tools4j.nobark.loop.Loop;
 import org.tools4j.nobark.loop.Step;
 import org.tools4j.nobark.run.StoppableThread;
 
+import java.util.concurrent.ThreadFactory;
+
 import static java.util.Objects.requireNonNull;
 
 public class DutyCycle {
 
-    public static final String DEFAULT_THREAD_NAME = "duty-cycle";
-
-    private final ServerState serverState;
     private final Step[] steps;
 
-    public DutyCycle(final ServerState serverState,
-                     final SourcePollerStep sourcePollerStep,
-                     final TimerTriggerStep timerTriggerStep,
-                     final CommandProcessorStep commandProcessorStep,
-                     final CommandSkipperStep commandSkipperStep,
+    public DutyCycle(final SequencerStep sequencerStep,
+                     final CommandPollerStep commandPollerStep,
                      final EventApplierStep eventApplierStep) {
-        this.serverState = requireNonNull(serverState);
-        this.steps = steps(sourcePollerStep, timerTriggerStep, commandProcessorStep, commandSkipperStep, eventApplierStep);
+        this.steps = steps(sequencerStep, commandPollerStep, eventApplierStep);
     }
 
-    private Step[] steps(final SourcePollerStep sourcePollerStep,
-                         final TimerTriggerStep timerTriggerStep,
-                         final CommandProcessorStep commandProcessorStep,
-                         final CommandSkipperStep commandSkipperStep,
+    private Step[] steps(final SequencerStep sequencerStep,
+                         final CommandPollerStep commandPollerStep,
                          final EventApplierStep eventApplierStep) {
-        requireNonNull(sourcePollerStep);
-        requireNonNull(timerTriggerStep);
-        requireNonNull(commandProcessorStep);
-        requireNonNull(commandSkipperStep);
+        requireNonNull(sequencerStep);
+        requireNonNull(commandPollerStep);
         requireNonNull(eventApplierStep);
-        return new Step[] {
-                sourcePollerStep,
-                timerTriggerStep,
-                () -> (processCommands() ? commandProcessorStep : commandSkipperStep).perform(),
-                eventApplierStep
-        };
-    }
-
-    /**
-     * Creates, starts and returns a new thread running a loop with the duty cycle steps.
-     *
-     * @param idleStrategy      the strategy handling idle loop phases
-     * @param exceptionHandler  the step exception handler
-     * @return the newly created and started thread running the loop
-     */
-    public StoppableThread start(final IdleStrategy idleStrategy,
-                                 final ExceptionHandler exceptionHandler) {
-        return Loop.start(idleStrategy, exceptionHandler, r -> new Thread(null, r, DEFAULT_THREAD_NAME), steps);
+        return new Step[] {sequencerStep, commandPollerStep, eventApplierStep};
     }
 
     /**
@@ -94,10 +65,4 @@ public class DutyCycle {
                                  final ThreadFactory threadFactory) {
         return Loop.start(idleStrategy, exceptionHandler, threadFactory, steps);
     }
-
-    private boolean processCommands() {
-        return serverState.processCommands();
-    }
-
-
 }

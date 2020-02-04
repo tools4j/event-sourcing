@@ -25,32 +25,23 @@ package org.tools4j.eso.loop;
 
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.log.PeekableMessageLog;
-import org.tools4j.eso.state.EventApplicationState;
 import org.tools4j.nobark.loop.Step;
 
 import static java.util.Objects.requireNonNull;
-import static org.tools4j.eso.log.PeekableMessageLog.PeekPollHandler.Result.PEEK;
-import static org.tools4j.eso.log.PeekableMessageLog.PeekPollHandler.Result.POLL;
 
-public class CommandSkipperStep implements Step {
+public class CommandPollerStep implements Step {
 
     private final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller;
-    private final EventApplicationState eventApplicationState;
-    private final PeekableMessageLog.PeekPollHandler<Command> handler = this::onCommand;
+    private final PeekableMessageLog.PeekPollHandler<Command> handler;
 
-    public CommandSkipperStep(final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller,
-                              final EventApplicationState eventApplicationState) {
+    public CommandPollerStep(final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller,
+                             final PeekableMessageLog.PeekPollHandler<Command> handler) {
         this.commandPoller = requireNonNull(commandPoller);
-        this.eventApplicationState = requireNonNull(eventApplicationState);
+        this.handler = requireNonNull(handler);
     }
 
     @Override
     public boolean perform() {
         return commandPoller.peekOrPoll(handler) > 0;
-    }
-
-    private PeekableMessageLog.PeekPollHandler.Result onCommand(final Command command) {
-        final long lastAppliedForSource = eventApplicationState.lastCommandAllEventsApplied(command.id().source());
-        return lastAppliedForSource >= command.id().sequence() ? POLL : PEEK;
     }
 }

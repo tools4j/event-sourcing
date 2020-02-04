@@ -21,23 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.time;
+package org.tools4j.eso.handler;
 
-import org.tools4j.eso.app.CommandProcessor;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.log.MessageLog;
+import org.tools4j.eso.state.EventApplicationState;
 
-public class ReplayTimeSource implements TimeSource, CommandProcessor {
+import static java.util.Objects.requireNonNull;
 
-    private long time = BIG_BANG;
+public class DedupEventHandler implements MessageLog.Handler<Event> {
 
-    @Override
-    public long currentTime() {
-        return time;
+    private final EventApplicationState eventApplicationState;
+    private final MessageLog.Handler<? super Event> eventHandler;
+
+    public DedupEventHandler(final EventApplicationState eventApplicationState,
+                             final MessageLog.Handler<? super Event> eventHandler) {
+        this.eventApplicationState = requireNonNull(eventApplicationState);
+        this.eventHandler = requireNonNull(eventHandler);
     }
 
     @Override
-    public void onCommand(final Command command, final EventRouter router) {
-        time = command.time();
+    public void onMessage(final Event event) {
+        final int source = event.id().commandId().source();
+        final long sequence = event.id().commandId().sequence();
+        if (sequence > eventApplicationState.lastCommandAllEventsApplied(source)) {
+            eventHandler.onMessage(event);
+        }
     }
 }

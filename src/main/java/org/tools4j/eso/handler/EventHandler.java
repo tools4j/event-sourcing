@@ -21,23 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.time;
+package org.tools4j.eso.handler;
 
-import org.tools4j.eso.app.CommandProcessor;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.app.EventApplier;
+import org.tools4j.eso.app.ExceptionHandler;
+import org.tools4j.eso.cmd.CommandLoopback;
+import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.log.MessageLog;
 
-public class ReplayTimeSource implements TimeSource, CommandProcessor {
+import static java.util.Objects.requireNonNull;
 
-    private long time = BIG_BANG;
+public class EventHandler implements MessageLog.Handler<Event> {
 
-    @Override
-    public long currentTime() {
-        return time;
+    private final CommandLoopback commandLoopback;
+    private final EventApplier eventApplier;
+    private final ExceptionHandler exceptionHandler;
+
+    public EventHandler(final CommandLoopback commandLoopback,
+                        final EventApplier eventApplier,
+                        final ExceptionHandler exceptionHandler) {
+        this.commandLoopback = requireNonNull(commandLoopback);
+        this.eventApplier = requireNonNull(eventApplier);
+        this.exceptionHandler = requireNonNull(exceptionHandler);
     }
 
     @Override
-    public void onCommand(final Command command, final EventRouter router) {
-        time = command.time();
+    public void onMessage(final Event event) {
+        try {
+            eventApplier.onEvent(event, commandLoopback);
+        } catch (final Throwable t) {
+            exceptionHandler.handleException(event, t);
+        }
     }
 }

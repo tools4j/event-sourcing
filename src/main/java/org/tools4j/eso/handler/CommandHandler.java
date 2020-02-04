@@ -21,53 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.loop;
+package org.tools4j.eso.handler;
 
-import org.tools4j.eso.app.Application;
-import org.tools4j.eso.cmd.AdminCommandProcessor;
+import org.tools4j.eso.app.CommandProcessor;
+import org.tools4j.eso.app.ExceptionHandler;
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.evt.FlyweightEventRouter;
 import org.tools4j.eso.log.PeekableMessageLog;
-import org.tools4j.eso.time.TimerControl;
-import org.tools4j.nobark.loop.Step;
 
 import static java.util.Objects.requireNonNull;
 import static org.tools4j.eso.log.PeekableMessageLog.PeekPollHandler.Result.POLL;
 
-public class CommandProcessorStep implements Step {
+public class CommandHandler implements PeekableMessageLog.PeekPollHandler<Command> {
 
-    private final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller;
     private final FlyweightEventRouter eventRouter;
-    private final TimerControl timerControl;
-    private final AdminCommandProcessor adminCommandProcessor;
-    private final Application application;
-    private final PeekableMessageLog.PeekPollHandler<Command> handler = this::onCommand;
+    private final CommandProcessor commandProcessor;
+    private final ExceptionHandler exceptionHandler;
 
-    public CommandProcessorStep(final PeekableMessageLog.PeekablePoller<? extends Command> commandPoller,
-                                final FlyweightEventRouter eventRouter,
-                                final TimerControl timerControl,
-                                final AdminCommandProcessor adminCommandProcessor,
-                                final Application application) {
-        this.commandPoller = requireNonNull(commandPoller);
+    public CommandHandler(final FlyweightEventRouter eventRouter,
+                          final CommandProcessor commandProcessor,
+                          final ExceptionHandler exceptionHandler) {
         this.eventRouter = requireNonNull(eventRouter);
-        this.timerControl = requireNonNull(timerControl);
-        this.adminCommandProcessor = requireNonNull(adminCommandProcessor);
-        this.application = requireNonNull(application);
+        this.commandProcessor = requireNonNull(commandProcessor);
+        this.exceptionHandler = requireNonNull(exceptionHandler);
     }
 
     @Override
-    public boolean perform() {
-        return commandPoller.peekOrPoll(handler) > 0;
-    }
-
-    private PeekableMessageLog.PeekPollHandler.Result onCommand(final Command command) {
+    public Result onMessage(final Command command) {
         try {
             eventRouter.start(command);
-            adminCommandProcessor.onCommand(command, eventRouter, timerControl);
-            application.commandProcessor().onCommand(command, eventRouter, timerControl);
+            commandProcessor.onCommand(command, eventRouter);
             eventRouter.commit();//TODO add abort if there is an exception
         } catch (final Throwable t) {
-            application.exceptionHandler().handleException(command, t);
+            exceptionHandler.handleException(command, t);
         }
         return POLL;
     }

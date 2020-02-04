@@ -21,27 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.loop;
+package org.tools4j.eso.handler;
 
-import org.tools4j.eso.evt.Event;
+import org.agrona.ExpandableDirectByteBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.cmd.FlyweightCommand;
 import org.tools4j.eso.log.MessageLog;
-import org.tools4j.nobark.loop.Step;
+import org.tools4j.eso.src.Source;
+import org.tools4j.eso.time.TimeSource;
+
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
-public class EventApplierStep implements Step {
+public final class SourceHandlerFactory implements Function<Source, Source.Handler> {
 
-    private final MessageLog.Poller<? extends Event> eventPoller;
-    private final MessageLog.Handler<Event> handler;
+    private final MessageLog.Appender<? super Command> commandLogAppender;
+    private final TimeSource timeSource;
+    private final MutableDirectBuffer headerBuffer = new ExpandableDirectByteBuffer(FlyweightCommand.HEADER_LENGTH);
+    private final FlyweightCommand flyweightCommand = new FlyweightCommand();
 
-    public EventApplierStep(final MessageLog.Poller<? extends Event> eventPoller,
-                            final MessageLog.Handler<Event> handler) {
-        this.eventPoller = requireNonNull(eventPoller);
-        this.handler = requireNonNull(handler);
+    public SourceHandlerFactory(final MessageLog.Appender<? super Command> commandLogAppender,
+                                final TimeSource timeSource) {
+        this.commandLogAppender = requireNonNull(commandLogAppender);
+        this.timeSource = requireNonNull(timeSource);
     }
 
     @Override
-    public boolean perform() {
-        return eventPoller.poll(handler) > 0;
+    public Source.Handler apply(final Source source) {
+        return new SourceHandler(
+                commandLogAppender,
+                timeSource,
+                source,
+                headerBuffer,
+                flyweightCommand
+        );
     }
 }

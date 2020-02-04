@@ -30,19 +30,23 @@ public class SimpleApplication implements Application {
     private final String name;
     private final CommandProcessor commandProcessor;
     private final EventApplier eventApplier;
+    private final ExceptionHandler exceptionHandler;
 
     public SimpleApplication(final String name,
                              final CommandProcessor commandProcessor,
-                             final EventApplier eventApplier) {
+                             final EventApplier eventApplier,
+                             final ExceptionHandler exceptionHandler) {
         this.name = requireNonNull(name);
         this.commandProcessor = requireNonNull(commandProcessor);
         this.eventApplier = requireNonNull(eventApplier);
+        this.exceptionHandler = requireNonNull(exceptionHandler);
     }
 
     public static <R,W> Application create(final String name,
                                            final CommandProcessor commandProcessor,
-                                           final EventApplier eventApplier) {
-        return new SimpleApplication(name, commandProcessor, eventApplier);
+                                           final EventApplier eventApplier,
+                                           final ExceptionHandler exceptionHandler) {
+        return new SimpleApplication(name, commandProcessor, eventApplier, exceptionHandler);
     }
 
     @Override
@@ -53,6 +57,11 @@ public class SimpleApplication implements Application {
     @Override
     public EventApplier eventApplier() {
         return eventApplier;
+    }
+
+    @Override
+    public ExceptionHandler exceptionHandler() {
+        return exceptionHandler;
     }
 
     @Override

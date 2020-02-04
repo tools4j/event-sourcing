@@ -21,23 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.time;
+package org.tools4j.eso.handler;
 
-import org.tools4j.eso.app.CommandProcessor;
 import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.log.PeekableMessageLog;
+import org.tools4j.eso.state.ServerState;
 
-public class ReplayTimeSource implements TimeSource, CommandProcessor {
+import static java.util.Objects.requireNonNull;
 
-    private long time = BIG_BANG;
+public class CommandPeekPollHandler implements PeekableMessageLog.PeekPollHandler<Command> {
 
-    @Override
-    public long currentTime() {
-        return time;
+    private final ServerState serverState;
+    private final CommandHandler commandHandler;
+    private final CommandSkipper commandSkipper;
+
+    public CommandPeekPollHandler(final ServerState serverState,
+                                  final CommandHandler commandHandler,
+                                  final CommandSkipper commandSkipper) {
+        this.serverState = requireNonNull(serverState);
+        this.commandHandler = requireNonNull(commandHandler);
+        this.commandSkipper = requireNonNull(commandSkipper);
     }
 
     @Override
-    public void onCommand(final Command command, final EventRouter router) {
-        time = command.time();
+    public Result onMessage(final Command command) {
+        return (serverState.processCommands() ? commandHandler : commandSkipper).onMessage(command);
     }
 }

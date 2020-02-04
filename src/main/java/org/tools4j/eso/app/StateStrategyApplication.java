@@ -33,29 +33,35 @@ public class StateStrategyApplication implements Application {
     private final String name;
     private final Supplier<CommandProcessor> commandProcessorSupplier;
     private final Supplier<EventApplier> eventApplierSupplier;
+    private final ExceptionHandler exceptionHandler;
 
     public StateStrategyApplication(final String name,
                                     final Supplier<CommandProcessor> commandProcessorSupplier,
-                                    final Supplier<EventApplier> eventApplierSupplier) {
+                                    final Supplier<EventApplier> eventApplierSupplier,
+                                    final ExceptionHandler exceptionHandler) {
         this.name = requireNonNull(name);
         this.commandProcessorSupplier = requireNonNull(commandProcessorSupplier);
         this.eventApplierSupplier = requireNonNull(eventApplierSupplier);
+        this.exceptionHandler = requireNonNull(exceptionHandler);
     }
 
     public static <R,W> Application create(final String name,
                                            final R readOnlyState,
                                            final W readWriteState,
                                            final Function<? super R, ? extends CommandProcessor> commandHandlerSupplier,
-                                           final Function<? super W, ? extends EventApplier> eventApplierSupplier) {
+                                           final Function<? super W, ? extends EventApplier> eventApplierSupplier,
+                                           final ExceptionHandler exceptionHandler) {
         requireNonNull(name);
         requireNonNull(readOnlyState);
         requireNonNull(readWriteState);
         requireNonNull(commandHandlerSupplier);
         requireNonNull(eventApplierSupplier);
+        requireNonNull(exceptionHandler);
         return new StateStrategyApplication(
                 name,
                 () -> commandHandlerSupplier.apply(readOnlyState),
-                () -> eventApplierSupplier.apply(readWriteState)
+                () -> eventApplierSupplier.apply(readWriteState),
+                exceptionHandler
         );
     }
 
@@ -67,6 +73,11 @@ public class StateStrategyApplication implements Application {
     @Override
     public EventApplier eventApplier() {
         return eventApplierSupplier.get();
+    }
+
+    @Override
+    public ExceptionHandler exceptionHandler() {
+        return exceptionHandler;
     }
 
     @Override

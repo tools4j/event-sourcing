@@ -28,6 +28,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.Test;
 import org.tools4j.eso.app.Application;
+import org.tools4j.eso.app.ExceptionHandler;
 import org.tools4j.eso.app.SimpleApplication;
 import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.cmd.CommandLoopback;
@@ -37,7 +38,6 @@ import org.tools4j.eso.evt.EventRouter;
 import org.tools4j.eso.evt.FlyweightEvent;
 import org.tools4j.eso.log.InMemoryLog;
 import org.tools4j.eso.src.Source;
-import org.tools4j.eso.time.TimerControl;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -50,7 +50,7 @@ public class LauncherTest {
 
     private Application application = new SimpleApplication(
             "simple-test-app",
-            this::onCommand, this::onEvent
+            this::onCommand, this::onEvent, ExceptionHandler.DEFAULT
     );
     private Queue<String> strings = new ConcurrentLinkedQueue<>();
     private Source.Poller stringSourcePoller = new StringSourcePoller(strings);
@@ -67,19 +67,19 @@ public class LauncherTest {
                         .eventLog(new InMemoryLog<>(new FlyweightEvent()))
         )) {
             //
-            Thread.sleep(2000);
+            Thread.sleep(200);
             strings.add("123");
-            Thread.sleep(2000);
+            Thread.sleep(500);
             strings.add("hello world");
             while (!strings.isEmpty()) {
-                launcher.join(100);
+                launcher.join(20);
             }
         }
     }
 
-    private void onCommand(final Command command, final EventRouter router, final TimerControl timers) {
+    private void onCommand(final Command command, final EventRouter router) {
         System.out.println("command: " + command + ", payload=" + payloadFor(command.type(), command.payload()));
-        router.routeEvent(command.payload(), 0, command.payload().capacity());
+        router.routeEvent(command.type(), command.payload(), 0, command.payload().capacity());
     }
 
     private void onEvent(final Event event, final CommandLoopback commandLoopback) {

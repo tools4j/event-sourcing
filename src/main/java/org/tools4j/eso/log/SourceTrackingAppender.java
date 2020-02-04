@@ -24,28 +24,43 @@
 package org.tools4j.eso.log;
 
 import org.agrona.collections.Long2LongHashMap;
-
 import org.tools4j.eso.cmd.Command;
 
 import static java.util.Objects.requireNonNull;
 
-public class SourceTrackingAppender implements MessageLog.Appender<Command> {
+public class SourceTrackingAppender implements MessageLog.Appender<Command>, MessageLog.Handler<Command> {
 
     private final MessageLog.Appender<? super Command> appender;
     private final Long2LongHashMap sourceToSeqMap = new Long2LongHashMap(Long.MIN_VALUE);
 
-    public SourceTrackingAppender(final MessageLog.Appender<? super Command> appender) {
+    public SourceTrackingAppender(final MessageLog.Appender<? super Command> appender,
+                                  final MessageLog.Poller<? extends Command> poller) {
         this.appender = requireNonNull(appender);
+        while (poller.poll(this) > 0) {
+            //keep going until we have updated the whole map
+        }
     }
 
     @Override
     public void append(final Command command) {
+        if (update(command)) {
+            appender.append(command);
+        }
+    }
+
+    @Override
+    public void onMessage(final Command command) {
+        update(command);
+    }
+
+    private boolean update(final Command command) {
         final int source = command.id().source();
         final long currentSeq = command.id().sequence();
         final long lastAppendedSeq = sourceToSeqMap.get(source);
         if (lastAppendedSeq < currentSeq) {
-            appender.append(command);
             sourceToSeqMap.put(source, currentSeq);
+            return true;
         }
+        return false;
     }
 }
