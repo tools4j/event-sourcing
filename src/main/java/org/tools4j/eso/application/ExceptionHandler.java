@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.app;
+package org.tools4j.eso.application;
 
 import org.tools4j.eso.command.Command;
 import org.tools4j.eso.event.Event;
@@ -50,8 +50,8 @@ public interface ExceptionHandler extends org.tools4j.nobark.loop.ExceptionHandl
         handleException("Unhandled exception when performing step [" + step + "], e=" + t, t);
     }
 
-    ExceptionHandler DEFAULT = (msg, t) -> {
-        System.err.println(msg);
+    ExceptionHandler DEFAULT = (message, t) -> {
+        System.err.println(message);
         t.printStackTrace();
     };
 

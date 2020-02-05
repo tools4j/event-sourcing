@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.app;
+package org.tools4j.eso.application;
 
 import static java.util.Objects.requireNonNull;
 
@@ -30,23 +30,19 @@ public class SimpleApplication implements Application {
     private final String name;
     private final CommandProcessor commandProcessor;
     private final EventApplier eventApplier;
-    private final ExceptionHandler exceptionHandler;
 
     public SimpleApplication(final String name,
                              final CommandProcessor commandProcessor,
-                             final EventApplier eventApplier,
-                             final ExceptionHandler exceptionHandler) {
+                             final EventApplier eventApplier) {
         this.name = requireNonNull(name);
         this.commandProcessor = requireNonNull(commandProcessor);
         this.eventApplier = requireNonNull(eventApplier);
-        this.exceptionHandler = requireNonNull(exceptionHandler);
     }
 
     public static <R,W> Application create(final String name,
                                            final CommandProcessor commandProcessor,
-                                           final EventApplier eventApplier,
-                                           final ExceptionHandler exceptionHandler) {
-        return new SimpleApplication(name, commandProcessor, eventApplier, exceptionHandler);
+                                           final EventApplier eventApplier) {
+        return new SimpleApplication(name, commandProcessor, eventApplier);
     }
 
     @Override
@@ -57,11 +53,6 @@ public class SimpleApplication implements Application {
     @Override
     public EventApplier eventApplier() {
         return eventApplier;
-    }
-
-    @Override
-    public ExceptionHandler exceptionHandler() {
-        return exceptionHandler;
     }
 
     @Override

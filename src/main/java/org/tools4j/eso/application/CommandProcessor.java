@@ -21,10 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.app;
+package org.tools4j.eso.application;
 
-public interface Application {
-    CommandProcessor commandProcessor();
-    EventApplier eventApplier();
-    ExceptionHandler exceptionHandler();
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.event.EventRouter;
+
+@FunctionalInterface
+public interface CommandProcessor {
+    void onCommand(Command command, EventRouter router);
 }

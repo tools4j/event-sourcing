@@ -23,7 +23,7 @@
  */
 package org.tools4j.eso.command;
 
-import org.tools4j.eso.app.CommandProcessor;
+import org.tools4j.eso.application.CommandProcessor;
 import org.tools4j.eso.event.AdminEvents;
 import org.tools4j.eso.event.EventRouter;
 

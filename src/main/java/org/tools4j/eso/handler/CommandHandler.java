@@ -23,8 +23,8 @@
  */
 package org.tools4j.eso.handler;
 
-import org.tools4j.eso.app.CommandProcessor;
-import org.tools4j.eso.app.ExceptionHandler;
+import org.tools4j.eso.application.CommandProcessor;
+import org.tools4j.eso.application.ExceptionHandler;
 import org.tools4j.eso.command.Command;
 import org.tools4j.eso.event.FlyweightEventRouter;
 import org.tools4j.eso.log.PeekableMessageLog;

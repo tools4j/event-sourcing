@@ -23,8 +23,8 @@
  */
 package org.tools4j.eso.init;
 
-import org.tools4j.eso.app.Application;
-import org.tools4j.eso.app.EventApplier;
+import org.tools4j.eso.application.Application;
+import org.tools4j.eso.application.EventApplier;
 import org.tools4j.eso.command.CommandLoopback;
 import org.tools4j.eso.command.DefaultCommandLoopback;
 import org.tools4j.eso.event.AdminEventApplier;
@@ -63,7 +63,7 @@ final class Singletons {
                         adminEventApplier.onEvent(event, loopback);
                         application.eventApplier().onEvent(event, loopback);
                     },
-                    application.exceptionHandler()
+                    context.exceptionHandler()
                 )
         );
         eventRouter = new FlyweightEventRouter(new ForwardingAppender<>(
@@ -72,7 +72,7 @@ final class Singletons {
         commandHandler = new CommandHandler(
                 eventRouter,
                 application.commandProcessor(),
-                application.exceptionHandler()
+                context.exceptionHandler()
         );
     }
     final SequenceGenerator adminSequenceGenerator;

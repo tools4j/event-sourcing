@@ -24,7 +24,8 @@
 package org.tools4j.eso.init;
 
 import org.agrona.concurrent.IdleStrategy;
-import org.tools4j.eso.app.Application;
+import org.tools4j.eso.application.Application;
+import org.tools4j.eso.application.ExceptionHandler;
 import org.tools4j.eso.command.Command;
 import org.tools4j.eso.event.Event;
 import org.tools4j.eso.input.Input;
@@ -56,6 +57,9 @@ interface Context {
 
     TimeSource timeSource();
     Context timeSource(TimeSource timeSource);
+
+    ExceptionHandler exceptionHandler();
+    Context exceptionHandler(ExceptionHandler exceptionHandler);
 
     IdleStrategy idleStrategy();
     Context idleStrategy(IdleStrategy idleStrategy);

@@ -27,17 +27,16 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.Test;
-import org.tools4j.eso.app.Application;
-import org.tools4j.eso.app.ExceptionHandler;
-import org.tools4j.eso.app.SimpleApplication;
+import org.tools4j.eso.application.Application;
+import org.tools4j.eso.application.SimpleApplication;
 import org.tools4j.eso.command.Command;
 import org.tools4j.eso.command.CommandLoopback;
 import org.tools4j.eso.command.FlyweightCommand;
 import org.tools4j.eso.event.Event;
 import org.tools4j.eso.event.EventRouter;
 import org.tools4j.eso.event.FlyweightEvent;
-import org.tools4j.eso.log.InMemoryLog;
 import org.tools4j.eso.input.Input;
+import org.tools4j.eso.log.InMemoryLog;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -49,8 +48,7 @@ public class LauncherTest {
     private static int TYPE_STRING = 1;
 
     private Application application = new SimpleApplication(
-            "simple-test-app",
-            this::onCommand, this::onEvent, ExceptionHandler.DEFAULT
+            "simple-test-app", this::process, this::apply
     );
     private Queue<String> strings = new ConcurrentLinkedQueue<>();
     private Input.Poller stringInputPoller = new StringInputPoller(strings);
@@ -79,17 +77,17 @@ public class LauncherTest {
         }
     }
 
-    private void onCommand(final Command command, final EventRouter router) {
-        System.out.println("command: " + command + ", payload=" + payloadFor(command.type(), command.payload()));
+    private void process(final Command command, final EventRouter router) {
+        System.out.println("processing: " + command + ", payload=" + payloadFor(command.type(), command.payload()));
         router.routeEvent(command.type(), command.payload(), 0, command.payload().capacity());
     }
 
-    private void onEvent(final Event event, final CommandLoopback commandLoopback) {
+    private void apply(final Event event, final CommandLoopback commandLoopback) {
         System.out.println("applied: " + event + ", payload=" + payloadFor(event.type(), event.payload()));
     }
 
     private void publish(final Event event) {
-        System.out.println("publish: " + event + ", payload=" + payloadFor(event.type(), event.payload()));
+        System.out.println("published: " + event + ", payload=" + payloadFor(event.type(), event.payload()));
     }
 
     private String payloadFor(final int type, final DirectBuffer payload) {

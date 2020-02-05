@@ -26,11 +26,13 @@ package org.tools4j.eso.log;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.tools4j.eso.log.PeekableMessageLog.PeekPollHandler.Result;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
+import static org.tools4j.eso.log.PeekableMessageLog.PeekPollHandler.Result.POLL;
 
 public class InMemoryLog<M extends Writable> implements PeekableMessageLog<M> {
 
@@ -52,14 +54,35 @@ public class InMemoryLog<M extends Writable> implements PeekableMessageLog<M> {
 
     @Override
     public PeekablePoller<M> poller() {
-        return handler -> {
-            final DirectBuffer message = queue.poll();
-            if (message != null) {
-                final M flyMessage = flyweight.init(message, 0);
-                handler.onMessage(flyMessage);
-                return 1;
+        return new PeekablePoller<M>() {
+            @Override
+            public int peekOrPoll(final PeekPollHandler<? super M> handler) {
+                final DirectBuffer message = queue.peek();
+                if (message != null) {
+                    final M flyMessage = flyweight.init(message, 0);
+                    final Result result = handler.onMessage(flyMessage);
+                    if (result == POLL) {
+                        queue.poll();
+                        return 1;
+                    }
+                    //NOTE: we have work done here, but if this work is the only
+                    //      bit performed in the duty cycle loop then the result
+                    //      in the next loop iteration will be the same, hence we
+                    //      better let the idle strategy do its job
+                }
+                return 0;
             }
-            return 0;
+
+            @Override
+            public int poll(final Handler<? super M> handler) {
+                final DirectBuffer message = queue.poll();
+                if (message != null) {
+                    final M flyMessage = flyweight.init(message, 0);
+                    handler.onMessage(flyMessage);
+                    return 1;
+                }
+                return 0;
+            }
         };
     }
 

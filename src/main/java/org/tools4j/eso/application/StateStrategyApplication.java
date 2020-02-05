@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.app;
+package org.tools4j.eso.application;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -33,35 +33,29 @@ public class StateStrategyApplication implements Application {
     private final String name;
     private final Supplier<CommandProcessor> commandProcessorSupplier;
     private final Supplier<EventApplier> eventApplierSupplier;
-    private final ExceptionHandler exceptionHandler;
 
     public StateStrategyApplication(final String name,
                                     final Supplier<CommandProcessor> commandProcessorSupplier,
-                                    final Supplier<EventApplier> eventApplierSupplier,
-                                    final ExceptionHandler exceptionHandler) {
+                                    final Supplier<EventApplier> eventApplierSupplier) {
         this.name = requireNonNull(name);
         this.commandProcessorSupplier = requireNonNull(commandProcessorSupplier);
         this.eventApplierSupplier = requireNonNull(eventApplierSupplier);
-        this.exceptionHandler = requireNonNull(exceptionHandler);
     }
 
     public static <R,W> Application create(final String name,
                                            final R readOnlyState,
                                            final W readWriteState,
                                            final Function<? super R, ? extends CommandProcessor> commandHandlerSupplier,
-                                           final Function<? super W, ? extends EventApplier> eventApplierSupplier,
-                                           final ExceptionHandler exceptionHandler) {
+                                           final Function<? super W, ? extends EventApplier> eventApplierSupplier) {
         requireNonNull(name);
         requireNonNull(readOnlyState);
         requireNonNull(readWriteState);
         requireNonNull(commandHandlerSupplier);
         requireNonNull(eventApplierSupplier);
-        requireNonNull(exceptionHandler);
         return new StateStrategyApplication(
                 name,
                 () -> commandHandlerSupplier.apply(readOnlyState),
-                () -> eventApplierSupplier.apply(readWriteState),
-                exceptionHandler
+                () -> eventApplierSupplier.apply(readWriteState)
         );
     }
 
@@ -73,11 +67,6 @@ public class StateStrategyApplication implements Application {
     @Override
     public EventApplier eventApplier() {
         return eventApplierSupplier.get();
-    }
-
-    @Override
-    public ExceptionHandler exceptionHandler() {
-        return exceptionHandler;
     }
 
     @Override

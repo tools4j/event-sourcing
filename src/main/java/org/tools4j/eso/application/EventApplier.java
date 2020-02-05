@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.app;
+package org.tools4j.eso.application;
 
-import org.tools4j.eso.command.Command;
-import org.tools4j.eso.event.EventRouter;
+import org.tools4j.eso.command.CommandLoopback;
+import org.tools4j.eso.event.Event;
 
 @FunctionalInterface
-public interface CommandProcessor {
-    void onCommand(Command command, EventRouter router);
+public interface EventApplier {
+    void onEvent(Event event, CommandLoopback loopback);
 }

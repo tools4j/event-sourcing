@@ -23,7 +23,7 @@
  */
 package org.tools4j.eso.event;
 
-import org.tools4j.eso.app.EventApplier;
+import org.tools4j.eso.application.EventApplier;
 import org.tools4j.eso.command.CommandLoopback;
 import org.tools4j.eso.state.AdminStateProvider;
 

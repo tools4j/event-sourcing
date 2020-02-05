@@ -25,7 +25,8 @@ package org.tools4j.eso.init;
 
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
-import org.tools4j.eso.app.Application;
+import org.tools4j.eso.application.Application;
+import org.tools4j.eso.application.ExceptionHandler;
 import org.tools4j.eso.command.Command;
 import org.tools4j.eso.event.Event;
 import org.tools4j.eso.handler.CommandPeekPollHandler;
@@ -59,6 +60,7 @@ final class DefaultContext implements Context {
     private PeekableMessageLog<Command> commandLog;
     private MessageLog<Event> eventLog;
     private TimeSource timeSource;
+    private ExceptionHandler exceptionHandler = ExceptionHandler.DEFAULT;
     private IdleStrategy idleStrategy = new BackoffIdleStrategy(
             100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
     private ThreadFactory threadFactory;
@@ -140,6 +142,17 @@ final class DefaultContext implements Context {
     @Override
     public Context timeSource(final TimeSource timeSource) {
         this.timeSource = timeSource;//null allowed here
+        return this;
+    }
+
+    @Override
+    public ExceptionHandler exceptionHandler() {
+        return exceptionHandler;
+    }
+
+    @Override
+    public Context exceptionHandler(final ExceptionHandler exceptionHandler) {
+        this.exceptionHandler = requireNonNull(exceptionHandler);
         return this;
     }
 
@@ -253,7 +266,7 @@ final class DefaultContext implements Context {
         context.validateAndPopulateDefaults();
         return dutyCycle(context).start(
                 idleStrategy(context),
-                context.application().exceptionHandler(),
+                context.exceptionHandler(),
                 context.threadFactory()
         );
     }

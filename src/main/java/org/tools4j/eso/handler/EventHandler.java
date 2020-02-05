@@ -23,8 +23,8 @@
  */
 package org.tools4j.eso.handler;
 
-import org.tools4j.eso.app.EventApplier;
-import org.tools4j.eso.app.ExceptionHandler;
+import org.tools4j.eso.application.EventApplier;
+import org.tools4j.eso.application.ExceptionHandler;
 import org.tools4j.eso.command.CommandLoopback;
 import org.tools4j.eso.event.Event;
 import org.tools4j.eso.log.MessageLog;
