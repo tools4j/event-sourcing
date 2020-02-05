@@ -21,23 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.command;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.tools4j.eso.cmd.Command;
 import org.tools4j.eso.log.Flyweight;
 
-public class FlyweightEvent implements Flyweight<FlyweightEvent>, Event, Event.Id, Command.Id {
+public class FlyweightCommand implements Flyweight<FlyweightCommand>, Command, Command.Id {
 
-    public static final int SOURCE_OFFSET = 0;
-    public static final int SOURCE_LENGTH = Integer.BYTES;
-    public static final int SEQUENCE_OFFSET = SOURCE_OFFSET + SOURCE_LENGTH;
+    public static final int INPUT_OFFSET = 0;
+    public static final int INPUT_LENGTH = Integer.BYTES;
+    public static final int SEQUENCE_OFFSET = INPUT_OFFSET + INPUT_LENGTH;
     public static final int SEQUENCE_LENGTH = Long.BYTES;
-    public static final int INDEX_OFFSET = SEQUENCE_OFFSET + SEQUENCE_LENGTH;
-    public static final int INDEX_LENGTH = Integer.BYTES;
-    public static final int TYPE_OFFSET = INDEX_OFFSET + INDEX_LENGTH;
+    public static final int TYPE_OFFSET = SEQUENCE_OFFSET + SEQUENCE_LENGTH;
     public static final int TYPE_LENGTH = Integer.BYTES;
     public static final int TIME_OFFSET = TYPE_OFFSET + TYPE_LENGTH;
     public static final int TIME_LENGTH = Long.BYTES;
@@ -45,47 +42,46 @@ public class FlyweightEvent implements Flyweight<FlyweightEvent>, Event, Event.I
     public static final int SIZE_LENGTH = Integer.BYTES;
 
     public static final int HEADER_OFFSET = 0;
-    public static final int HEADER_LENGTH = SOURCE_LENGTH + SEQUENCE_LENGTH +
-            INDEX_LENGTH + TYPE_LENGTH + TIME_LENGTH + SIZE_LENGTH;
+    public static final int HEADER_LENGTH = INPUT_LENGTH + SEQUENCE_LENGTH +
+            TYPE_LENGTH + TIME_LENGTH + SIZE_LENGTH;
     public static final int PAYLOAD_OFFSET = HEADER_OFFSET + HEADER_LENGTH;
 
     private final MutableDirectBuffer header = new UnsafeBuffer(0, 0);
     private final DirectBuffer payload = new UnsafeBuffer(0, 0);
 
-    public FlyweightEvent init(final MutableDirectBuffer header,
-                               final int headerOffset,
-                               final int source,
-                               final long sequence,
-                               final int index,
-                               final int type,
-                               final long time,
-                               final DirectBuffer payload,
-                               final int payloadOffset,
-                               final int payloadLSize) {
-        writeHeaderTo(header, headerOffset, source, sequence, index, type, time, payloadLSize);
+    public FlyweightCommand init(final MutableDirectBuffer header,
+                                 final int headerOffset,
+                                 final int input,
+                                 final long sequence,
+                                 final int type,
+                                 final long time,
+                                 final DirectBuffer payload,
+                                 final int payloadOffset,
+                                 final int payloadLSize) {
+        writeHeaderTo(header, headerOffset, input, sequence, type, time, payloadLSize);
         return init(header, headerOffset, payload, payloadOffset, payloadLSize);
     }
 
-    public FlyweightEvent init(final DirectBuffer header,
-                               final int headerOffset,
-                               final DirectBuffer payload,
-                               final int payloadOffset,
-                               final int payloadSize) {
+    public FlyweightCommand init(final DirectBuffer header,
+                                 final int headerOffset,
+                                 final DirectBuffer payload,
+                                 final int payloadOffset,
+                                 final int payloadSize) {
         this.header.wrap(header, headerOffset, HEADER_LENGTH);
         this.payload.wrap(payload, payloadOffset, payloadSize);
         return this;
     }
 
     @Override
-    public FlyweightEvent init(final DirectBuffer event, final int offset) {
+    public FlyweightCommand init(final DirectBuffer command, final int offset) {
         return this.init(
-                event, offset + HEADER_OFFSET,
-                event, offset + PAYLOAD_OFFSET,
-                event.getInt(offset + SIZE_OFFSET)
+                command, offset + HEADER_OFFSET,
+                command, offset + PAYLOAD_OFFSET,
+                command.getInt(offset + SIZE_OFFSET)
         );
     }
 
-    public FlyweightEvent reset() {
+    public FlyweightCommand reset() {
         header.wrap(0, 0);
         payload.wrap(0, 0);
         return this;
@@ -97,23 +93,13 @@ public class FlyweightEvent implements Flyweight<FlyweightEvent>, Event, Event.I
     }
 
     @Override
-    public Command.Id commandId() {
-        return this;
-    }
-
-    @Override
-    public int source() {
-        return header.getInt(SOURCE_OFFSET);
+    public int input() {
+        return header.getInt(INPUT_OFFSET);
     }
 
     @Override
     public long sequence() {
         return header.getLong(SEQUENCE_OFFSET);
-    }
-
-    @Override
-    public int index() {
-        return header.getInt(INDEX_OFFSET);
     }
 
     @Override
@@ -133,15 +119,13 @@ public class FlyweightEvent implements Flyweight<FlyweightEvent>, Event, Event.I
 
     public static int writeHeaderTo(final MutableDirectBuffer header,
                                     final int headerOffset,
-                                    final int source,
+                                    final int input,
                                     final long sequence,
-                                    final int index,
                                     final int type,
                                     final long time,
                                     final int payloadLSize) {
-        header.putInt(headerOffset + SOURCE_OFFSET, source);
+        header.putInt(headerOffset + INPUT_OFFSET, input);
         header.putLong(headerOffset + SEQUENCE_OFFSET, sequence);
-        header.putInt(headerOffset + INDEX_OFFSET, index);
         header.putInt(headerOffset + TYPE_OFFSET, type);
         header.putLong(headerOffset + TIME_OFFSET, time);
         header.putInt(headerOffset + SIZE_OFFSET, payloadLSize);
@@ -158,12 +142,11 @@ public class FlyweightEvent implements Flyweight<FlyweightEvent>, Event, Event.I
     @Override
     public String toString() {
         if (header.capacity() < HEADER_LENGTH) {
-            return "FlyweightEvent";
+            return "FlyweightCommand";
         }
-        return "FlyweightEvent{" +
-                "source=" + header.getInt(SOURCE_OFFSET) +
+        return "FlyweightCommand{" +
+                "input=" + header.getInt(INPUT_OFFSET) +
                 ", sequence=" + header.getLong(SEQUENCE_OFFSET) +
-                ", index=" + header.getInt(INDEX_OFFSET) +
                 ", type=" + header.getInt(TYPE_OFFSET) +
                 ", time=" + header.getLong(TIME_OFFSET) +
                 ", payload-size=" + header.getInt(SIZE_OFFSET) +

@@ -21,19 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.src;
+package org.tools4j.eso.input;
 
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.tools4j.eso.cmd.CommandType;
+import org.tools4j.eso.command.CommandType;
 import org.tools4j.eso.state.TimerState;
 import org.tools4j.eso.time.TimeSource;
 
 import static java.util.Objects.requireNonNull;
-import static org.tools4j.eso.cmd.AdminCommands.TIMER_PAYLOAD_SIZE;
-import static org.tools4j.eso.cmd.AdminCommands.triggerTimer;
+import static org.tools4j.eso.command.AdminCommands.TIMER_PAYLOAD_SIZE;
+import static org.tools4j.eso.command.AdminCommands.triggerTimer;
 
-public final class TimerTriggerSource implements Source {
+public final class TimerTriggerInput implements Input {
 
     private final TimeSource timeSource;
     private final TimerState timerState;
@@ -42,9 +42,9 @@ public final class TimerTriggerSource implements Source {
     private final MutableDirectBuffer buffer = new ExpandableDirectByteBuffer(TIMER_PAYLOAD_SIZE);
     private final Poller poller = new TimerTriggerPoller();
 
-    public TimerTriggerSource(final TimeSource timeSource,
-                              final TimerState timerState,
-                              final SequenceGenerator adminSequenceGenerator) {
+    public TimerTriggerInput(final TimeSource timeSource,
+                             final TimerState timerState,
+                             final SequenceGenerator adminSequenceGenerator) {
         this.timeSource = requireNonNull(timeSource);
         this.timerState = requireNonNull(timerState);
         this.adminSequenceGenerator = requireNonNull(adminSequenceGenerator);

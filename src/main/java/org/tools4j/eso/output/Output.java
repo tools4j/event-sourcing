@@ -21,35 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.output;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.log.Writable;
+import org.tools4j.eso.event.Event;
 
-public interface Event extends Writable {
-    interface Id {
-        Command.Id commandId();
-        int index();
-    }
-
-    Id id();
-
-    int type();
-
-    long time();
-
-    default boolean isAdmin() {
-        return EventType.isAdmin(type());
-    }
-
-    default boolean isApplication() {
-        return EventType.isApplication(type());
-    }
-
-    DirectBuffer payload();
-
-    @Override
-    int writeTo(MutableDirectBuffer dst, int offset);
+@FunctionalInterface
+public interface Output {
+    void publish(Event event);
 }

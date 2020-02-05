@@ -21,11 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.src;
+package org.tools4j.eso.event;
 
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.log.Writable;
 
-@FunctionalInterface
-public interface SourceSequenceGenerator {
-    long nextSequence(int source, DirectBuffer buffer, int offset, int length);
+public interface Event extends Writable {
+    interface Id {
+        Command.Id commandId();
+        int index();
+    }
+
+    Id id();
+
+    int type();
+
+    long time();
+
+    default boolean isAdmin() {
+        return EventType.isAdmin(type());
+    }
+
+    default boolean isApplication() {
+        return EventType.isApplication(type());
+    }
+
+    DirectBuffer payload();
+
+    @Override
+    int writeTo(MutableDirectBuffer dst, int offset);
 }

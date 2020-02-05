@@ -26,16 +26,19 @@ package org.tools4j.eso.init;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.tools4j.eso.app.Application;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.Event;
-import org.tools4j.eso.handler.*;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.event.Event;
+import org.tools4j.eso.handler.CommandPeekPollHandler;
+import org.tools4j.eso.handler.CommandSkipper;
+import org.tools4j.eso.handler.InputHandlerFactory;
+import org.tools4j.eso.input.Input;
 import org.tools4j.eso.log.MessageLog;
 import org.tools4j.eso.log.PeekableMessageLog;
 import org.tools4j.eso.loop.CommandPollerStep;
 import org.tools4j.eso.loop.DutyCycle;
 import org.tools4j.eso.loop.EventApplierStep;
 import org.tools4j.eso.loop.SequencerStep;
-import org.tools4j.eso.src.Source;
+import org.tools4j.eso.output.Output;
 import org.tools4j.eso.time.TimeSource;
 import org.tools4j.nobark.run.ThreadLike;
 
@@ -51,7 +54,8 @@ final class DefaultContext implements Context {
     private static final String DEFAULT_THREAD_NAME = "duty-cycle";
 
     private Application application;
-    private final List<Source> sources = new ArrayList<>();
+    private final List<Input> inputs = new ArrayList<>();
+    private Output output = event -> {};
     private PeekableMessageLog<Command> commandLog;
     private MessageLog<Event> eventLog;
     private TimeSource timeSource;
@@ -70,19 +74,30 @@ final class DefaultContext implements Context {
     }
 
     @Override
-    public Source[] sources() {
-        return sources.toArray(new Source[sources.size()]);
+    public Input[] inputs() {
+        return inputs.toArray(new Input[inputs.size()]);
     }
 
     @Override
-    public Context source(final Source source) {
-        sources.add(source);
+    public Context input(final Input input) {
+        inputs.add(input);
         return this;
     }
 
     @Override
-    public Context source(final int id, final Source.Poller poller) {
-        return source(Source.create(id, poller));
+    public Context input(final int id, final Input.Poller poller) {
+        return input(Input.create(id, poller));
+    }
+
+    @Override
+    public Output output() {
+        return output;
+    }
+
+    @Override
+    public Context output(final Output output) {
+        this.output = requireNonNull(output);
+        return this;
     }
 
     @Override
@@ -184,12 +199,12 @@ final class DefaultContext implements Context {
         );
     }
 
-    static SourceHandlerFactory sourceHandlerFactory(final Context context) {
-        return new SourceHandlerFactory(context.commandLog().appender(), context.timeSource());
+    static InputHandlerFactory inputHandlerFactory(final Context context) {
+        return new InputHandlerFactory(context.commandLog().appender(), context.timeSource());
     }
 
     static SequencerStep sequencerStep(final Context context) {
-        return new SequencerStep(sourceHandlerFactory(context), context.sources());
+        return new SequencerStep(inputHandlerFactory(context), context.inputs());
     }
 
     static CommandPollerStep commandPollerStep(final Context context,

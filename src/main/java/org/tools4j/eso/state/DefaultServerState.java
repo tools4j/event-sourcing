@@ -24,7 +24,6 @@
 package org.tools4j.eso.state;
 
 public class DefaultServerState implements ServerState {
-
     @Override
     public boolean processCommands() {
         return true;

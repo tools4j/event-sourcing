@@ -21,10 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.app;
+package org.tools4j.eso.command;
 
-public interface Application {
-    CommandProcessor commandProcessor();
-    EventApplier eventApplier();
-    ExceptionHandler exceptionHandler();
+import org.agrona.DirectBuffer;
+
+public interface CommandLoopback {
+    default void enqueueCommand(DirectBuffer command, int offset, int length) {
+        enqueueCommand(CommandType.APPLICATION.value(), command, offset, length);
+    }
+
+    void enqueueCommand(int type, DirectBuffer command, int offset, int length);
 }

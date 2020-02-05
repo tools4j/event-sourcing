@@ -23,7 +23,7 @@
  */
 package org.tools4j.eso.loop;
 
-import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.event.Event;
 import org.tools4j.eso.log.MessageLog;
 import org.tools4j.nobark.loop.Step;
 

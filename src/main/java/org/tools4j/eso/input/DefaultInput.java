@@ -21,17 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.cmd;
+package org.tools4j.eso.input;
 
-import org.agrona.DirectBuffer;
+import static java.util.Objects.requireNonNull;
 
-public interface CommandLoopback {
-    default void enqueueCommand(DirectBuffer command, int offset, int length) {
-        enqueueCommand(CommandType.APPLICATION.value(), command, offset, length);
+public class DefaultInput implements Input {
+
+    private final int id;
+    private final Input.Poller poller;
+
+    public DefaultInput(final int id, final Input.Poller poller) {
+        this.id = id;
+        this.poller = requireNonNull(poller);
     }
 
-    void enqueueCommand(int type, DirectBuffer command, int offset, int length);
+    @Override
+    public int id() {
+        return id;
+    }
 
-    CommandLoopback NOOP = (type, event, offset, length) -> {};
-
+    @Override
+    public Poller poller() {
+        return poller;
+    }
 }

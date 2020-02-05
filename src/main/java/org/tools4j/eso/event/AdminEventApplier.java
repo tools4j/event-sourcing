@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.event;
 
 import org.tools4j.eso.app.EventApplier;
-import org.tools4j.eso.cmd.CommandLoopback;
+import org.tools4j.eso.command.CommandLoopback;
 import org.tools4j.eso.state.AdminStateProvider;
 
 import static java.util.Objects.requireNonNull;
-import static org.tools4j.eso.evt.AdminEvents.*;
+import static org.tools4j.eso.event.AdminEvents.*;
 
 public class AdminEventApplier implements EventApplier {
 

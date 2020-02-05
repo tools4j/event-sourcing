@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.event;
 
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.command.Command;
 import org.tools4j.eso.log.MessageLog;
 
 import static java.util.Objects.requireNonNull;
@@ -54,7 +54,7 @@ public class FlyweightEventRouter implements EventRouter {
     public void routeEvent(final int type, final DirectBuffer event, final int offset, final int length) {
         checkAllowedType(type);
         eventLogAppender.append(flyweightEvent.init(
-                headerBuffer, 0, command.id().source(), command.id().sequence(), index, type,
+                headerBuffer, 0, command.id().input(), command.id().sequence(), index, type,
                 command.time(), event, offset, length
         ));
         this.flyweightEvent.reset();

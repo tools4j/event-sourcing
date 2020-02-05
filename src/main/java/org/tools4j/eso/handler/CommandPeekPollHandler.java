@@ -23,7 +23,7 @@
  */
 package org.tools4j.eso.handler;
 
-import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.command.Command;
 import org.tools4j.eso.log.PeekableMessageLog;
 import org.tools4j.eso.state.ServerState;
 

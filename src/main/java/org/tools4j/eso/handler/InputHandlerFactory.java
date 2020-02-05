@@ -21,46 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.cmd;
+package org.tools4j.eso.handler;
 
-import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
-
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.command.FlyweightCommand;
 import org.tools4j.eso.log.MessageLog;
-import org.tools4j.eso.src.SequenceGenerator;
-import org.tools4j.eso.src.Source;
+import org.tools4j.eso.input.Input;
 import org.tools4j.eso.time.TimeSource;
 
-import static java.util.Objects.requireNonNull;
-import static org.tools4j.eso.cmd.AdminCommands.TIMER_PAYLOAD_SIZE;
+import java.util.function.Function;
 
-public class DefaultCommandLoopback implements CommandLoopback {
+import static java.util.Objects.requireNonNull;
+
+public final class InputHandlerFactory implements Function<Input, Input.Handler> {
 
     private final MessageLog.Appender<? super Command> commandLogAppender;
     private final TimeSource timeSource;
-    private final SequenceGenerator adminSequenceGenerator;
-
-    private final MutableDirectBuffer buffer = new ExpandableDirectByteBuffer(
-            FlyweightCommand.HEADER_LENGTH + TIMER_PAYLOAD_SIZE);
+    private final MutableDirectBuffer headerBuffer = new ExpandableDirectByteBuffer(FlyweightCommand.HEADER_LENGTH);
     private final FlyweightCommand flyweightCommand = new FlyweightCommand();
 
-    public DefaultCommandLoopback(final MessageLog.Appender<? super Command> commandLogAppender,
-                                  final TimeSource timeSource,
-                                  final SequenceGenerator adminSequenceGenerator) {
+    public InputHandlerFactory(final MessageLog.Appender<? super Command> commandLogAppender,
+                               final TimeSource timeSource) {
         this.commandLogAppender = requireNonNull(commandLogAppender);
         this.timeSource = requireNonNull(timeSource);
-        this.adminSequenceGenerator = requireNonNull(adminSequenceGenerator);
     }
 
     @Override
-    public void enqueueCommand(final int type, final DirectBuffer command, final int offset, final int length) {
-        if (CommandType.isAdmin(type)) {
-            throw new IllegalArgumentException("Invalid command type: " + type);
-        }
-        commandLogAppender.append(flyweightCommand.init(buffer, 0, Source.ADMIN_ID,
-                adminSequenceGenerator.nextSequence(), type, timeSource.currentTime(), command, offset, length
-        ));
-        flyweightCommand.reset();
+    public Input.Handler apply(final Input input) {
+        return new InputHandler(
+                commandLogAppender,
+                timeSource,
+                input,
+                headerBuffer,
+                flyweightCommand
+        );
     }
 }

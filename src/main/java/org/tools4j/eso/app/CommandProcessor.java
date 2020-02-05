@@ -23,8 +23,8 @@
  */
 package org.tools4j.eso.app;
 
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.event.EventRouter;
 
 @FunctionalInterface
 public interface CommandProcessor {

@@ -23,7 +23,7 @@
  */
 package org.tools4j.eso.loop;
 
-import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.command.Command;
 import org.tools4j.eso.log.PeekableMessageLog;
 import org.tools4j.nobark.loop.Step;
 

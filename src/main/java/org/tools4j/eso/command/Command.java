@@ -21,15 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.command;
 
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.tools4j.eso.log.Writable;
 
-@FunctionalInterface
-public interface EventRouter {
-    default void routeEvent(final DirectBuffer event, final int offset, final int length) {
-        routeEvent(EventType.APPLICATION.value(), event, offset, length);
+public interface Command extends Writable {
+    interface Id {
+        int input();
+        long sequence();
     }
 
-    void routeEvent(int type, DirectBuffer event, int offset, int length);
+    Id id();
+
+    int type();
+
+    long time();
+
+    default boolean isAdmin() {
+        return CommandType.isAdmin(type());
+    }
+
+    default boolean isApplication() {
+        return CommandType.isApplication(type());
+    }
+
+    DirectBuffer payload();
+
+    int writeTo(MutableDirectBuffer buffer, int offset);
 }

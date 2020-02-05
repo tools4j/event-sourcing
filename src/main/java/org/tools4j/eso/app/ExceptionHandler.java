@@ -23,29 +23,35 @@
  */
 package org.tools4j.eso.app;
 
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.event.Event;
 import org.tools4j.nobark.loop.Loop;
 import org.tools4j.nobark.loop.Step;
 
 @FunctionalInterface
 public interface ExceptionHandler extends org.tools4j.nobark.loop.ExceptionHandler {
 
-    void handleException(Command command, Throwable t);
+    void handleException(String message, Throwable t);
 
-    default void handleException(final Event event, final Throwable t) {
-        System.err.println("Unhandled exception when applying event [" + event + "], e=" + t);
-        t.printStackTrace();
+    default void handleCommandProcessorException(final Command command, final Throwable t) {
+        handleException("Unhandled exception when processing command [" + command + "], e=" + t, t);
+    }
+
+    default void handleEventApplierException(final Event event, final Throwable t) {
+        handleException("Unhandled exception when applying event [" + event + "], e=" + t, t);
+    }
+
+    default void handleEventOutputException(final Event event, final Throwable t) {
+        handleException("Unhandled exception when publishing event [" + event + "], e=" + t, t);
     }
 
     @Override
     default void handleException(final Loop loop, final Step step, final Throwable t) {
-        System.err.println("Unhandled exception when performing step [" + step + "], e=" + t);
-        t.printStackTrace();
+        handleException("Unhandled exception when performing step [" + step + "], e=" + t, t);
     }
 
-    ExceptionHandler DEFAULT = (command, t) -> {
-        System.err.println("Unhandled exception when processing command [" + command + "], e=" + t);
+    ExceptionHandler DEFAULT = (msg, t) -> {
+        System.err.println(msg);
         t.printStackTrace();
     };
 

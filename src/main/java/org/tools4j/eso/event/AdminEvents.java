@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.event;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.cmd.CommandType;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.command.CommandType;
 
 public enum AdminEvents {
     ;
@@ -49,7 +49,7 @@ public enum AdminEvents {
                                       final int offset,
                                       final Command command,
                                       final int index) {
-        return flyweightEvent.init(headerBuffer, offset, command.id().source(), command.id().sequence(), index,
+        return flyweightEvent.init(headerBuffer, offset, command.id().input(), command.id().sequence(), index,
                 EventType.NOOP.value(), command.time(), EMPTY_BUFFER, 0, 0);
     }
 

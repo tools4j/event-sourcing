@@ -21,28 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.cmd;
+package org.tools4j.eso.event;
 
-public enum CommandType {
-    APPLICATION(0),
-    TRIGGER_TIMER(-1),
-    NOMINATE_LEADER(-2);
+import org.agrona.DirectBuffer;
 
-    private final int value;
-
-    CommandType(final int value) {
-        this.value = value;
+@FunctionalInterface
+public interface EventRouter {
+    default void routeEvent(final DirectBuffer event, final int offset, final int length) {
+        routeEvent(EventType.APPLICATION.value(), event, offset, length);
     }
 
-    public int value() {
-        return value;
-    }
-
-    public static boolean isAdmin(final int value) {
-        return value < 0;
-    }
-
-    public static boolean isApplication(final int value) {
-        return value >= 0;
-    }
+    void routeEvent(int type, DirectBuffer event, int offset, int length);
 }

@@ -27,7 +27,7 @@ import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.LongArrayList;
 
-import org.tools4j.eso.src.AdjustableSequenceGenerator;
+import org.tools4j.eso.input.AdjustableSequenceGenerator;
 
 import static java.util.Objects.requireNonNull;
 

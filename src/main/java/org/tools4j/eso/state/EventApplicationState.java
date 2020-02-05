@@ -23,12 +23,12 @@
  */
 package org.tools4j.eso.state;
 
-import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.command.Command;
 
 public interface EventApplicationState {
     long NO_COMMANDS = -1;
 
-    long lastCommandAllEventsApplied(int source);
+    long lastCommandAllEventsApplied(int input);
 
     interface Mutable extends EventApplicationState {
         void allEventsAppliedFor(Command.Id id);

@@ -23,7 +23,7 @@
  */
 package org.tools4j.eso.handler;
 
-import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.command.Command;
 import org.tools4j.eso.log.PeekableMessageLog;
 import org.tools4j.eso.state.EventApplicationState;
 
@@ -41,7 +41,7 @@ public class CommandSkipper implements PeekableMessageLog.PeekPollHandler<Comman
 
     @Override
     public Result onMessage(final Command command) {
-        final long lastAppliedForSource = eventApplicationState.lastCommandAllEventsApplied(command.id().source());
-        return lastAppliedForSource >= command.id().sequence() ? POLL : PEEK;
+        final long lastAppliedForInput = eventApplicationState.lastCommandAllEventsApplied(command.id().input());
+        return lastAppliedForInput >= command.id().sequence() ? POLL : PEEK;
     }
 }

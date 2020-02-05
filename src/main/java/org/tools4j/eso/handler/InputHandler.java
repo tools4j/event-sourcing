@@ -25,30 +25,30 @@ package org.tools4j.eso.handler;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.cmd.FlyweightCommand;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.command.FlyweightCommand;
 import org.tools4j.eso.log.MessageLog;
-import org.tools4j.eso.src.Source;
+import org.tools4j.eso.input.Input;
 import org.tools4j.eso.time.TimeSource;
 
 import static java.util.Objects.requireNonNull;
 
-public final class SourceHandler implements Source.Handler {
+public final class InputHandler implements Input.Handler {
 
     private final MessageLog.Appender<? super Command> commandLogAppender;
     private final TimeSource timeSource;
-    private final Source source;
+    private final Input input;
     private final MutableDirectBuffer headerBuffer;
     private final FlyweightCommand flyweightCommand;
 
-    public SourceHandler(final MessageLog.Appender<? super Command> commandLogAppender,
-                         final TimeSource timeSource,
-                         final Source source,
-                         final MutableDirectBuffer headerBuffer,
-                         final FlyweightCommand flyweightCommand) {
+    public InputHandler(final MessageLog.Appender<? super Command> commandLogAppender,
+                        final TimeSource timeSource,
+                        final Input input,
+                        final MutableDirectBuffer headerBuffer,
+                        final FlyweightCommand flyweightCommand) {
         this.commandLogAppender = requireNonNull(commandLogAppender);
         this.timeSource = requireNonNull(timeSource);
-        this.source  = requireNonNull(source);
+        this.input = requireNonNull(input);
         this.headerBuffer  = requireNonNull(headerBuffer);
         this.flyweightCommand  = requireNonNull(flyweightCommand);
     }
@@ -56,7 +56,7 @@ public final class SourceHandler implements Source.Handler {
     @Override
     public void onMessage(final long sequence, final int type, final DirectBuffer buffer, final int offset, final int length) {
         commandLogAppender.append(flyweightCommand.init(
-                headerBuffer, 0, source.id(), sequence, type, timeSource.currentTime(),
+                headerBuffer, 0, input.id(), sequence, type, timeSource.currentTime(),
                 buffer, offset, length));
         flyweightCommand.reset();
     }

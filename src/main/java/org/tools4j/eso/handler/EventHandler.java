@@ -25,22 +25,26 @@ package org.tools4j.eso.handler;
 
 import org.tools4j.eso.app.EventApplier;
 import org.tools4j.eso.app.ExceptionHandler;
-import org.tools4j.eso.cmd.CommandLoopback;
-import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.command.CommandLoopback;
+import org.tools4j.eso.event.Event;
 import org.tools4j.eso.log.MessageLog;
+import org.tools4j.eso.output.Output;
 
 import static java.util.Objects.requireNonNull;
 
 public class EventHandler implements MessageLog.Handler<Event> {
 
     private final CommandLoopback commandLoopback;
+    private final Output output;
     private final EventApplier eventApplier;
     private final ExceptionHandler exceptionHandler;
 
     public EventHandler(final CommandLoopback commandLoopback,
+                        final Output output,
                         final EventApplier eventApplier,
                         final ExceptionHandler exceptionHandler) {
         this.commandLoopback = requireNonNull(commandLoopback);
+        this.output = requireNonNull(output);
         this.eventApplier = requireNonNull(eventApplier);
         this.exceptionHandler = requireNonNull(exceptionHandler);
     }
@@ -48,9 +52,14 @@ public class EventHandler implements MessageLog.Handler<Event> {
     @Override
     public void onMessage(final Event event) {
         try {
+            output.publish(event);
+        } catch (final Throwable t) {
+            exceptionHandler.handleEventOutputException(event, t);
+        }
+        try {
             eventApplier.onEvent(event, commandLoopback);
         } catch (final Throwable t) {
-            exceptionHandler.handleException(event, t);
+            exceptionHandler.handleEventApplierException(event, t);
         }
     }
 }

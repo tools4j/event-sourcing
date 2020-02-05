@@ -24,8 +24,8 @@
 package org.tools4j.eso.time;
 
 import org.tools4j.eso.app.CommandProcessor;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.EventRouter;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.event.EventRouter;
 
 public class ReplayTimeSource implements TimeSource, CommandProcessor {
 

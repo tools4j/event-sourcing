@@ -21,11 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.src;
+package org.tools4j.eso.input;
 
 import org.agrona.DirectBuffer;
+import org.tools4j.eso.event.EventType;
 
-@FunctionalInterface
-public interface SequenceGenerator {
-    long nextSequence();
+public interface Input {
+    int ADMIN_ID = 0;
+    int id();
+
+    Poller poller();
+
+    @FunctionalInterface
+    interface Poller {
+        int poll(Handler handler);
+    }
+
+    @FunctionalInterface
+    interface Handler {
+        default void onMessage(final long sequence, final DirectBuffer buffer, final int offset, final int length) {
+            onMessage(sequence, EventType.APPLICATION.value(), buffer, offset, length);
+        }
+        void onMessage(long sequence, int type, DirectBuffer buffer, int offset, int length);
+    }
+
+    static Input create(final int id, final Poller poller) {
+        return new DefaultInput(id, poller);
+    }
 }

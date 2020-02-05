@@ -25,8 +25,8 @@ package org.tools4j.eso.handler;
 
 import org.tools4j.eso.app.CommandProcessor;
 import org.tools4j.eso.app.ExceptionHandler;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.FlyweightEventRouter;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.event.FlyweightEventRouter;
 import org.tools4j.eso.log.PeekableMessageLog;
 
 import static java.util.Objects.requireNonNull;
@@ -53,7 +53,7 @@ public class CommandHandler implements PeekableMessageLog.PeekPollHandler<Comman
             commandProcessor.onCommand(command, eventRouter);
             eventRouter.commit();//TODO add abort if there is an exception
         } catch (final Throwable t) {
-            exceptionHandler.handleException(command, t);
+            exceptionHandler.handleCommandProcessorException(command, t);
         }
         return POLL;
     }

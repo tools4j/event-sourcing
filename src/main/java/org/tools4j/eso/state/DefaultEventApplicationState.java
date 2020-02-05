@@ -24,23 +24,23 @@
 package org.tools4j.eso.state;
 
 import org.agrona.collections.Long2LongHashMap;
-import org.tools4j.eso.cmd.Command;
+import org.tools4j.eso.command.Command;
 
 public class DefaultEventApplicationState implements EventApplicationState.Mutable {
 
-    private final Long2LongHashMap sourceToSeq = new Long2LongHashMap(NO_COMMANDS);
+    private final Long2LongHashMap inputToSeqMap = new Long2LongHashMap(NO_COMMANDS);
 
     @Override
-    public long lastCommandAllEventsApplied(final int source) {
-        return sourceToSeq.get(source);
+    public long lastCommandAllEventsApplied(final int input) {
+        return inputToSeqMap.get(input);
     }
 
     @Override
     public void allEventsAppliedFor(final Command.Id id) {
-        final int source = id.source();
+        final int input = id.input();
         final long sequence = id.sequence();
-        if (sequence > lastCommandAllEventsApplied(source)) {
-            sourceToSeq.put(source, sequence);
+        if (sequence > lastCommandAllEventsApplied(input)) {
+            inputToSeqMap.put(input, sequence);
         }
     }
 }

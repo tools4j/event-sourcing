@@ -21,31 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.src;
+package org.tools4j.eso.event;
 
-import org.agrona.DirectBuffer;
-import org.tools4j.eso.evt.EventType;
+public enum  EventType {
+    APPLICATION(0),
+    NOOP(-1),
+    TIMER_STARTED(-2),
+    TIMER_STOPPED(-3),
+    TIMER_EXPIRED(-4),
+    LEADER_VOTED(-5),
+    LEADER_ELECTED(-6);
 
-public interface Source {
-    int ADMIN_ID = 0;
-    int id();
+    private final int value;
 
-    Poller poller();
-
-    @FunctionalInterface
-    interface Poller {
-        int poll(Handler handler);
+    EventType(final int value) {
+        this.value = value;
     }
 
-    @FunctionalInterface
-    interface Handler {
-        default void onMessage(final long sequence, final DirectBuffer buffer, final int offset, final int length) {
-            onMessage(sequence, EventType.APPLICATION.value(), buffer, offset, length);
-        }
-        void onMessage(long sequence, int type, DirectBuffer buffer, int offset, int length);
+    public int value() {
+        return value;
     }
 
-    static Source create(final int id, final Poller poller) {
-        return new DefaultSource(id, poller);
+    public static boolean isAdmin(final int value) {
+        return value < 0;
+    }
+
+    public static boolean isApplication(final int value) {
+        return value >= 0;
     }
 }

@@ -23,52 +23,52 @@
  */
 package org.tools4j.eso.loop;
 
-import org.tools4j.eso.src.Source;
+import org.tools4j.eso.input.Input;
 import org.tools4j.nobark.loop.Step;
 
 import java.util.function.Function;
 
 public final class SequencerStep implements Step {
 
-    private final Source.Poller[] sourcePollers;
-    private final Source.Handler[] handlers;
+    private final Input.Poller[] inputPollers;
+    private final Input.Handler[] handlers;
 
-    private int sourceIndex = 0;
+    private int inputIndex = 0;
 
-    public SequencerStep(final Function<? super Source, ? extends Source.Handler> handlerFactory,
-                         final Source... sources) {
-        this.sourcePollers = initPollersFor(sources);
-        this.handlers = initHandlersFor(handlerFactory, sources);
+    public SequencerStep(final Function<? super Input, ? extends Input.Handler> handlerFactory,
+                         final Input... inputs) {
+        this.inputPollers = initPollersFor(inputs);
+        this.handlers = initHandlersFor(handlerFactory, inputs);
     }
 
     @Override
     public boolean perform() {
-        final int count = sourcePollers.length;
+        final int count = inputPollers.length;
         for (int i = 0; i < count; i++) {
-            if (sourcePollers[sourceIndex].poll(handlers[sourceIndex]) > 0) {
+            if (inputPollers[inputIndex].poll(handlers[inputIndex]) > 0) {
                 return true;
             }
-            sourceIndex++;
-            if (sourceIndex >= count) {
-                sourceIndex = 0;
+            inputIndex++;
+            if (inputIndex >= count) {
+                inputIndex = 0;
             }
         }
         return false;
     }
 
-    private Source.Poller[] initPollersFor(final Source... sources) {
-        final Source.Poller[] pollers = new Source.Poller[sources.length];
-        for (int i = 0; i < sources.length; i++) {
-            pollers[i] = sources[i].poller();
+    private Input.Poller[] initPollersFor(final Input... inputs) {
+        final Input.Poller[] pollers = new Input.Poller[inputs.length];
+        for (int i = 0; i < inputs.length; i++) {
+            pollers[i] = inputs[i].poller();
         }
         return pollers;
     }
 
-    private Source.Handler[] initHandlersFor(final Function<? super Source, ? extends Source.Handler> handlerFactory,
-                                             final Source... sources) {
-        final Source.Handler[] handlers = new Source.Handler[sources.length];
-        for (int i = 0; i < sources.length; i++) {
-            handlers[i] = handlerFactory.apply(sources[i]);
+    private Input.Handler[] initHandlersFor(final Function<? super Input, ? extends Input.Handler> handlerFactory,
+                                            final Input... inputs) {
+        final Input.Handler[] handlers = new Input.Handler[inputs.length];
+        for (int i = 0; i < inputs.length; i++) {
+            handlers[i] = handlerFactory.apply(inputs[i]);
         }
         return handlers;
     }

@@ -25,11 +25,12 @@ package org.tools4j.eso.init;
 
 import org.agrona.concurrent.IdleStrategy;
 import org.tools4j.eso.app.Application;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.event.Event;
+import org.tools4j.eso.input.Input;
 import org.tools4j.eso.log.MessageLog;
 import org.tools4j.eso.log.PeekableMessageLog;
-import org.tools4j.eso.src.Source;
+import org.tools4j.eso.output.Output;
 import org.tools4j.eso.time.TimeSource;
 
 import java.util.concurrent.ThreadFactory;
@@ -38,9 +39,12 @@ interface Context {
     Application application();
     Context application(Application application);
 
-    Source[] sources();
-    Context source(Source source);
-    Context source(int id, Source.Poller poller);
+    Input[] inputs();
+    Context input(Input input);
+    Context input(int id, Input.Poller poller);
+
+    Output output();
+    Context output(Output output);
 
     PeekableMessageLog<Command> commandLog();
     Context commandLog(String file);

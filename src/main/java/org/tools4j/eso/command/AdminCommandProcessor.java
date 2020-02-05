@@ -21,8 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.src;
+package org.tools4j.eso.command;
 
-public interface AdjustableSequenceGenerator extends SequenceGenerator {
-    void adjust(long nextAfterThis);
+import org.tools4j.eso.app.CommandProcessor;
+import org.tools4j.eso.event.AdminEvents;
+import org.tools4j.eso.event.EventRouter;
+
+public class AdminCommandProcessor implements CommandProcessor {
+
+    @Override
+    public void onCommand(final Command command, final EventRouter router) {
+        if (command.isAdmin()) {
+            onAdminCommand(command, router);
+        }
+    }
+
+    protected void onAdminCommand(final Command command, final EventRouter router) {
+        final int type = command.type();
+        if (type == CommandType.TRIGGER_TIMER.value()) {
+            AdminEvents.timerExpired(command, router);
+        }
+    }
 }

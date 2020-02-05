@@ -21,33 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.cmd;
+package org.tools4j.eso.input;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.tools4j.eso.log.Writable;
-
-public interface Command extends Writable {
-    interface Id {
-        int source();
-        long sequence();
-    }
-
-    Id id();
-
-    int type();
-
-    long time();
-
-    default boolean isAdmin() {
-        return CommandType.isAdmin(type());
-    }
-
-    default boolean isApplication() {
-        return CommandType.isApplication(type());
-    }
-
-    DirectBuffer payload();
-
-    int writeTo(MutableDirectBuffer buffer, int offset);
+public interface AdjustableSequenceGenerator extends SequenceGenerator {
+    void adjust(long nextAfterThis);
 }

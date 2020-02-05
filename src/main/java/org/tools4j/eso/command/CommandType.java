@@ -21,20 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.evt;
+package org.tools4j.eso.command;
 
-public enum  EventType {
+public enum CommandType {
     APPLICATION(0),
-    NOOP(-1),
-    TIMER_STARTED(-2),
-    TIMER_STOPPED(-3),
-    TIMER_EXPIRED(-4),
-    LEADER_VOTED(-5),
-    LEADER_ELECTED(-6);
+    TRIGGER_TIMER(-1),
+    NOMINATE_LEADER(-2);
 
     private final int value;
 
-    EventType(final int value) {
+    CommandType(final int value) {
         this.value = value;
     }
 

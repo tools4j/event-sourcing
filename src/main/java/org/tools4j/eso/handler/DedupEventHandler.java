@@ -23,7 +23,7 @@
  */
 package org.tools4j.eso.handler;
 
-import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.event.Event;
 import org.tools4j.eso.log.MessageLog;
 import org.tools4j.eso.state.EventApplicationState;
 
@@ -42,9 +42,9 @@ public class DedupEventHandler implements MessageLog.Handler<Event> {
 
     @Override
     public void onMessage(final Event event) {
-        final int source = event.id().commandId().source();
+        final int input = event.id().commandId().input();
         final long sequence = event.id().commandId().sequence();
-        if (sequence > eventApplicationState.lastCommandAllEventsApplied(source)) {
+        if (sequence > eventApplicationState.lastCommandAllEventsApplied(input)) {
             eventHandler.onMessage(event);
         }
     }

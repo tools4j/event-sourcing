@@ -26,9 +26,9 @@ package org.tools4j.eso.time;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 
-import org.tools4j.eso.evt.AdminEvents;
-import org.tools4j.eso.evt.EventRouter;
-import org.tools4j.eso.src.SequenceGenerator;
+import org.tools4j.eso.event.AdminEvents;
+import org.tools4j.eso.event.EventRouter;
+import org.tools4j.eso.input.SequenceGenerator;
 import org.tools4j.eso.state.TimerState;
 
 import static java.util.Objects.requireNonNull;

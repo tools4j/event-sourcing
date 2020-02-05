@@ -25,18 +25,18 @@ package org.tools4j.eso.init;
 
 import org.tools4j.eso.app.Application;
 import org.tools4j.eso.app.EventApplier;
-import org.tools4j.eso.cmd.CommandLoopback;
-import org.tools4j.eso.cmd.DefaultCommandLoopback;
-import org.tools4j.eso.evt.AdminEventApplier;
-import org.tools4j.eso.evt.Event;
-import org.tools4j.eso.evt.FlyweightEventRouter;
+import org.tools4j.eso.command.CommandLoopback;
+import org.tools4j.eso.command.DefaultCommandLoopback;
+import org.tools4j.eso.event.AdminEventApplier;
+import org.tools4j.eso.event.Event;
+import org.tools4j.eso.event.FlyweightEventRouter;
 import org.tools4j.eso.handler.CommandHandler;
 import org.tools4j.eso.handler.DedupEventHandler;
 import org.tools4j.eso.handler.EventHandler;
+import org.tools4j.eso.input.SequenceGenerator;
+import org.tools4j.eso.input.SimpleSequenceGenerator;
 import org.tools4j.eso.log.ForwardingAppender;
 import org.tools4j.eso.log.MessageLog;
-import org.tools4j.eso.src.SequenceGenerator;
-import org.tools4j.eso.src.SimpleSequenceGenerator;
 import org.tools4j.eso.state.*;
 
 final class Singletons {
@@ -58,6 +58,7 @@ final class Singletons {
                 eventApplicationState,
                 new EventHandler(
                     commandLoopback,
+                    context.output(),
                     (event, loopback) -> {
                         adminEventApplier.onEvent(event, loopback);
                         application.eventApplier().onEvent(event, loopback);

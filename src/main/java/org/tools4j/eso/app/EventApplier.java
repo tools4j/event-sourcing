@@ -23,8 +23,8 @@
  */
 package org.tools4j.eso.app;
 
-import org.tools4j.eso.cmd.CommandLoopback;
-import org.tools4j.eso.evt.Event;
+import org.tools4j.eso.command.CommandLoopback;
+import org.tools4j.eso.event.Event;
 
 @FunctionalInterface
 public interface EventApplier {

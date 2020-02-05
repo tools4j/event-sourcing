@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.src;
+package org.tools4j.eso.input;
 
 import org.agrona.DirectBuffer;
 
-public class SimpleSequenceGenerator implements AdjustableSequenceGenerator, SourceSequenceGenerator {
+public class SimpleSequenceGenerator implements AdjustableSequenceGenerator, InputSequenceGenerator {
 
     private long sequence = 0;
 
@@ -35,7 +35,7 @@ public class SimpleSequenceGenerator implements AdjustableSequenceGenerator, Sou
     }
 
     @Override
-    public long nextSequence(final int source, final DirectBuffer buffer, final int offset, final int length) {
+    public long nextSequence(final int input, final DirectBuffer buffer, final int offset, final int length) {
         return nextSequence();
     }
 

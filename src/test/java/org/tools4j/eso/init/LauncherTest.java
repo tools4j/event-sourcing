@@ -30,14 +30,14 @@ import org.junit.Test;
 import org.tools4j.eso.app.Application;
 import org.tools4j.eso.app.ExceptionHandler;
 import org.tools4j.eso.app.SimpleApplication;
-import org.tools4j.eso.cmd.Command;
-import org.tools4j.eso.cmd.CommandLoopback;
-import org.tools4j.eso.cmd.FlyweightCommand;
-import org.tools4j.eso.evt.Event;
-import org.tools4j.eso.evt.EventRouter;
-import org.tools4j.eso.evt.FlyweightEvent;
+import org.tools4j.eso.command.Command;
+import org.tools4j.eso.command.CommandLoopback;
+import org.tools4j.eso.command.FlyweightCommand;
+import org.tools4j.eso.event.Event;
+import org.tools4j.eso.event.EventRouter;
+import org.tools4j.eso.event.FlyweightEvent;
 import org.tools4j.eso.log.InMemoryLog;
-import org.tools4j.eso.src.Source;
+import org.tools4j.eso.input.Input;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -53,7 +53,7 @@ public class LauncherTest {
             this::onCommand, this::onEvent, ExceptionHandler.DEFAULT
     );
     private Queue<String> strings = new ConcurrentLinkedQueue<>();
-    private Source.Poller stringSourcePoller = new StringSourcePoller(strings);
+    private Input.Poller stringInputPoller = new StringInputPoller(strings);
 
     @Test
     public void launch() throws Exception {
@@ -62,18 +62,20 @@ public class LauncherTest {
         try (Launcher launcher = Launcher.launch(
                 Context.create()
                         .application(application)
-                        .source(1, stringSourcePoller)
+                        .input(1, stringInputPoller)
+                        .output(this::publish)
                         .commandLog(new InMemoryLog<>(new FlyweightCommand()))
                         .eventLog(new InMemoryLog<>(new FlyweightEvent()))
         )) {
             //
-            Thread.sleep(200);
-            strings.add("123");
             Thread.sleep(500);
+            strings.add("123");
+            Thread.sleep(1000);
             strings.add("hello world");
             while (!strings.isEmpty()) {
                 launcher.join(20);
             }
+            launcher.join(200);
         }
     }
 
@@ -83,7 +85,11 @@ public class LauncherTest {
     }
 
     private void onEvent(final Event event, final CommandLoopback commandLoopback) {
-        System.out.println("event: " + event + ", payload=" + payloadFor(event.type(), event.payload()));
+        System.out.println("applied: " + event + ", payload=" + payloadFor(event.type(), event.payload()));
+    }
+
+    private void publish(final Event event) {
+        System.out.println("publish: " + event + ", payload=" + payloadFor(event.type(), event.payload()));
     }
 
     private String payloadFor(final int type, final DirectBuffer payload) {
@@ -93,16 +99,16 @@ public class LauncherTest {
         return "(unknown)";
     }
 
-    private static class StringSourcePoller implements Source.Poller {
+    private static class StringInputPoller implements Input.Poller {
         final Queue<String> strings;
         long seq = 0;
 
-        StringSourcePoller(final Queue<String> strings) {
+        StringInputPoller(final Queue<String> strings) {
             this.strings = requireNonNull(strings);
         }
 
         @Override
-        public int poll(final Source.Handler handler) {
+        public int poll(final Input.Handler handler) {
             final String msg = strings.poll();
             if (msg != null) {
                 final MutableDirectBuffer buffer = new ExpandableArrayBuffer(msg.length() + 4);
