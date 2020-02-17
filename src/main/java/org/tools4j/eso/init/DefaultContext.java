@@ -188,6 +188,13 @@ final class DefaultContext implements Context {
         if (application == null) {
             throw new IllegalStateException("Application must be set");
         }
+        for (int i = 0; i < inputs.size(); i++) {
+            for (int j = i + 1; j < inputs.size(); j++) {
+                if (inputs.get(i).id() == inputs.get(j).id()) {
+                    throw new IllegalStateException("Duplicate input id: " + inputs.get(i).id());
+                }
+            }
+        }
         if (commandLog == null) {
             throw new IllegalStateException("Command log must be set");
         }
