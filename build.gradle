@@ -9,9 +9,12 @@ version = '1.0-SNAPSHOT'
 archivesBaseName = "tools4j-event-sourcing"
 
 jar {
-    manifest {
-        attributes 'Implementation-Title': 'tools4j-event-sourcing', 'Implementation-Version': version
-    }
+    manifest.attributes(
+            'Implementation-Title': 'tools4j-event-sourcing',
+            'Implementation-Version': "${project.version}",
+            'Implementation-Vendor': 'tools4j',
+            'Automatic-Module-Name': 'org.tools4j.eso'
+    )
 }
 
 repositories {
@@ -35,10 +38,10 @@ buildscript {
 }
 
 dependencies {
-    compile 'org.tools4j:tools4j-nobark:1.5'
-    compile 'org.agrona:agrona:1.3.0'
+    implementation 'org.tools4j:tools4j-nobark:1.5'
+    implementation 'org.agrona:agrona:1.3.0'
 
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
 }
 
 uploadArchives {
