@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.init;
+package org.tools4j.eso.sample.simple;
 
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -37,13 +37,15 @@ import org.tools4j.eso.event.EventRouter;
 import org.tools4j.eso.event.FlyweightEvent;
 import org.tools4j.eso.input.Input;
 import org.tools4j.eso.log.InMemoryLog;
+import org.tools4j.eso.sample.Context;
+import org.tools4j.eso.sample.Launcher;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.util.Objects.requireNonNull;
 
-public class LauncherTest {
+public class SimpleStringAppTest {
 
     private static int TYPE_STRING = 1;
 

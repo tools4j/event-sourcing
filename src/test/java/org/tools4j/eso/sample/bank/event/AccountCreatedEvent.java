@@ -21,39 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.tools4j.eso.init;
+package org.tools4j.eso.sample.bank.event;
 
-import org.tools4j.nobark.run.ThreadLike;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 
-public class Launcher implements ThreadLike {
+import static java.util.Objects.requireNonNull;
 
-    private final ThreadLike threadLike;
+public class AccountCreatedEvent implements BankEvent {
+    public static final EventType TYPE = EventType.AccountCreated;
 
-    private Launcher(final ThreadLike threadLike) {
-        this.threadLike = threadLike;
-    }
-
-    public static Launcher launch(final Context context) {
-        return new Launcher(DefaultContext.start(context));
-    }
-
-    @Override
-    public Thread.State threadState() {
-        return threadLike.threadState();
+    public final String name;
+    public AccountCreatedEvent(String name) {
+        this.name = requireNonNull(name);
     }
 
     @Override
-    public void join(final long millis) {
-        threadLike.join(millis);
+    public EventType type() {
+        return TYPE;
     }
 
     @Override
-    public void stop() {
-        threadLike.stop();
+    public DirectBuffer encode() {
+        final MutableDirectBuffer buffer = new ExpandableArrayBuffer(
+                Integer.BYTES + name.length());
+        buffer.putStringAscii(0, name);
+        return buffer;
     }
 
-    @Override
     public String toString() {
-        return threadLike.toString();
+        return TYPE + "{name=" + name + "}";
+    }
+
+    public static AccountCreatedEvent decode(final DirectBuffer payload) {
+        final String name = payload.getStringAscii(0);
+        return new AccountCreatedEvent(name);
+    }
+
+    public static String toString(final DirectBuffer payload) {
+        return decode(payload).toString();
     }
 }
